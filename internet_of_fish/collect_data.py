@@ -114,7 +114,7 @@ def main():
         return generate_svg(src_size, inference_box, objs, labels, text_lines)
 
     result = gstreamer.run_pipeline(user_callback,
-                                    src_size=(1296, 972),
+                                    src_size=(640, 480),
                                     appsink_size=inference_size,
                                     videosrc=args.videosrc,
                                     videofmt=args.videofmt)
