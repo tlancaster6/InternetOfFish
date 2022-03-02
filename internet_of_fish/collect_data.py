@@ -66,6 +66,9 @@ def generate_svg(src_size, inference_box, objs, labels, text_lines):
 
 
 def main():
+    output_dir = os.path.join(os.path.expanduser('~'), 'Data')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     model_dir = '../models'
     default_model = 'pretrained_mobilenetV2.tflite'
     default_labels = 'coco_labels.txt'
@@ -111,7 +114,7 @@ def main():
         return generate_svg(src_size, inference_box, objs, labels, text_lines)
 
     result = gstreamer.run_pipeline(user_callback,
-                                    src_size=(640, 480),
+                                    src_size=(1296, 972),
                                     appsink_size=inference_size,
                                     videosrc=args.videosrc,
                                     videofmt=args.videofmt)
