@@ -30,6 +30,8 @@ import argparse
 import gstreamer
 import os
 import time
+from PIL import Image
+import logging
 
 from common import avg_fps_counter, SVG
 from pycoral.adapters.common import input_size
@@ -37,6 +39,16 @@ from pycoral.adapters.detect import get_objects
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 from pycoral.utils.edgetpu import run_inference
+
+
+def save_data(image, results, path, ext='png'):
+    """Saves camera frame and model inference results
+    to user-defined storage directory."""
+    tag = '%010d' % int(time.monotonic()*1000)
+    name = '%s/img-%s.%s' % (path, tag, ext)
+    image.save(name)
+    print('Frame saved as: %s' % name)
+    logging.info('Image: %s Results: %s', tag, results)
 
 
 def generate_svg(src_size, inference_box, objs, labels, text_lines):
@@ -111,6 +123,7 @@ def main():
             'FPS: {} fps'.format(round(next(fps_counter))),
         ]
         print(' '.join(text_lines))
+        print(objs)
         return generate_svg(src_size, inference_box, objs, labels, text_lines)
 
     result = gstreamer.run_pipeline(user_callback,
