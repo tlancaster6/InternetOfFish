@@ -24,7 +24,7 @@ class Collector:
         os.makedirs(img_dir)
         os.makedirs(vid_dir)
 
-    def collect_data(self, vid_id=None):
+    def collect_data(self, vid_id=None, queue=None):
         if vid_id is None:
             generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
@@ -35,8 +35,11 @@ class Collector:
             iterations = 0
             while cam.recording:
                 cam.wait_recording(self.definitions.WAIT_TIME)
-                cam.capture(os.path.join(self.img_dir, f'{current_time_ms()}.jpg'), use_video_port=True)
-                self.logger.info(f'{current_time_ms()}.jpg captured')
+                img_path = os.path.join(self.img_dir, f'{current_time_ms()}.jpg')
+                cam.capture(img_path, use_video_port=True)
+                self.logger.info(f'{img_path} captured')
+                if queue is not None:
+                    queue.put(img_path)
                 if self.definitions.TESTING and (iterations > 100):
                     cam.stop_recording()
         self.logger.info('exiting data collection')

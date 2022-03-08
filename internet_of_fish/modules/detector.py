@@ -81,9 +81,13 @@ class Detector:
             self.hit_counter.increment()
             return True
 
-    def continuous_detect(self, img_dir):
-        """continuously run detection on batches"""
-        self.logger.info('continuous detection starting')
+    def notify(self):
+        # TODO: write notification function
+        pass
+
+    def batch_detect(self, img_dir):
+        """continuously run detection on batches as files are added to img_dir"""
+        self.logger.info('continuous detection starting in batch mode')
         self.running = True
         while self.running:
             start = time.time()
@@ -95,11 +99,30 @@ class Detector:
             self.logger.info(f'batch detection completed. Processed {len(img_paths)} frames in {time.time()-start} seconds')
             if self.hit_counter.hits >= definitions.HIT_THRESH:
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
-                pass
-                #TODO: notification call here
+                self.notify()
             for p in img_paths:
                 os.remove(p)
                 time.sleep(definitions.BATCHING_TIME)
+        self.logger.info('continuous detection exiting')
+
+    def queue_detect(self, queue):
+        """continuously run detection on images in the order their paths are added to the multiprocessing queue"""
+        self.logger.info('continuous detection starting in queue mode')
+        self.running = True
+        img_buffer = []
+        while self.running:
+            img_path = queue.get()
+            img_buffer.append(img_path)
+            dets = self.detect(img_path)
+            self.check_for_hit(dets)
+            if self.hit_counter.hits >= definitions.HIT_THRESH:
+                self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
+                self.notify()
+            if len(img_buffer) > definitions.IMG_BUFFER:
+                os.remove(img_buffer.pop(0))
+            while queue.empty():
+                self.logger.info('queue empty, sleeping for 60 seconds')
+                time.sleep(60)
         self.logger.info('continuous detection exiting')
 
     def stop(self):
