@@ -7,7 +7,8 @@ BASE_DIR = os.path.dirname(CODE_DIR)
 MODELS_DIR = os.path.join(BASE_DIR, 'models')
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 HOME_DIR = os.path.expanduser('~')
-DATA_DIR = os.path.join(HOME_DIR, '__ProjectData')
+DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
+TEMP_DIR = os.path.join(HOME_DIR, 'Temp')
 
 # project-specific parameters
 TOPK = 3  # number of categories with highest score to display
