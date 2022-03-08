@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import definitions
-import os
+import os, time, sys
 from glob import glob
 
 from detector import Detector
@@ -32,13 +32,22 @@ class Manager:
     def collect_and_detect(self):
         collection_process = self.start_collection()
         detection_process = self.start_detection()
+        while True:
+            try:
+                time.sleep(10)
+            except KeyboardInterrupt:
+                print('shutting down detection process')
+                self.stop_detection(detection_process)
+                print('shutting down collection process')
+                self.stop_collection(collection_process)
+                print('exiting')
+                sys.exit()
 
     def start_collection(self):
         self.logger.info('starting collection')
         collection_process = mp.Process(target=self.collector.collect_data)
         collection_process.start()
         return collection_process
-
 
     def start_detection(self):
         self.logger.info('starting detection')
@@ -47,10 +56,12 @@ class Manager:
         detection_process.start()
         return detection_process
 
-    def stop_detection(self):
+    def stop_detection(self, detection_process):
         """add a 'STOP' the detector's image queue, which will trigger the detection to exit elegantly"""
         self.detector.img_queue.put('STOP')
+        detection_process.join()
 
-    def stop_collection(self):
+    def stop_collection(self, collection_process):
         """add a 'STOP' the collector's signal queue, which will trigger the collection to exit elegantly"""
         self.collector.sig_queue.put('STOP')
+        collection_process.join()
