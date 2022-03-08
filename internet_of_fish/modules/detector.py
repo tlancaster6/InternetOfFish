@@ -11,18 +11,16 @@ from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
 import definitions
-from utils import vprint, vvprint
+from utils import make_logger
 
 
 class HitCounter:
 
     def __init__(self):
-        vprint('initializing hit detector')
         self.hits = 0
 
     def increment(self):
         self.hits += 1
-        vprint(f'hit counter incremented. Current value {self.hits}')
 
     def decrement(self):
         if self.hits > 0:
@@ -35,7 +33,8 @@ class HitCounter:
 class Detector:
 
     def __init__(self, model_path, label_path):
-        vprint('initializing Detector')
+        self.logger = make_logger('detector')
+        self.logger.info('initializing detector')
         self.interpreter = make_interpreter(model_path)
         self.labels = read_label_file(label_path)
         self.ids = {val: key for key, val in self.labels.items()}
@@ -47,11 +46,8 @@ class Detector:
         image = Image.open(img_path)
         _, scale = common.set_resized_input(
             self.interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
-        start = time.perf_counter()
         self.interpreter.invoke()
-        inference_time = time.perf_counter() - start
         dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
-        vvprint('inference time: {:.2f} ms'.format(inference_time * 1000))
         return dets
 
     def overlay_boxes(self, img_path, dets):
@@ -87,7 +83,7 @@ class Detector:
 
     def continuous_detect(self, img_dir):
         """continuously run detection on batches"""
-        vprint('continuous detection starting')
+        self.logger.info('continuous detection starting')
         self.running = True
         while self.running:
             start = time.time()
@@ -96,15 +92,15 @@ class Detector:
             for p in img_paths:
                 dets = self.detect(p)
                 self.check_for_hit(dets)
-            vprint(f'batch detection completed. Processed {len(img_paths)} frames in {time.time()-start} seconds')
+            self.logger.info(f'batch detection completed. Processed {len(img_paths)} frames in {time.time()-start} seconds')
             if self.hit_counter.hits >= definitions.HIT_THRESH:
-                vprint('POSSIBLE SPAWNING EVENT DETECTED')
+                self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
                 pass
                 #TODO: notification call here
             for p in img_paths:
                 os.remove(p)
                 time.sleep(definitions.BATCHING_TIME)
-        vprint('continuous detection exiting')
+        self.logger.info('continuous detection exiting')
 
     def stop(self):
         self.running = False

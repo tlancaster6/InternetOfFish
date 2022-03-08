@@ -5,6 +5,7 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 CODE_DIR = os.path.dirname(MODULE_DIR)
 BASE_DIR = os.path.dirname(CODE_DIR)
 MODELS_DIR = os.path.join(BASE_DIR, 'models')
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
 HOME_DIR = os.path.expanduser('~')
 DATA_DIR = os.path.join(HOME_DIR, '__ProjectData')
 
