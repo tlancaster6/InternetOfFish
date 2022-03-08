@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import time
 
@@ -40,6 +41,7 @@ class Detector:
         self.ids = {val: key for key, val in self.labels.items()}
         self.hit_counter = HitCounter()
         self.running = False
+        self.img_queue = multiprocessing.Queue()
 
     def detect(self, img_path):
         """run detection on a single image"""
@@ -105,14 +107,17 @@ class Detector:
                 time.sleep(definitions.BATCHING_TIME)
         self.logger.info('continuous detection exiting')
 
-    def queue_detect(self, queue):
+    def queue_detect(self):
         """continuously run detection on images in the order their paths are added to the multiprocessing queue"""
         self.logger.info('continuous detection starting in queue mode')
         self.running = True
         img_buffer = []
         dets_buffer = []
         while self.running:
-            img_path = queue.get()
+            img_path = self.img_queue.get()
+            if img_path == 'STOP':
+                self.logger.info('stop signal encountered, exiting detection')
+                break
             img_buffer.append(img_path)
             dets = self.detect(img_path)
             dets_buffer.append(dets)
@@ -123,12 +128,8 @@ class Detector:
             if len(img_buffer) > definitions.IMG_BUFFER:
                 os.remove(img_buffer.pop(0))
                 dets_buffer.pop(0)
-            while queue.empty():
-                self.logger.info('queue empty, sleeping for 60 seconds')
-                time.sleep(60)
         self.logger.info('continuous detection exiting')
-
-    def stop(self):
         self.running = False
+
 
 

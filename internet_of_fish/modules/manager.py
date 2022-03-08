@@ -12,9 +12,9 @@ class Manager:
         self.logger = make_logger('Manager')
         self.logger.info('initializing manager')
         self.img_dir, self.vid_dir = img_dir, vid_dir
+
         self.collector = Collector(vid_dir, img_dir)
         self.detector = Detector(model_path, label_path)
-        self.img_queue = mp.Queue()
 
     def collect_and_detect(self):
         collection_process = self.start_collection()
@@ -33,3 +33,11 @@ class Manager:
         detection_process = mp.Process(target=self.detector.queue_detect, args=(self.img_queue,))
         detection_process.start()
         return detection_process
+
+    def stop_detection(self):
+        """add a 'STOP' the detector's image queue, which will trigger the detection to exit elegantly"""
+        self.detector.img_queue.put('STOP')
+
+    def stop_collection(self):
+        """add a 'STOP' the collector's signal queue, which will trigger the collection to exit elegantly"""
+        self.collector.sig_queue.put('STOP')

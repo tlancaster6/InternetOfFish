@@ -1,3 +1,7 @@
+import logging
+import multiprocessing
+import queue
+
 import picamera
 import os
 import definitions
@@ -15,16 +19,18 @@ def generate_vid_id(vid_dir):
 
 class Collector:
 
-    def __init__(self, vid_dir, img_dir):
+    def __init__(self, vid_dir: str, img_dir: str):
         self.logger = make_logger('collector')
         self.logger.info('initializing Collector')
         self.definitions = definitions
         self.vid_dir, self.img_dir = vid_dir, img_dir
         self.running = False
+        self.img_queue = multiprocessing.Queue()
+        self.sig_queue = multiprocessing.Queue()
         os.makedirs(img_dir)
         os.makedirs(vid_dir)
 
-    def collect_data(self, vid_id=None, queue=None):
+    def collect_data(self, vid_id=None):
         if vid_id is None:
             generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
@@ -32,15 +38,19 @@ class Collector:
             self.logger.info('starting recording')
             cam.start_recording(os.path.join(self.vid_dir, f'{vid_id}.h264'))
             self.running = True
-            iterations = 0
             while cam.recording:
                 cam.wait_recording(self.definitions.WAIT_TIME)
                 img_path = os.path.join(self.img_dir, f'{current_time_ms()}.jpg')
                 cam.capture(img_path, use_video_port=True)
                 self.logger.info(f'{img_path} captured')
-                if queue is not None:
-                    queue.put(img_path)
-                if self.definitions.TESTING and (iterations > 100):
-                    cam.stop_recording()
+                try:
+                    self.img_queue.put(img_path)
+                except queue.Full:
+                    self.logger.warn('img_queue full, cannot add path to queue')
+                if not self.sig_queue.empty():
+                    sig = self.sig_queue.get()
+                    if sig == 'STOP':
+                        break
+
         self.logger.info('exiting data collection')
         self.running = False

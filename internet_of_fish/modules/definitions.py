@@ -20,6 +20,3 @@ IMG_BUFFER = 10  # number of sequential images that will be sent if a spawning e
 # hardware parameters
 RESOLUTION = (1296, 972)  # pi camera resolution
 FRAMERATE = 30  # pi camera framerate
-
-# parameters for debugging/development
-TESTING = False
