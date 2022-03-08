@@ -1,6 +1,6 @@
 import os, shutil
 import pytest
-from .context import TEST_DATA_DIR, TMP_DIR, Collector, generate_vid_id
+from .context import RESOURCES_DIR, TMP_DIR, Collector, generate_vid_id
 
 @pytest.fixture
 def setup_tmp_dir():
