@@ -110,16 +110,19 @@ class Detector:
         self.logger.info('continuous detection starting in queue mode')
         self.running = True
         img_buffer = []
+        dets_buffer = []
         while self.running:
             img_path = queue.get()
             img_buffer.append(img_path)
             dets = self.detect(img_path)
+            dets_buffer.append(dets)
             self.check_for_hit(dets)
             if self.hit_counter.hits >= definitions.HIT_THRESH:
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
                 self.notify()
             if len(img_buffer) > definitions.IMG_BUFFER:
                 os.remove(img_buffer.pop(0))
+                dets_buffer.pop(0)
             while queue.empty():
                 self.logger.info('queue empty, sleeping for 60 seconds')
                 time.sleep(60)
