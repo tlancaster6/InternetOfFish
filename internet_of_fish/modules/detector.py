@@ -12,7 +12,7 @@ from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
 from internet_of_fish.modules import definitions
-from internet_of_fish.modules.utils import make_logger
+from internet_of_fish.modules.utils import make_logger, Averager
 
 
 class HitCounter:
@@ -42,14 +42,17 @@ class Detector:
         self.hit_counter = HitCounter()
         self.running = False
         self.img_queue = multiprocessing.Queue()
+        self.avg_timer = Averager()
 
     def detect(self, img_path):
         """run detection on a single image"""
+        start = time.time()
         image = Image.open(img_path)
         _, scale = common.set_resized_input(
             self.interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
         self.interpreter.invoke()
         dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
+        self.avg_timer.update(time.time() - start)
         return dets
 
     def overlay_boxes(self, img_path, dets):
@@ -124,11 +127,14 @@ class Detector:
             self.check_for_hit(dets)
             if self.hit_counter.hits >= definitions.HIT_THRESH:
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
+                [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
                 self.notify()
             if len(img_buffer) > definitions.IMG_BUFFER:
                 os.remove(img_buffer.pop(0))
                 dets_buffer.pop(0)
         self.logger.info('continuous detection exiting')
+        self.logger.info(f'average inference time: {self.avg_timer.avg / 1000}ms')
+        [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
         self.running = False
 
 

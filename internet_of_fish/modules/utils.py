@@ -24,3 +24,18 @@ def make_logger(name):
 def upload():
     pass
 
+
+class Averager:
+
+    def __init__(self):
+        self.avg = None
+        self.count = 0
+
+    def update(self, val):
+        if self.count == 0:
+            self.avg = val
+        else:
+            self.avg = ((self.avg * self.count) + val) / (self.count + 1)
+        self.count += 1
+
+
