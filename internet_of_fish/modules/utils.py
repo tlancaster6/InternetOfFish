@@ -11,7 +11,7 @@ def current_time_ms():
 
 def make_logger(name):
     if not os.path.exists(definitions.LOG_DIR):
-        os.makedirs(definitions.LOG_DIR)
+        os.makedirs(definitions.LOG_DIR, exist_ok=True)
     logging.basicConfig(
         format='%(asctime)s %(levelname)-8s %(message)s',
         level=logging.INFO,

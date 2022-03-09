@@ -28,8 +28,8 @@ class Collector:
         self.img_queue = multiprocessing.Queue()
         self.sig_queue = multiprocessing.Queue()
         self.stat_queue = multiprocessing.Queue()
-        os.makedirs(img_dir)
-        os.makedirs(vid_dir)
+        os.makedirs(img_dir, exist_ok=True)
+        os.makedirs(vid_dir, exist_ok=True)
 
     def collect_data(self, vid_id=None):
         if vid_id is None:
