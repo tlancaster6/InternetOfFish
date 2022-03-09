@@ -37,6 +37,7 @@ class Detector:
         self.logger = make_logger('detector')
         self.logger.info('initializing detector')
         self.interpreter = make_interpreter(model_path)
+        self.interpreter.allocate_tensors()
         self.labels = read_label_file(label_path)
         self.ids = {val: key for key, val in self.labels.items()}
         self.hit_counter = HitCounter()
