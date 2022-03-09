@@ -11,8 +11,8 @@ from pycoral.adapters import detect
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
-import definitions
-from utils import make_logger
+from internet_of_fish.modules import definitions
+from internet_of_fish.modules.utils import make_logger
 
 
 class HitCounter:

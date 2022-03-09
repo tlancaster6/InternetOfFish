@@ -2,10 +2,10 @@ import multiprocessing as mp
 import os, time, sys, datetime
 from glob import glob
 
-import definitions
-from detector import Detector
-from collector import Collector
-from utils import make_logger
+from internet_of_fish.modules import definitions
+from internet_of_fish.modules.detector import Detector
+from internet_of_fish.modules.collector import Collector
+from internet_of_fish.modules.utils import make_logger
 
 class Manager:
 

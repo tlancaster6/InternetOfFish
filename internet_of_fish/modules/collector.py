@@ -4,8 +4,8 @@ import queue
 
 import picamera
 import os
-import definitions
-from utils import current_time_ms, make_logger
+from internet_of_fish.modules import definitions
+from internet_of_fish.modules.utils import current_time_ms, make_logger
 
 
 def generate_vid_id(vid_dir):
