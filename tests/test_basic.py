@@ -67,6 +67,7 @@ def test_collector(manager):
 def test_integration(manager):
     errors = []
     p = mp.Process(target=manager.collect_and_detect)
+    p.start()
     time.sleep(20)
     if not manager.collection_process.is_alive():
         errors.append('collection process terminated prematurely')

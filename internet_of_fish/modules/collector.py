@@ -33,7 +33,7 @@ class Collector:
 
     def collect_data(self, vid_id=None):
         if vid_id is None:
-            generate_vid_id(self.vid_dir)
+            vid_id = generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
         with picamera.PiCamera() as cam:
             self.logger.info('starting recording')
