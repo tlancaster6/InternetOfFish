@@ -52,7 +52,9 @@ class Detector:
             self.interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
         self.interpreter.invoke()
         dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
-        self.avg_timer.update(time.time() - start)
+        duration = time.time() - start
+        self.avg_timer.update(duration)
+        self.logger.debug(f'inference performed on {os.path.split(img_path)[-1]} in {duration}')
         return dets
 
     def overlay_boxes(self, img_path, dets):

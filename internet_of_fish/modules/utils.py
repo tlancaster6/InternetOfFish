@@ -4,6 +4,8 @@ from internet_of_fish.modules import definitions
 import os
 import sys
 
+log_level = logging.DEBUG
+
 
 def current_time_ms():
     return int(round(time.time() * 1000))
@@ -14,11 +16,11 @@ def make_logger(name):
         os.makedirs(definitions.LOG_DIR, exist_ok=True)
     logging.basicConfig(
         format='%(asctime)s %(levelname)-8s %(message)s',
-        level=logging.INFO,
+        level=log_level,
         datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger(name)
     handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
-    handler.setLevel(logging.INFO)
+    handler.setLevel(log_level)
     logger.addHandler(handler)
     return logger
 
