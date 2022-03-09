@@ -17,9 +17,10 @@ class Manager:
         self.project_id, self.model = project_id, model
         self.vid_dir = os.path.join(definitions.DATA_DIR, project_id, 'Videos')
         self.img_dir = os.path.join(definitions.DATA_DIR, project_id, 'Images')
+        self.img_queue = mp.Queue()
 
-        self.collector = Collector(self.vid_dir, self.img_dir)
-        self.detector = Detector(*self.locate_model_files(model))
+        self.collector = Collector(self.vid_dir, self.img_dir, self.img_queue)
+        self.detector = Detector(*self.locate_model_files(model), self.img_queue)
 
         self.detection_process = None
         self.collection_process = None

@@ -33,7 +33,7 @@ class HitCounter:
 
 class Detector:
 
-    def __init__(self, model_path, label_path):
+    def __init__(self, model_path, label_path, img_queue: multiprocessing.Queue):
         self.logger = make_logger('detector')
         self.logger.info('initializing detector')
         self.interpreter = make_interpreter(model_path)
@@ -41,7 +41,7 @@ class Detector:
         self.ids = {val: key for key, val in self.labels.items()}
         self.hit_counter = HitCounter()
         self.running = False
-        self.img_queue = multiprocessing.Queue()
+        self.img_queue = img_queue
         self.avg_timer = Averager()
 
     def detect(self, img_path):
@@ -140,7 +140,10 @@ class Detector:
                 os.remove(img_buffer.pop(0))
                 dets_buffer.pop(0)
         self.logger.info('continuous detection exiting')
-        self.logger.info(f'average inference time: {self.avg_timer.avg / 1000}ms')
+        if self.avg_timer.avg is not None:
+            self.logger.info(f'average inference time: {self.avg_timer.avg / 1000}ms')
+        else:
+            self.logger.info('cannot calculate inference time because detection never ran successfully')
         [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
         self.running = False
 

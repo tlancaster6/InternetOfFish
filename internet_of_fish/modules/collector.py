@@ -19,13 +19,13 @@ def generate_vid_id(vid_dir):
 
 class Collector:
 
-    def __init__(self, vid_dir: str, img_dir: str):
+    def __init__(self, vid_dir: str, img_dir: str, img_queue: multiprocessing.Queue):
         self.logger = make_logger('collector')
         self.logger.info('initializing Collector')
         self.definitions = definitions
         self.vid_dir, self.img_dir = vid_dir, img_dir
         self.running = False
-        self.img_queue = multiprocessing.Queue()
+        self.img_queue = img_queue
         self.sig_queue = multiprocessing.Queue()
         self.stat_queue = multiprocessing.Queue()
         os.makedirs(img_dir, exist_ok=True)
@@ -36,14 +36,15 @@ class Collector:
             vid_id = generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
         with picamera.PiCamera() as cam:
-            self.logger.info('starting recording')
+            self.logger.info(f'initializing recording for {vid_id}.h264')
             cam.start_recording(os.path.join(self.vid_dir, f'{vid_id}.h264'))
             self.running = True
+            self.logger.info(f'initializing still captures at {self.definitions.WAIT_TIME} second intervals')
             while cam.recording:
                 cam.wait_recording(self.definitions.WAIT_TIME)
                 img_path = os.path.join(self.img_dir, f'{current_time_ms()}.jpg')
                 cam.capture(img_path, use_video_port=True)
-                self.logger.info(f'{img_path} captured')
+                self.logger.debug(f'{img_path} captured')
                 try:
                     self.img_queue.put(img_path)
                 except queue.Full:
