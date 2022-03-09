@@ -98,7 +98,7 @@ class Detector:
         self.running = True
         while self.running:
             start = time.time()
-            img_paths = [glob(os.path.join(img_dir, '*.jpg'))]
+            img_paths = glob(os.path.join(img_dir, '*.jpg'))
             img_paths.sort()
             for p in img_paths:
                 dets = self.detect(p)
@@ -119,14 +119,19 @@ class Detector:
         img_buffer = []
         dets_buffer = []
         while self.running:
+            self.logger.debug('waiting for image')
             img_path = self.img_queue.get()
+            fname = os.path.split(img_path)[-1]
+            self.logger.debug(f'image path aquired from queue: {fname}')
             if img_path == 'STOP':
                 self.logger.info('stop signal encountered, exiting detection')
                 break
             img_buffer.append(img_path)
             dets = self.detect(img_path)
+            self.logger.debug(f'detection complete for {fname}. {len(dets)} detections')
             dets_buffer.append(dets)
             self.check_for_hit(dets)
+            self.logger.debug(f'hit check complete for {fname}. current hit count: {self.hit_counter.hits}')
             if self.hit_counter.hits >= definitions.HIT_THRESH:
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
                 [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
