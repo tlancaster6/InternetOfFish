@@ -49,9 +49,12 @@ class Detector:
         """run detection on a single image"""
         start = time.time()
         image = Image.open(img_path)
+        self.logger.debug('setting resized input')
         _, scale = common.set_resized_input(
             self.interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
+        self.logger.debug('invoking interpreter')
         self.interpreter.invoke()
+        self.logger.debug('performing inference')
         dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
         duration = time.time() - start
         self.avg_timer.update(duration)
