@@ -40,8 +40,8 @@ class Manager:
         while (self.collection_process is not None) or (self.detection_process is not None):
             try:
                 time.sleep(10)
-                # self.collection_process.join(timeout=0)
-                # self.detection_process.join(timeout=0)
+                self.collection_process.join(timeout=0)
+                self.detection_process.join(timeout=0)
             except KeyboardInterrupt:
                 print('shutting down detection process')
                 self.stop_detection()
