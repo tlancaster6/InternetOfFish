@@ -5,11 +5,13 @@ import time
 from PIL import Image
 from PIL import ImageDraw
 from glob import glob
+import numpy as np
 
 from pycoral.adapters import common
 from pycoral.adapters import detect
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
+from pycoral.utils.edgetpu import run_inference
 
 from internet_of_fish.modules import definitions
 from internet_of_fish.modules.utils import make_logger, Averager
@@ -39,6 +41,7 @@ class Detector:
         self.interpreter = make_interpreter(model_path)
         self.interpreter.allocate_tensors()
         self.labels = read_label_file(label_path)
+        self.inference_size = common.input_size(self.interpreter)
         self.ids = {val: key for key, val in self.labels.items()}
         self.hit_counter = HitCounter()
         self.running = False
@@ -48,14 +51,16 @@ class Detector:
     def detect(self, img_path):
         """run detection on a single image"""
         start = time.time()
-        image = Image.open(img_path)
+        image = np.array(Image.open(img_path).convert('RGB').resize(self.inference_size, Image.ANTIALIAS))
         self.logger.debug('setting resized input')
-        _, scale = common.set_resized_input(
-            self.interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
+        # _, scale = common.set_resized_input(
+        #     self.interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
+        common.set_input(self.interpreter, image.astype(np.uint8))
         self.logger.debug('invoking interpreter')
+        # self.interpreter.invoke()
         self.interpreter.invoke()
         self.logger.debug('performing inference')
-        dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
+        dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH)[:definitions.TOPK]
         duration = time.time() - start
         self.avg_timer.update(duration)
         self.logger.debug(f'inference performed on {os.path.split(img_path)[-1]} in {duration}')
