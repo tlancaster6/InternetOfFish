@@ -51,6 +51,7 @@ def test_generate_vid_id(collector):
 
 def test_collector(manager):
     errors = []
+    collector = manager.collector
     manager.start_collection()
     time.sleep(10)
     manager.stop_collection()
@@ -63,7 +64,7 @@ def test_collector(manager):
     assert not errors, "errors occured:\n{}".format("\n".join(errors))
 
 
-def integration_test(manager):
+def test_integration(manager):
     errors = []
     p = mp.Process(target=manager.collect_and_detect)
     time.sleep(20)
