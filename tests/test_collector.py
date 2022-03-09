@@ -1,6 +1,6 @@
 import os, shutil
 import pytest
-from context import RESOURCES_DIR, TMP_DIR, Collector, generate_vid_id
+from .context import RESOURCES_DIR, TMP_DIR, Collector, generate_vid_id
 
 @pytest.fixture
 def setup_tmp_dir():
@@ -24,7 +24,7 @@ def test_generate_vid_id(setup_tmp_dir):
     id_0 = generate_vid_id(TMP_DIR)
     if id_0 != '0001_vid':
         errors.append(f'expected vid id to be 0001_vid, got {id_0}')
-    f = open(os.path.join(TMP_DIR, '0001_vid.mp4'))
+    f = open(os.path.join(TMP_DIR, '0001_vid.mp4'), 'w+')
     f.close()
     id_1 = generate_vid_id(TMP_DIR)
     if id_1 != '0002_vid':

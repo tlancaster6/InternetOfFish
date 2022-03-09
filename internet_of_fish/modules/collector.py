@@ -12,8 +12,8 @@ def generate_vid_id(vid_dir):
     current_vids = [f for f in os.listdir(vid_dir) if (f.endswith('.h264') or f.endswith('.mp4'))]
     if len(current_vids) == 0:
         return('0001_vid')
-    current_vids = [int(i) for i in ['_'.split(f)[0] for f in current_vids] if i.isdigit()]
-    new_id = '{:02d}_vid'.format(max(current_vids) + 1)
+    current_vids = [int(i) for i in [f.split('_')[0] for f in current_vids] if i.isdigit()]
+    new_id = '{:04d}_vid'.format(max(current_vids) + 1)
     return new_id
 
 

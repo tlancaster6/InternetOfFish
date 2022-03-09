@@ -1,6 +1,6 @@
 import logging
 import time
-import definitions
+from internet_of_fish.modules import definitions
 import os
 import sys
 
@@ -10,6 +10,8 @@ def current_time_ms():
 
 
 def make_logger(name):
+    if not os.path.exists(definitions.LOG_DIR):
+        os.makedirs(definitions.LOG_DIR)
     logging.basicConfig(
         format='%(asctime)s %(levelname)-8s %(message)s',
         level=logging.INFO,
