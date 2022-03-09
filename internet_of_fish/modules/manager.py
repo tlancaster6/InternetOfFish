@@ -36,7 +36,7 @@ class Manager:
     def collect_and_detect(self):
         self.start_collection()
         self.start_detection()
-        while self.collection_process.is_alive() or self.detection_process.is_alive():
+        while (self.collection_process is not None) or (self.detection_process is not None):
             try:
                 time.sleep(10)
                 self.collection_process.join(timeout=0)
