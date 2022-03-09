@@ -48,7 +48,7 @@ class Manager:
                 self.stop_collection()
                 print('exiting')
                 sys.exit()
-            if 8 <= datetime.datetime.now().hour <= 18:
+            if not 8 <= datetime.datetime.now().hour <= 18:
                 self.stop_detection()
                 self.stop_collection()
 
