@@ -7,6 +7,7 @@ from internet_of_fish.modules.detector import Detector
 from internet_of_fish.modules.collector import Collector
 from internet_of_fish.modules.utils import make_logger
 
+
 class Manager:
 
     def __init__(self, project_id, model):
@@ -20,6 +21,9 @@ class Manager:
         self.collector = Collector(self.vid_dir, self.img_dir)
         self.detector = Detector(*self.locate_model_files(model))
 
+        self.detection_process = None
+        self.collection_process = None
+
     @staticmethod
     def locate_model_files(model):
         try:
@@ -30,44 +34,51 @@ class Manager:
             print(f'error locating model files:\n{e}')
 
     def collect_and_detect(self):
-        collection_process = self.start_collection()
-        detection_process = self.start_detection()
-        while collection_process.is_alive() or detection_process.is_alive():
+        self.start_collection()
+        self.start_detection()
+        while self.collection_process.is_alive() or self.detection_process.is_alive():
             try:
                 time.sleep(10)
-                collection_process.join(timeout=0)
-                detection_process.join(timeout=0)
+                self.collection_process.join(timeout=0)
+                self.detection_process.join(timeout=0)
             except KeyboardInterrupt:
                 print('shutting down detection process')
-                self.stop_detection(detection_process)
+                self.stop_detection()
                 print('shutting down collection process')
-                self.stop_collection(collection_process)
+                self.stop_collection()
                 print('exiting')
                 sys.exit()
             if 8 <= datetime.datetime.now().hour <= 18:
-                self.stop_detection(detection_process)
-                self.stop_collection(collection_process)
-
+                self.stop_detection()
+                self.stop_collection()
 
     def start_collection(self):
         self.logger.info('starting collection')
-        collection_process = mp.Process(target=self.collector.collect_data)
-        collection_process.start()
-        return collection_process
+        self.collection_process = mp.Process(target=self.collector.collect_data)
+        self.collection_process.start()
+        return self.collection_process
 
     def start_detection(self):
         self.logger.info('starting detection')
         # detection_process = mp.Process(target=self.detector.batch_detect, args=(self.img_dir,))
-        detection_process = mp.Process(target=self.detector.queue_detect)
-        detection_process.start()
-        return detection_process
+        self.detection_process = mp.Process(target=self.detector.queue_detect)
+        self.detection_process.start()
+        return self.detection_process
 
-    def stop_detection(self, detection_process):
+    def stop_detection(self):
         """add a 'STOP' the detector's image queue, which will trigger the detection to exit elegantly"""
+        if self.detection_process is None:
+            self.logger.info('manager.stop_detection called, but no detection process was running')
+            return
         self.detector.img_queue.put('STOP')
-        detection_process.join()
+        self.detection_process.join()
+        self.detection_process = None
 
-    def stop_collection(self, collection_process):
+    def stop_collection(self):
         """add a 'STOP' the collector's signal queue, which will trigger the collection to exit elegantly"""
+        if self.collection_process is None:
+            self.logger.info('manager.stop_collection called, but no collection process was running')
+            return
         self.collector.sig_queue.put('STOP')
-        collection_process.join()
+        self.collection_process.join()
+        self.collection_process = None
