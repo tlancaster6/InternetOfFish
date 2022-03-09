@@ -8,8 +8,8 @@ from .context import RESOURCES_DIR, MODEL_DIR, Collector, generate_vid_id, Detec
 def manager():
     m = Manager('test', 'test_model')
     yield m
-    shutil.rmtree(m.img_dir)
-    shutil.rmtree(m.vid_dir)
+    # shutil.rmtree(m.img_dir)
+    # shutil.rmtree(m.vid_dir)
 
 @pytest.fixture
 def collector(manager):
