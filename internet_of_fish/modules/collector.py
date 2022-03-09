@@ -36,6 +36,8 @@ class Collector:
             vid_id = generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
         with picamera.PiCamera() as cam:
+            cam.resolution = self.definitions.RESOLUTION
+            cam.framerate = self.definitions.FRAMERATE
             self.logger.info(f'initializing recording for {vid_id}.h264')
             cam.start_recording(os.path.join(self.vid_dir, f'{vid_id}.h264'))
             self.running = True
