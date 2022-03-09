@@ -134,7 +134,7 @@ class Detector:
             dets = self.detect(img_path)
             self.logger.debug(f'detection complete for {fname}. {len(dets)} detections')
             dets_buffer.append(dets)
-            self.check_for_hit(dets)
+            # self.check_for_hit(dets)
             self.logger.debug(f'hit check complete for {fname}. current hit count: {self.hit_counter.hits}')
             if self.hit_counter.hits >= definitions.HIT_THRESH:
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
