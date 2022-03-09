@@ -51,9 +51,9 @@ def test_generate_vid_id(collector):
 
 def test_collector(manager):
     errors = []
-    collection_process = manager.start_collection()
+    manager.start_collection()
     time.sleep(10)
-    manager.stop_collection(collection_process)
+    manager.stop_collection()
     if '0001_vid.h264' not in os.listdir(collector.vid_dir):
         errors.append(f'expected 0001_vid.h264 in {collector.vid_dir}. found {os.listdir(collector.vid_dir)}')
     image_files = [f for f in os.listdir(collector.img_dir) if f.endswith('.jpg')]
