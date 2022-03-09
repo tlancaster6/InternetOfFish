@@ -17,7 +17,9 @@ def make_logger(name):
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger(name)
-    logger.addHandler(logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log')))
+    handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
+    handler.setLevel(logging.INFO)
+    logger.addHandler(handler)
     return logger
 
 
@@ -37,5 +39,3 @@ class Averager:
         else:
             self.avg = ((self.avg * self.count) + val) / (self.count + 1)
         self.count += 1
-
-

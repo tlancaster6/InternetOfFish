@@ -11,7 +11,7 @@ from internet_of_fish.modules.utils import make_logger
 class Manager:
 
     def __init__(self, project_id, model):
-        self.logger = make_logger('Manager')
+        self.logger = make_logger('manager')
         self.logger.info('initializing manager')
 
         self.project_id, self.model = project_id, model
