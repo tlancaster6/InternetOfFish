@@ -6,7 +6,7 @@ from .context import RESOURCES_DIR, MODEL_DIR, Collector, generate_vid_id, Detec
 
 @pytest.fixture
 def manager():
-    m = Manager('test_model', 'test')
+    m = Manager('test', 'test_model')
     yield m
     shutil.rmtree(m.img_dir)
     shutil.rmtree(m.vid_dir)
