@@ -27,6 +27,7 @@ class Collector:
         self.running = False
         self.img_queue = multiprocessing.Queue()
         self.sig_queue = multiprocessing.Queue()
+        self.stat_queue = multiprocessing.Queue()
         os.makedirs(img_dir)
         os.makedirs(vid_dir)
 

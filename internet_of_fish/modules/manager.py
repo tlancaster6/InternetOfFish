@@ -1,8 +1,8 @@
 import multiprocessing as mp
-import definitions
-import os, time, sys
+import os, time, sys, datetime
 from glob import glob
 
+import definitions
 from detector import Detector
 from collector import Collector
 from utils import make_logger
@@ -32,9 +32,11 @@ class Manager:
     def collect_and_detect(self):
         collection_process = self.start_collection()
         detection_process = self.start_detection()
-        while True:
+        while collection_process.is_alive() or detection_process.is_alive():
             try:
                 time.sleep(10)
+                collection_process.join(timeout=0)
+                detection_process.join(timeout=0)
             except KeyboardInterrupt:
                 print('shutting down detection process')
                 self.stop_detection(detection_process)
@@ -42,6 +44,10 @@ class Manager:
                 self.stop_collection(collection_process)
                 print('exiting')
                 sys.exit()
+            if 8 <= datetime.datetime.now().hour <= 18:
+                self.stop_detection(detection_process)
+                self.stop_collection(collection_process)
+
 
     def start_collection(self):
         self.logger.info('starting collection')
