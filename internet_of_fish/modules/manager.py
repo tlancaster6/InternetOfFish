@@ -41,7 +41,6 @@ class Manager:
                 time.sleep(10)
                 self.collection_process.join(timeout=0)
                 self.detection_process.join(timeout=0)
-                iters += 1
             except KeyboardInterrupt:
                 print('shutting down detection process')
                 self.stop_detection()
@@ -52,6 +51,8 @@ class Manager:
             if (not 8 <= datetime.datetime.now().hour <= 18) or (iterlimit is not None and iters > iterlimit):
                 self.stop_detection()
                 self.stop_collection()
+            iters += 1
+            self.logger.debug(f'managers iters = {iters}')
 
     def start_collection(self):
         self.logger.info('starting collection')
