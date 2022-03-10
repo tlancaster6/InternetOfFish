@@ -15,11 +15,11 @@ def manager():
 
 
 def test_all_images_consumed(manager):
-    assert manager.img_queue.empty(), 'images left in queue'
+    assert manager.img_queue.empty(), f'{manager.img_queue.qsize()}images left in queue'
 
 
 def test_img_buffer_length(manager):
-    n_images_act = len(os.listdir(manager.img_dir))
+    n_images_act = len([f.endswith('.jpg') for f in os.listdir(manager.img_dir)])
     n_images_exp = manager.definitions.IMG_BUFFER
     assert n_images_exp == n_images_act, f'expected {n_images_exp} in buffer, encountered {n_images_act}'
 
