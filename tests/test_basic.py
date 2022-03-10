@@ -8,7 +8,7 @@ from .context import Manager
 @pytest.fixture(scope='session')
 def manager():
     m = Manager('test', 'mobilenetv2')
-    manager.collect_and_detect(iterlimit=1)
+    m.collect_and_detect(iterlimit=1)
     yield m
     shutil.rmtree(m.img_dir)
     shutil.rmtree(m.vid_dir)
