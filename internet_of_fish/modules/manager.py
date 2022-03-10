@@ -39,8 +39,8 @@ class Manager:
         while (self.collection_process is not None) or (self.detection_process is not None):
             try:
                 time.sleep(10)
-                self.collection_process.join(timeout=0)
-                self.detection_process.join(timeout=0)
+                self.collection_process.join(timeout=1)
+                self.detection_process.join(timeout=1)
             except KeyboardInterrupt:
                 print('shutting down detection process')
                 self.stop_detection()
@@ -58,6 +58,7 @@ class Manager:
         self.logger.info('starting collection')
         self.collection_process = mp.Process(target=start_collection_mp,
                                              args=(self.vid_dir, self.img_dir, self.img_queue, self.collector_sig_queue))
+        self.collection_process.daemon = True
         self.collection_process.start()
         return self.collection_process
 
@@ -66,6 +67,7 @@ class Manager:
         # detection_process = mp.Process(target=self.detector.batch_detect, args=(self.img_dir,))
         self.detection_process = mp.Process(target=start_detection_mp,
                                             args=(*self.locate_model_files(self.model), self.img_queue,))
+        self.detection_process.daemon = True
         self.detection_process.start()
         return self.detection_process
 
