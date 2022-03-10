@@ -75,16 +75,14 @@ class Detector:
                       fill='red')
         img.save(img_path)
 
-    def check_for_hit(self, dets):
+    def check_for_hit(self, fish_dets, pipe_det):
         """check for multiple fish intersecting with the pipe and adjust hit counter accordingly"""
-        fish_bboxes = [d.bbox for d in dets if d.id == self.ids['fish']]
-        pipe_bbox = [d.bbox for d in dets if d.id == self.ids['pipe']]
-        if (len(fish_bboxes) < 2) or (len(pipe_bbox) != 1):
+        if (len(fish_dets) < 2) or (len(pipe_det) != 1):
             self.hit_counter.decrement()
             return False
         intersect_count = 0
-        for bbox in fish_bboxes:
-            intersect = detect.BBox.intersect(bbox, pipe_bbox)
+        for det in fish_dets:
+            intersect = detect.BBox.intersect(det, pipe_det)
             intersect_count += intersect.valid
         if intersect_count < 2:
             self.hit_counter.decrement()
@@ -96,26 +94,6 @@ class Detector:
     def notify(self):
         # TODO: write notification function
         pass
-
-    def batch_detect(self, img_dir):
-        """continuously run detection on batches as files are added to img_dir"""
-        self.logger.info('continuous detection starting in batch mode')
-        self.running = True
-        while self.running:
-            start = time.time()
-            img_paths = glob(os.path.join(img_dir, '*.jpg'))
-            img_paths.sort()
-            for p in img_paths:
-                dets = self.detect(p)
-                self.check_for_hit(dets)
-            self.logger.info(f'batch detection completed. Processed {len(img_paths)} frames in {time.time()-start} seconds')
-            if self.hit_counter.hits >= definitions.HIT_THRESH:
-                self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
-                self.notify()
-            for p in img_paths:
-                os.remove(p)
-                time.sleep(definitions.BATCHING_TIME)
-        self.logger.info('continuous detection exiting')
 
     def queue_detect(self):
         """continuously run detection on images in the order their paths are added to the multiprocessing queue"""
@@ -134,8 +112,9 @@ class Detector:
             img_buffer.append(img_path)
             dets = self.detect(img_path)
             self.logger.debug(f'detection complete for {fname}. {len(dets)} detections')
-            dets_buffer.append(dets)
-            self.check_for_hit(dets)
+            fish_dets, pipe_det = self.filter_dets(dets)
+            dets_buffer.append(fish_dets+pipe_det)
+            self.check_for_hit(fish_dets, pipe_det)
             self.logger.debug(f'hit check complete for {fname}. current hit count: {self.hit_counter.hits}')
             if self.hit_counter.hits >= definitions.HIT_THRESH:
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
@@ -152,6 +131,11 @@ class Detector:
         [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
         self.running = False
 
+    def filter_dets(self, dets):
+        fish_dets = [d.bbox for d in dets if d.id == self.ids['fish']][:definitions.MAX_FISH]
+        pipe_det = [d.bbox for d in dets if d.id == self.ids['pipe']][:1]
+        self.logger.debug(f'detections filtered. {len(fish_dets)} fish detections and {len(pipe_det)} detections found')
+        return fish_dets, pipe_det
 
 def start_detection_mp(model_path, label_path, img_queue: multiprocessing.Queue):
     detector = Detector(model_path, label_path, img_queue)

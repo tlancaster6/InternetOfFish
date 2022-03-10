@@ -10,7 +10,7 @@ HOME_DIR = os.path.expanduser('~')
 DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
 
 # project-specific parameters
-TOPK = 3  # number of categories with highest score to display
+MAX_FISH = 3  # maximum number of fish detections that should be returned
 CONF_THRESH = 0.1  # classifier score threshold
 HIT_THRESH = 5  # hit counter threshold
 WAIT_TIME = 1  # time between image captures in seconds
