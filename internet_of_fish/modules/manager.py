@@ -1,4 +1,4 @@
-import multiprocess as mp
+import multiprocessing as mp
 import os, time, sys, datetime
 from glob import glob
 
@@ -7,7 +7,7 @@ from internet_of_fish.modules.detector import Detector, start_detection_mp
 from internet_of_fish.modules.collector import Collector, start_collection_mp
 from internet_of_fish.modules.utils import make_logger
 
-mp.set_start_method("spawn", force=True)
+mp.set_start_method('spawn')
 
 
 class Manager:
@@ -20,9 +20,7 @@ class Manager:
         self.vid_dir = os.path.join(definitions.DATA_DIR, project_id, 'Videos')
         self.img_dir = os.path.join(definitions.DATA_DIR, project_id, 'Images')
         self.img_queue = mp.Queue()
-
-        self.collector = Collector(self.vid_dir, self.img_dir, self.img_queue)
-        self.detector = Detector(*self.locate_model_files(model), self.img_queue)
+        self.collector_sig_queue = mp.Queue()
 
         self.detection_process = None
         self.collection_process = None
@@ -57,14 +55,16 @@ class Manager:
 
     def start_collection(self):
         self.logger.info('starting collection')
-        self.collection_process = mp.Process(target=start_collection_mp, args=(self.collector,))
+        self.collection_process = mp.Process(target=start_collection_mp,
+                                             args=(self.vid_dir, self.img_dir, self.img_queue, self.collector_sig_queue))
         self.collection_process.start()
         return self.collection_process
 
     def start_detection(self):
         self.logger.info('starting detection')
         # detection_process = mp.Process(target=self.detector.batch_detect, args=(self.img_dir,))
-        self.detection_process = mp.Process(target=start_detection_mp, args=(self.detector,))
+        self.detection_process = mp.Process(target=start_detection_mp,
+                                            args=(*self.locate_model_files(self.model), self.img_queue,))
         self.detection_process.start()
         return self.detection_process
 
@@ -73,7 +73,7 @@ class Manager:
         if self.detection_process is None:
             self.logger.info('manager.stop_detection called, but no detection process was running')
             return
-        self.detector.img_queue.put('STOP')
+        self.img_queue.put('STOP')
         self.detection_process.join()
         self.detection_process = None
 
@@ -82,6 +82,6 @@ class Manager:
         if self.collection_process is None:
             self.logger.info('manager.stop_collection called, but no collection process was running')
             return
-        self.collector.sig_queue.put('STOP')
+        self.collector_sig_queue.put('STOP')
         self.collection_process.join()
         self.collection_process = None

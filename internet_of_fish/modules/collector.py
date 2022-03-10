@@ -1,5 +1,5 @@
 import logging
-import multiprocess
+import multiprocessing
 import queue
 
 import picamera
@@ -20,15 +20,14 @@ def generate_vid_id(vid_dir):
 
 class Collector:
 
-    def __init__(self, vid_dir: str, img_dir: str, img_queue: multiprocess.Queue):
+    def __init__(self, vid_dir: str, img_dir: str, img_queue: multiprocessing.Queue, sig_queue: multiprocessing.Queue):
         self.logger = make_logger('collector')
         self.logger.info('initializing Collector')
         self.definitions = definitions
         self.vid_dir, self.img_dir = vid_dir, img_dir
         self.running = False
         self.img_queue = img_queue
-        self.sig_queue = multiprocess.Queue()
-        self.stat_queue = multiprocess.Queue()
+        self.sig_queue = sig_queue
         os.makedirs(img_dir, exist_ok=True)
         os.makedirs(vid_dir, exist_ok=True)
 
@@ -61,5 +60,6 @@ class Collector:
         self.running = False
 
 
-def start_collection_mp(collector: Collector):
+def start_collection_mp(vid_dir: str, img_dir: str, img_queue: multiprocessing.Queue, sig_queue: multiprocessing.Queue):
+    collector = Collector(vid_dir, img_dir, img_queue, sig_queue)
     collector.collect_data()

@@ -1,4 +1,4 @@
-import multiprocess
+import multiprocessing
 import os
 import time
 
@@ -33,7 +33,7 @@ class HitCounter:
 
 class Detector:
 
-    def __init__(self, model_path, label_path, img_queue: multiprocess.Queue):
+    def __init__(self, model_path, label_path, img_queue: multiprocessing.Queue):
         self.logger = make_logger('detector')
         self.logger.info('initializing detector')
         self.interpreter = make_interpreter(model_path)
@@ -118,7 +118,7 @@ class Detector:
         self.logger.info('continuous detection exiting')
 
     def queue_detect(self):
-        """continuously run detection on images in the order their paths are added to the multiprocess queue"""
+        """continuously run detection on images in the order their paths are added to the multiprocessing queue"""
         self.logger.info('continuous detection starting in queue mode')
         self.running = True
         img_buffer = []
@@ -153,7 +153,8 @@ class Detector:
         self.running = False
 
 
-def start_detection_mp(detector: Detector):
+def start_detection_mp(model_path, label_path, img_queue: multiprocessing.Queue):
+    detector = Detector(model_path, label_path, img_queue)
     detector.queue_detect()
 
 
