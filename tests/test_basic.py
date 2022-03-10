@@ -6,7 +6,7 @@ from .context import Manager
 
 @pytest.fixture
 def manager():
-    m = Manager('test', 'test_model')
+    m = Manager('test', 'mobilenetv2')
     yield m
     shutil.rmtree(m.img_dir)
     shutil.rmtree(m.vid_dir)
