@@ -1,5 +1,5 @@
 import os, shutil, time
-import multiprocessing as mp
+import multiprocess as mp
 
 import pytest
 from .context import RESOURCES_DIR, MODEL_DIR, Collector, generate_vid_id, Detector, HitCounter, Manager
