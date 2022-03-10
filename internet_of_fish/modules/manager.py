@@ -37,6 +37,10 @@ class Manager:
         self.start_detection()
         iters = 0
         while (self.collection_process is not None) or (self.detection_process is not None):
+            if (not 8 <= datetime.datetime.now().hour <= 18) or (iterlimit is not None and iters > iterlimit):
+                self.stop_detection()
+                self.stop_collection()
+                break
             try:
                 time.sleep(10)
                 self.collection_process.join(timeout=1)
@@ -48,9 +52,6 @@ class Manager:
                 self.stop_collection()
                 print('exiting')
                 sys.exit()
-            if (not 8 <= datetime.datetime.now().hour <= 18) or (iterlimit is not None and iters > iterlimit):
-                self.stop_detection()
-                self.stop_collection()
             iters += 1
             self.logger.debug(f'managers iters = {iters}')
 
