@@ -84,10 +84,9 @@ class Detector:
             return False
         intersect_count = 0
         pipe_det = pipe_det[0]
-        self.logger.debug(f'checking {fish_dets} (ids = {[det.id for det in fish_dets]}) '
-                          f'against {pipe_det} (id = {pipe_det.id}')
+        self.logger.debug(f'checking {fish_dets}) against {pipe_det}')
         for det in fish_dets:
-            intersect = detect.BBox.intersect(det, pipe_det)
+            intersect = detect.BBox.intersect(det.bbox, pipe_det.bbox)
             intersect_count += intersect.valid
         if intersect_count < 2:
             self.hit_counter.decrement()
@@ -137,8 +136,8 @@ class Detector:
         self.running = False
 
     def filter_dets(self, dets):
-        fish_dets = [d.bbox for d in dets if d.id == self.ids['fish']][:definitions.MAX_FISH]
-        pipe_det = [d.bbox for d in dets if d.id == self.ids['pipe']][:1]
+        fish_dets = [d for d in dets if d.id == self.ids['fish']][:definitions.MAX_FISH]
+        pipe_det = [d for d in dets if d.id == self.ids['pipe']][:1]
         self.logger.debug(f'detections filtered. {len(fish_dets)} fish detections '
                           f'and {len(pipe_det)} pipe detections found')
         return fish_dets, pipe_det
