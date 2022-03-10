@@ -7,6 +7,8 @@ from internet_of_fish.modules.detector import Detector
 from internet_of_fish.modules.collector import Collector
 from internet_of_fish.modules.utils import make_logger
 
+mp.set_start_method("spawn")
+
 
 class Manager:
 
