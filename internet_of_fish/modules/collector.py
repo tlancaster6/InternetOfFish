@@ -1,5 +1,5 @@
 import logging
-import multiprocessing
+import multiprocess
 import queue
 
 import picamera
