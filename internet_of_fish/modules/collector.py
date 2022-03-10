@@ -31,6 +31,9 @@ class Collector:
         os.makedirs(img_dir, exist_ok=True)
         os.makedirs(vid_dir, exist_ok=True)
 
+    def __call__(self):
+        return self.collect_data()
+
     def collect_data(self, vid_id=None):
         if vid_id is None:
             vid_id = generate_vid_id(self.vid_dir)

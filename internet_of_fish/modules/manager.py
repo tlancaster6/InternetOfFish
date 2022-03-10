@@ -57,14 +57,14 @@ class Manager:
 
     def start_collection(self):
         self.logger.info('starting collection')
-        self.collection_process = mp.Process(target=self.collector.collect_data)
+        self.collection_process = mp.Process(target=self.collector)
         self.collection_process.start()
         return self.collection_process
 
     def start_detection(self):
         self.logger.info('starting detection')
         # detection_process = mp.Process(target=self.detector.batch_detect, args=(self.img_dir,))
-        self.detection_process = mp.Process(target=self.detector.queue_detect)
+        self.detection_process = mp.Process(target=self.detector)
         self.detection_process.start()
         return self.detection_process
 

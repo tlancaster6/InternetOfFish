@@ -45,6 +45,9 @@ class Detector:
         self.img_queue = img_queue
         self.avg_timer = Averager()
 
+    def __call__(self):
+        return self.queue_detect()
+
     def detect(self, img_path):
         """run detection on a single image"""
         start = time.time()
