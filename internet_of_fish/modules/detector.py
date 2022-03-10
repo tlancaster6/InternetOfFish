@@ -4,7 +4,6 @@ import time
 
 from PIL import Image
 from PIL import ImageDraw
-from glob import glob
 
 from pycoral.adapters import common
 from pycoral.adapters import detect

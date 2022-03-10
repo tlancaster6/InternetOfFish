@@ -2,7 +2,6 @@ import logging
 import time
 from internet_of_fish.modules import definitions
 import os
-import sys
 
 log_level = logging.DEBUG
 

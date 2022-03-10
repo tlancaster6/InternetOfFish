@@ -78,7 +78,7 @@ def test_integration(manager):
     if manager.collection_process is not None:
         errors.append('collection process failed to terminate')
     manager.stop_detection()
-    time.sleep(10)
+    time.sleep(2)
     if manager.detection_process is not None:
         errors.append('detection process failed to terminate')
     p.join(timeout=10)

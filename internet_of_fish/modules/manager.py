@@ -3,8 +3,8 @@ import os, time, sys, datetime
 from glob import glob
 
 from internet_of_fish.modules import definitions
-from internet_of_fish.modules.detector import Detector, start_detection_mp
-from internet_of_fish.modules.collector import Collector, start_collection_mp
+from internet_of_fish.modules.detector import start_detection_mp
+from internet_of_fish.modules.collector import start_collection_mp
 from internet_of_fish.modules.utils import make_logger
 
 
@@ -66,7 +66,6 @@ class Manager:
 
     def start_detection(self):
         self.logger.info('starting detection')
-        # detection_process = mp.Process(target=self.detector.batch_detect, args=(self.img_dir,))
         self.detection_process = mp.Process(target=start_detection_mp,
                                             args=(*self.locate_model_files(self.model), self.img_queue,))
         self.detection_process.daemon = True
