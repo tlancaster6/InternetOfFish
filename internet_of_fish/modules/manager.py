@@ -58,7 +58,8 @@ class Manager:
     def start_collection(self):
         self.logger.info('starting collection')
         self.collection_process = mp.Process(target=start_collection_mp,
-                                             args=(self.vid_dir, self.img_dir, self.img_queue, self.collector_sig_queue))
+                                             args=(self.vid_dir, self.img_dir, self.img_queue,
+                                                   self.collector_sig_queue))
         self.collection_process.daemon = True
         self.collection_process.start()
         return self.collection_process
