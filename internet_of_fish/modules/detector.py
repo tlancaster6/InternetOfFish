@@ -60,6 +60,8 @@ class Detector:
         duration = time.time() - start
         self.avg_timer.update(duration)
         self.logger.debug(f'inference performed on {os.path.split(img_path)[-1]} in {duration}')
+        confs = [det.score for det in dets]
+        self.logger.debug(f'max score of {max(confs)}, min score of {min(confs)}')
         return dets
 
     def overlay_boxes(self, img_path, dets):
@@ -82,6 +84,7 @@ class Detector:
             return False
         intersect_count = 0
         for det in fish_dets:
+            self.logger.debug(f'checking {det.bbox} against {pipe_det.bbox}')
             intersect = detect.BBox.intersect(det, pipe_det)
             intersect_count += intersect.valid
         if intersect_count < 2:
@@ -134,7 +137,8 @@ class Detector:
     def filter_dets(self, dets):
         fish_dets = [d.bbox for d in dets if d.id == self.ids['fish']][:definitions.MAX_FISH]
         pipe_det = [d.bbox for d in dets if d.id == self.ids['pipe']][:1]
-        self.logger.debug(f'detections filtered. {len(fish_dets)} fish detections and {len(pipe_det)} detections found')
+        self.logger.debug(f'detections filtered. {len(fish_dets)} fish detections '
+                          f'and {len(pipe_det)} pipe detections found')
         return fish_dets, pipe_det
 
 def start_detection_mp(model_path, label_path, img_queue: multiprocessing.Queue):
