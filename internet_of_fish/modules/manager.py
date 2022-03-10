@@ -13,6 +13,7 @@ class Manager:
     def __init__(self, project_id, model):
         self.logger = make_logger('manager')
         self.logger.info('initializing manager')
+        self.definitions = definitions
 
         self.project_id, self.model = project_id, model
         self.vid_dir = os.path.join(definitions.DATA_DIR, project_id, 'Videos')
