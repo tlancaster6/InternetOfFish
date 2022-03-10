@@ -39,8 +39,8 @@ class Manager:
         iters = 0
         while (self.collection_process is not None) or (self.detection_process is not None):
             if (not 8 <= datetime.datetime.now().hour <= 18) or (iterlimit is not None and iters > iterlimit):
-                self.stop_detection()
                 self.stop_collection()
+                self.stop_detection()
                 break
             try:
                 time.sleep(10)
@@ -48,9 +48,9 @@ class Manager:
                 self.detection_process.join(timeout=1)
             except KeyboardInterrupt:
                 print('shutting down detection process')
-                self.stop_detection()
-                print('shutting down collection process')
                 self.stop_collection()
+                print('shutting down collection process')
+                self.stop_detection()
                 print('exiting')
                 sys.exit()
             iters += 1
