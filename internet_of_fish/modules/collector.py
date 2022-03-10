@@ -17,6 +17,7 @@ def generate_vid_id(vid_dir):
     return new_id
 
 
+
 class Collector:
 
     def __init__(self, vid_dir: str, img_dir: str, img_queue: multiprocessing.Queue):
@@ -30,9 +31,6 @@ class Collector:
         self.stat_queue = multiprocessing.Queue()
         os.makedirs(img_dir, exist_ok=True)
         os.makedirs(vid_dir, exist_ok=True)
-
-    def __call__(self):
-        return self.collect_data()
 
     def collect_data(self, vid_id=None):
         if vid_id is None:
@@ -61,3 +59,7 @@ class Collector:
 
         self.logger.info('exiting data collection')
         self.running = False
+
+
+def start_collection_mp(collector: Collector):
+    collector.collect_data()

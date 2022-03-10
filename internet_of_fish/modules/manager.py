@@ -3,8 +3,8 @@ import os, time, sys, datetime
 from glob import glob
 
 from internet_of_fish.modules import definitions
-from internet_of_fish.modules.detector import Detector
-from internet_of_fish.modules.collector import Collector
+from internet_of_fish.modules.detector import Detector, start_detection_mp
+from internet_of_fish.modules.collector import Collector, start_collection_mp
 from internet_of_fish.modules.utils import make_logger
 
 mp.set_start_method("spawn")
@@ -57,14 +57,14 @@ class Manager:
 
     def start_collection(self):
         self.logger.info('starting collection')
-        self.collection_process = mp.Process(target=self.collector)
+        self.collection_process = mp.Process(target=start_collection_mp, args=(self.collector,))
         self.collection_process.start()
         return self.collection_process
 
     def start_detection(self):
         self.logger.info('starting detection')
         # detection_process = mp.Process(target=self.detector.batch_detect, args=(self.img_dir,))
-        self.detection_process = mp.Process(target=self.detector)
+        self.detection_process = mp.Process(target=start_detection_mp, args=(self.detector,))
         self.detection_process.start()
         return self.detection_process
 

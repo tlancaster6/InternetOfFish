@@ -45,8 +45,6 @@ class Detector:
         self.img_queue = img_queue
         self.avg_timer = Averager()
 
-    def __call__(self):
-        return self.queue_detect()
 
     def detect(self, img_path):
         """run detection on a single image"""
@@ -154,5 +152,8 @@ class Detector:
         [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
         self.running = False
 
+
+def start_detection_mp(detector: Detector):
+    detector.queue_detect()
 
 
