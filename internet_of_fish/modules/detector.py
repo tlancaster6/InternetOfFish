@@ -84,7 +84,8 @@ class Detector:
             return False
         intersect_count = 0
         pipe_det = pipe_det[0]
-        self.logger.debug(f'checking {fish_dets} against {pipe_det}')
+        self.logger.debug(f'checking {fish_dets} (ids = {[det.id for det in fish_dets]}) '
+                          f'against {pipe_det} (id = {pipe_det.id}')
         for det in fish_dets:
             intersect = detect.BBox.intersect(det, pipe_det)
             intersect_count += intersect.valid
