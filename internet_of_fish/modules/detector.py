@@ -66,6 +66,7 @@ class Detector:
 
     def overlay_boxes(self, img_path, dets):
         """open an image, draw detection boxes, and replace the original image"""
+        self.logger.debug(f'overalying boxes on {os.path.split(img_path)[-1]}')
         img = Image.open(img_path).convert('RGB')
         draw = ImageDraw.Draw(img)
         for det in dets:
