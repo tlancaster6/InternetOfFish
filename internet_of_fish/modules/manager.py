@@ -7,8 +7,6 @@ from internet_of_fish.modules.detector import Detector, start_detection_mp
 from internet_of_fish.modules.collector import Collector, start_collection_mp
 from internet_of_fish.modules.utils import make_logger
 
-mp.set_start_method('spawn')
-
 
 class Manager:
 
@@ -85,3 +83,7 @@ class Manager:
         self.collector_sig_queue.put('STOP')
         self.collection_process.join()
         self.collection_process = None
+
+
+if __name__ == '__main__':
+    mp.set_start_method('spawn')
