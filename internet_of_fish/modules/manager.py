@@ -37,10 +37,8 @@ class Manager:
         self.start_collection()
         self.start_detection()
         iters = 0
-        while (self.collection_process is not None) or (self.detection_process is not None):
-            if (not 8 <= datetime.datetime.now().hour <= 18) or (iterlimit is not None and iters > iterlimit):
-                self.stop_collection()
-                self.stop_detection()
+        while 8 <= datetime.datetime.now().hour <= 18:
+            if iterlimit is not None and iters > iterlimit:
                 break
             try:
                 time.sleep(10)
@@ -51,10 +49,24 @@ class Manager:
                 self.stop_collection()
                 print('shutting down collection process')
                 self.stop_detection()
+                print('processing and uploading last video')
+                self.process_video()
+                self.upload_video()
                 print('exiting')
                 sys.exit()
             iters += 1
-            self.logger.debug(f'managers iters = {iters}')
+            self.logger.debug(f'manager iters = {iters}')
+        self.stop_collection()
+        self.stop_detection()
+        self.process_video()
+        self.upload_video()
+
+        while not 7 <= datetime.datetime.now().hour <= 18:
+            time.sleep(3600)
+        while not 7 <= datetime.datetime.now().hour <= 18:
+            time.sleep(1)
+
+        self.collect_and_detect()
 
     def start_collection(self):
         self.logger.info('starting collection')
@@ -90,6 +102,14 @@ class Manager:
         self.collector_sig_queue.put('STOP')
         self.collection_process.join()
         self.collection_process = None
+
+    def process_video(self):
+        # TODO: write this function
+        pass
+
+    def upload_video(self):
+        # TODO: write this function
+        pass
 
 
 if __name__ == '__main__':
