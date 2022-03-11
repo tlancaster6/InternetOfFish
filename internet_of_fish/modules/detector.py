@@ -125,7 +125,7 @@ class Detector:
                 buffer.pop(0)
         self.logger.info('continuous detection exiting')
         if self.avg_timer.avg is not None:
-            self.logger.info(f'average inference time: {self.avg_timer.avg / 1000}ms')
+            self.logger.info(f'average inference time: {self.avg_timer.avg * 1000}ms')
         else:
             self.logger.info('cannot calculate inference time because detection never ran successfully')
         [self.overlay_boxes(be) for be in buffer]
