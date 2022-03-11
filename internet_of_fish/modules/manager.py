@@ -7,7 +7,6 @@ from internet_of_fish.modules.detector import start_detection_mp
 from internet_of_fish.modules.collector import start_collection_mp
 from internet_of_fish.modules.utils import make_logger
 
-
 class Manager:
 
     def __init__(self, project_id, model):

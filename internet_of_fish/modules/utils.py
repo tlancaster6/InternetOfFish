@@ -4,6 +4,7 @@ from internet_of_fish.modules import definitions
 import os
 
 log_level = logging.DEBUG
+logging.getLogger('PIL').setLevel(logging.WARNING)
 
 
 def current_time_ms():
