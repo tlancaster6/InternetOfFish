@@ -110,7 +110,7 @@ class Detector:
             if img_path == 'STOP':
                 self.logger.info('stop signal encountered, exiting detection')
                 break
-            dets = self.detect(img_path)
+            dets = self.detect(img)
             self.logger.debug(f'detection complete for {fname}. {len(dets)} detections')
             fish_dets, pipe_det = self.filter_dets(dets)
             buffer.append(BufferEntry(img_path, img, fish_dets+pipe_det))
