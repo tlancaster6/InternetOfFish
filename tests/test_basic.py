@@ -19,7 +19,7 @@ def test_all_images_consumed(manager):
 
 
 def test_img_buffer_length(manager):
-    n_images_act = len([f.endswith('.jpg') for f in os.listdir(manager.img_dir)])
+    n_images_act = len([f.endswith('.jpeg') for f in os.listdir(manager.img_dir)])
     n_images_exp = manager.definitions.IMG_BUFFER
     assert n_images_exp == n_images_act, f'expected {n_images_exp} in buffer, encountered {n_images_act}'
 

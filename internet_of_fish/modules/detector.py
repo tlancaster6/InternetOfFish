@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 import time
+from collections import namedtuple
 
 from PIL import Image
 from PIL import ImageDraw
@@ -13,6 +14,7 @@ from pycoral.utils.edgetpu import make_interpreter
 from internet_of_fish.modules import definitions
 from internet_of_fish.modules.utils import make_logger, Averager
 
+BufferEntry = namedtuple('BufferEntry', ['img_path', 'img', 'dets'])
 
 class HitCounter:
 
@@ -30,6 +32,7 @@ class HitCounter:
         self.hits = 0
 
 
+
 class Detector:
 
     def __init__(self, model_path, label_path, img_queue: multiprocessing.Queue):
@@ -40,42 +43,38 @@ class Detector:
         self.labels = read_label_file(label_path)
         self.ids = {val: key for key, val in self.labels.items()}
         self.hit_counter = HitCounter()
-        self.running = False
         self.img_queue = img_queue
         self.avg_timer = Averager()
 
-
-    def detect(self, img_path):
+    def detect(self, img):
         """run detection on a single image"""
         start = time.time()
-        image = Image.open(img_path)
         self.logger.debug('setting resized input')
         _, scale = common.set_resized_input(
-            self.interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
+            self.interpreter, img.size, lambda size: img.resize(size, Image.ANTIALIAS))
         self.logger.debug('invoking interpreter')
         self.interpreter.invoke()
         self.logger.debug('performing inference')
         dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
         duration = time.time() - start
         self.avg_timer.update(duration)
-        self.logger.debug(f'inference performed on {os.path.split(img_path)[-1]} in {duration}')
+        self.logger.debug(f'inference performed in {duration}')
         confs = [det.score for det in dets]
         self.logger.debug(f'max score of {max(confs)}, min score of {min(confs)}')
         return dets
 
-    def overlay_boxes(self, img_path, dets):
+    def overlay_boxes(self, buffer_entry: BufferEntry):
         """open an image, draw detection boxes, and replace the original image"""
-        self.logger.debug(f'overalying boxes on {os.path.split(img_path)[-1]}')
-        img = Image.open(img_path).convert('RGB')
-        draw = ImageDraw.Draw(img)
-        for det in dets:
+        self.logger.debug(f'overalying boxes on {os.path.split(buffer_entry.img_path)[-1]}')
+        draw = ImageDraw.Draw(buffer_entry.img)
+        for det in buffer_entry.dets:
             bbox = det.bbox
             draw.rectangle([(bbox.xmin, bbox.ymin), (bbox.xmax, bbox.ymax)],
                            outline='red')
             draw.text((bbox.xmin + 10, bbox.ymin + 10),
                       '%s\n%.2f' % (self.labels.get(det.id, det.id), det.score),
                       fill='red')
-        img.save(img_path)
+        buffer_entry.img.save(buffer_entry.img_path)
 
     def check_for_hit(self, fish_dets, pipe_det):
         """check for multiple fish intersecting with the pipe and adjust hit counter accordingly"""
@@ -102,38 +101,34 @@ class Detector:
     def queue_detect(self):
         """continuously run detection on images in the order their paths are added to the multiprocessing queue"""
         self.logger.info('continuous detection starting in queue mode')
-        self.running = True
-        img_buffer = []
-        dets_buffer = []
-        while self.running:
+        buffer = []
+        while True:
             self.logger.debug('waiting for image')
-            img_path = self.img_queue.get()
+            img_path, img = self.img_queue.get()
             fname = os.path.split(img_path)[-1]
-            self.logger.debug(f'image path aquired from queue: {fname}')
+            self.logger.debug(f'image and path aquired from queue: {fname}')
             if img_path == 'STOP':
                 self.logger.info('stop signal encountered, exiting detection')
                 break
-            img_buffer.append(img_path)
             dets = self.detect(img_path)
             self.logger.debug(f'detection complete for {fname}. {len(dets)} detections')
             fish_dets, pipe_det = self.filter_dets(dets)
-            dets_buffer.append(fish_dets+pipe_det)
+            buffer.append(BufferEntry(img_path, img, fish_dets+pipe_det))
             self.check_for_hit(fish_dets, pipe_det)
             self.logger.debug(f'hit check complete for {fname}. current hit count: {self.hit_counter.hits}')
             if self.hit_counter.hits >= definitions.HIT_THRESH:
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
-                [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
+                [self.overlay_boxes(be) for be in buffer]
                 self.notify()
-            if len(img_buffer) > definitions.IMG_BUFFER:
-                os.remove(img_buffer.pop(0))
-                dets_buffer.pop(0)
+                self.hit_counter.reset()
+            if len(buffer) > definitions.IMG_BUFFER:
+                os.remove(buffer.pop(0)[0])
         self.logger.info('continuous detection exiting')
         if self.avg_timer.avg is not None:
             self.logger.info(f'average inference time: {self.avg_timer.avg / 1000}ms')
         else:
             self.logger.info('cannot calculate inference time because detection never ran successfully')
-        [self.overlay_boxes(i, d) for i, d in zip(img_buffer, dets_buffer)]
-        self.running = False
+        [self.overlay_boxes(be) for be in buffer]
 
     def filter_dets(self, dets):
         fish_dets = [d for d in dets if d.id == self.ids['fish']][:definitions.MAX_FISH]
@@ -141,6 +136,7 @@ class Detector:
         self.logger.debug(f'detections filtered. {len(fish_dets)} fish detections '
                           f'and {len(pipe_det)} pipe detections found')
         return fish_dets, pipe_det
+
 
 def start_detection_mp(model_path, label_path, img_queue: multiprocessing.Queue):
     detector = Detector(model_path, label_path, img_queue)

@@ -90,7 +90,7 @@ class Manager:
         if self.detection_process is None:
             self.logger.info('manager.stop_detection called, but no detection process was running')
             return
-        self.img_queue.put('STOP')
+        self.img_queue.put(('STOP', 'STOP'))
         self.detection_process.join()
         self.detection_process = None
 

@@ -1,5 +1,9 @@
+import io
 import multiprocessing
 import queue
+import sys
+
+from PIL import Image
 
 import picamera
 import os
@@ -14,7 +18,6 @@ def generate_vid_id(vid_dir):
     current_vids = [int(i) for i in [f.split('_')[0] for f in current_vids] if i.isdigit()]
     new_id = '{:04d}_vid'.format(max(current_vids) + 1)
     return new_id
-
 
 
 class Collector:
@@ -34,6 +37,7 @@ class Collector:
         if vid_id is None:
             vid_id = generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
+        stream = io.BytesIO()
         with picamera.PiCamera() as cam:
             cam.resolution = self.definitions.RESOLUTION
             cam.framerate = self.definitions.FRAMERATE
@@ -44,17 +48,20 @@ class Collector:
             while cam.recording:
                 cam.wait_recording(self.definitions.WAIT_TIME)
                 img_path = os.path.join(self.img_dir, f'{current_time_ms()}.jpg')
-                cam.capture(img_path, use_video_port=True)
-                self.logger.debug(f'{img_path} captured')
+                cam.capture(stream, format='jpeg', use_video_port=True)
+                self.logger.debug(f'{img_path} captured to stream. '
+                                  f'Stream currently contains {sys.getsizeof(stream)} bytes')
+                stream.seek(0)
+                img = Image.open(stream)
                 try:
-                    self.img_queue.put(img_path)
+                    self.img_queue.put((img_path, img))
                 except queue.Full:
                     self.logger.warn('img_queue full, cannot add path to queue')
                 if not self.sig_queue.empty():
                     sig = self.sig_queue.get()
                     if sig == 'STOP':
                         break
-
+        stream.close()
         self.logger.info('exiting data collection')
         self.running = False
 
