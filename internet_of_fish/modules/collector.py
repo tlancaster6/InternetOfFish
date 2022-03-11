@@ -38,7 +38,6 @@ class Collector:
             vid_id = generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
         with picamera.PiCamera() as cam:
-            stream = io.BytesIO()
             cam.resolution = self.definitions.RESOLUTION
             cam.framerate = self.definitions.FRAMERATE
             self.logger.info(f'initializing recording for {vid_id}.h264')
@@ -46,6 +45,7 @@ class Collector:
             self.running = True
             self.logger.info(f'initializing still captures at {self.definitions.WAIT_TIME} second intervals')
             while cam.recording:
+                stream = io.BytesIO()
                 cam.wait_recording(self.definitions.WAIT_TIME)
                 img_path = os.path.join(self.img_dir, f'{current_time_ms()}.jpg')
                 cam.capture(stream, format='jpeg', use_video_port=True)
@@ -62,7 +62,7 @@ class Collector:
                     sig = self.sig_queue.get()
                     if sig == 'STOP':
                         break
-            stream.close()
+                stream.close()
         self.logger.info('exiting data collection')
         self.running = False
 
