@@ -37,8 +37,8 @@ class Collector:
         if vid_id is None:
             vid_id = generate_vid_id(self.vid_dir)
         self.logger.info('initializing camera object')
-        stream = io.BytesIO()
         with picamera.PiCamera() as cam:
+            stream = io.BytesIO()
             cam.resolution = self.definitions.RESOLUTION
             cam.framerate = self.definitions.FRAMERATE
             self.logger.info(f'initializing recording for {vid_id}.h264')
@@ -53,16 +53,16 @@ class Collector:
                                   f'Stream currently contains {sys.getsizeof(stream)} bytes')
                 stream.seek(0)
                 img = Image.open(stream)
+                img.load()
                 try:
                     self.img_queue.put((img_path, img))
                 except queue.Full:
                     self.logger.warn('img_queue full, cannot add path to queue')
-                stream.truncate(0)
                 if not self.sig_queue.empty():
                     sig = self.sig_queue.get()
                     if sig == 'STOP':
                         break
-        stream.close()
+            stream.close()
         self.logger.info('exiting data collection')
         self.running = False
 
