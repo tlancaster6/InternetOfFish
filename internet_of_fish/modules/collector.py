@@ -53,6 +53,7 @@ class Collector:
                                   f'Stream currently contains {sys.getsizeof(stream)} bytes')
                 stream.seek(0)
                 img = Image.open(stream)
+                stream.truncate(0)
                 try:
                     self.img_queue.put((img_path, img))
                 except queue.Full:
