@@ -122,7 +122,7 @@ class Detector:
                 self.notify()
                 self.hit_counter.reset()
             if len(buffer) > definitions.IMG_BUFFER:
-                os.remove(buffer.pop(0)[0])
+                buffer.pop(0)
         self.logger.info('continuous detection exiting')
         if self.avg_timer.avg is not None:
             self.logger.info(f'average inference time: {self.avg_timer.avg / 1000}ms')
