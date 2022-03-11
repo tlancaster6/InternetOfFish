@@ -53,11 +53,11 @@ class Collector:
                                   f'Stream currently contains {sys.getsizeof(stream)} bytes')
                 stream.seek(0)
                 img = Image.open(stream)
-                stream.truncate(0)
                 try:
                     self.img_queue.put((img_path, img))
                 except queue.Full:
                     self.logger.warn('img_queue full, cannot add path to queue')
+                stream.truncate(0)
                 if not self.sig_queue.empty():
                     sig = self.sig_queue.get()
                     if sig == 'STOP':
