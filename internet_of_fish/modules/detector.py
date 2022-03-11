@@ -94,7 +94,7 @@ class Detector:
             self.hit_counter.increment()
             return True
 
-    def notify(self):
+    def notify(self, img_dir):
         # TODO: write notification function
         pass
 
@@ -117,9 +117,10 @@ class Detector:
             self.check_for_hit(fish_dets, pipe_det)
             self.logger.debug(f'hit check complete for {fname}. current hit count: {self.hit_counter.hits}')
             if self.hit_counter.hits >= definitions.HIT_THRESH:
+                img_dir = os.path.dirname(buffer[0].img_path)
                 self.logger.info('POSSIBLE SPAWNING EVENT DETECTED')
                 [self.overlay_boxes(be) for be in buffer]
-                self.notify()
+                self.notify(img_dir)
                 self.hit_counter.reset()
             if len(buffer) > definitions.IMG_BUFFER:
                 buffer.pop(0)

@@ -12,6 +12,7 @@ from internet_of_fish.modules.utils import current_time_ms, make_logger
 
 
 def generate_vid_id(vid_dir):
+    # TODO: make robust to empty video directory after upload
     current_vids = [f for f in os.listdir(vid_dir) if (f.endswith('.h264') or f.endswith('.mp4'))]
     if len(current_vids) == 0:
         return('0001_vid')

@@ -10,8 +10,8 @@ HOME_DIR = os.path.expanduser('~')
 DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
 
 # project-specific parameters
-MAX_FISH = 3  # maximum number of fish detections that should be returned
-CONF_THRESH = 0.5  # classifier score threshold
+MAX_FISH = 5  # maximum number of fish detections that should be returned
+CONF_THRESH = 0.4  # classifier score threshold
 HIT_THRESH = 5  # hit counter threshold
 WAIT_TIME = 1  # time between image captures in seconds
 IMG_BUFFER = 10  # number of sequential images that will be sent if a spawning event is detected in queue mode
