@@ -39,6 +39,7 @@ class Manager:
         iters = 0
         while 8 <= datetime.datetime.now().hour <= 18:
             if iterlimit is not None and iters > iterlimit:
+                self.logger.debug('max iters reached, exiting loop collect and detect loop')
                 break
             try:
                 time.sleep(10)
@@ -66,7 +67,8 @@ class Manager:
         while not 7 <= datetime.datetime.now().hour <= 18:
             time.sleep(1)
 
-        self.collect_and_detect()
+        if iterlimit is None:
+            self.collect_and_detect()
 
     def start_collection(self):
         self.logger.info('starting collection')
