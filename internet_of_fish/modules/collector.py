@@ -1,74 +1,38 @@
-import io
-import multiprocessing as mp
-import queue
-import sys
-
+import logging, picamera, os, io
+from pycoral.adapters import common, detect
+from pycoral.utils.dataset import read_label_file
+from pycoral.utils.edgetpu import make_interpreter
 from PIL import Image
-
-import picamera
-import os
-from internet_of_fish.modules import definitions
-from internet_of_fish.modules.utils import current_time_ms, make_logger
+from internet_of_fish.modules.workers import TimerProcWorker
+from internet_of_fish.modules.utils import _current_time_ms, _current_time_iso
 
 
-def generate_vid_id(vid_dir):
-    # TODO: make robust to empty video directory after upload
-    current_vids = [f for f in os.listdir(vid_dir) if (f.endswith('.h264') or f.endswith('.mp4'))]
-    if len(current_vids) == 0:
-        return('0001_vid')
-    current_vids = [int(i) for i in [f.split('_')[0] for f in current_vids] if i.isdigit()]
-    new_id = '{:04d}_vid'.format(max(current_vids) + 1)
-    return new_id
+class CollectorWorker(TimerProcWorker):
+    INTERVAL_SECS = 1
+    RESOLUTION = (1296, 972)  # pi camera resolution
+    FRAMERATE = 30  # pi camera framerate
 
+    def init_args(self, args):
+        self.log(logging.DEBUG, f"Entering CollectorWorker.init_args : {args}")
+        self.img_q, self.proj_id = args
 
-class Collector:
-
-    def __init__(self, vid_dir: str, img_dir: str, img_queue: mp.Queue, shutdown_event: mp.Event):
-        self.logger = make_logger('collector')
-        self.logger.info('initializing Collector')
-        self.definitions = definitions
-        self.vid_dir, self.img_dir = vid_dir, img_dir
-        self.running = False
-        self.img_queue = img_queue
-        self.shutdown_event = shutdown_event
-        os.makedirs(img_dir, exist_ok=True)
+    def startup(self):
+        self.cam = picamera.PiCamera()
+        self.cam.resolution = self.RESOLUTION
+        self.cam.framerate = self.FRAMERATE
+        vid_dir = os.path.join(self.DATA_DIR, self.proj_id, 'Videos')
         os.makedirs(vid_dir, exist_ok=True)
+        self.cam.start_recording(os.path.join(vid_dir, f'{_current_time_iso()}.h264'))
 
-    def collect_data(self, vid_id=None):
-        if vid_id is None:
-            vid_id = generate_vid_id(self.vid_dir)
-        self.logger.info('initializing camera object')
-        with picamera.PiCamera() as cam:
-            cam.resolution = self.definitions.RESOLUTION
-            cam.framerate = self.definitions.FRAMERATE
-            self.logger.info(f'initializing recording for {vid_id}.h264')
-            cam.start_recording(os.path.join(self.vid_dir, f'{vid_id}.h264'))
-            self.running = True
-            self.logger.info(f'initializing still captures at {self.definitions.WAIT_TIME} second intervals')
-            while not self.shutdown_event:
-                stream = io.BytesIO()
-                cam.wait_recording(self.definitions.WAIT_TIME)
-                img_path = os.path.join(self.img_dir, f'{current_time_ms()}.jpg')
-                cam.capture(stream, format='jpeg', use_video_port=True)
-                self.logger.debug(f'{img_path} captured to stream. '
-                                  f'Stream currently contains {sys.getsizeof(stream)} bytes')
-                stream.seek(0)
-                img = Image.open(stream)
-                img.load()
-                try:
-                    self.img_queue.put((img_path, img))
-                except queue.Full:
-                    self.logger.warn('img_queue full, cannot add path to queue')
-                stream.close()
-        self.cleanup()
+    def main_func(self):
+        stream = io.BytesIO()
+        cap_time = _current_time_ms()
+        self.cam.capture(stream, format='jpeg', use_video_port=True)
+        stream.seek(0)
+        img = Image.open(stream)
+        img.load()
+        self.img_q.safe_put((cap_time, img))
+        stream.close()
 
-    def cleanup(self):
-        self.logger.info('exiting data collection')
-        pass
-
-
-def start_collection_mp(vid_dir: str, img_dir: str,
-                        img_queue: mp.Queue, shutdown_event: mp.Event,
-                        vid_id=None):
-    collector = Collector(vid_dir, img_dir, img_queue, shutdown_event)
-    collector.collect_data(vid_id)
+    def shutdown(self):
+        self.cam.close()

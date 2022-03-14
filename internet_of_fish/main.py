@@ -1,19 +1,61 @@
-import argparse
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from modules.manager import Manager
+import argparse, time, logging
+from internet_of_fish.modules.collector import CollectorWorker
+from internet_of_fish.modules.detector import DetectorWorker
+from internet_of_fish.modules.contexts import MainContext
+import internet_of_fish.modules.signals as iof_signals
+
 
 """
 python3 main.py --pid test_project --model mobilenetv2 
 """
 
+def main(args):
+    proj_id, model_id, kill_after = args.proj_id, args.model_id, args.kill_after
+    with MainContext() as main_ctx:
+        if kill_after:
+            die_time = time.time() + kill_after
+            main_ctx.log(logging.DEBUG, f"Application will be killed in {kill_after} seconds")
+        else:
+            die_time = None
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--pid', help='project id')
-parser.add_argument('--model', help='name of the model')
-parser.add_argument('--iterlimit', default=None, type=int)
-args = parser.parse_args()
+        iof_signals.init_signals(main_ctx.shutdown_event,
+                                 iof_signals.default_signal_handler,
+                                 iof_signals.default_signal_handler)
 
-manager = Manager(args.pid, args.model)
-manager.collect_and_detect(args.iterlimit)
+        img_q = main_ctx.MPQueue()
+        send_q = main_ctx.MPQueue()
+        reply_q = main_ctx.MPQueue()
+
+        main_ctx.Proc('COLLECT', CollectorWorker, img_q, proj_id)
+        main_ctx.Proc('DETECT', DetectorWorker, img_q, proj_id, model_id)
+
+        while not main_ctx.shutdown_event.is_set():
+            if die_time and time.time() > die_time:
+                raise RuntimeError("Application has run too long.")
+            event = main_ctx.event_queue.safe_get()
+            if not event:
+                continue
+            elif event.msg_type == "STATUS":
+                send_q.put(event)
+            elif event.msg_type == "OBSERVATION":
+                send_q.put(event)
+            elif event.msg_type == "ERROR":
+                send_q.put(event)
+            elif event.msg_type == "REQUEST":
+                request_handler(event, reply_q, main_ctx)
+            elif event.msg_type == "FATAL":
+                main_ctx.log(logging.INFO, f"Fatal Event received: {event.msg}")
+                break
+            elif event.msg_type == "END":
+                main_ctx.log(logging.INFO, f"Shutdown Event received: {event.msg}")
+                break
+            else:
+                main_ctx.log(logging.ERROR, f"Unknown Event: {event}")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--proj_id', help='project id')
+    parser.add_argument('--model_id', help='name of the model')
+    parser.add_argument('--kill_after', default=None, type=int, help='optional. kill after specified number of seconds')
+    args = parser.parse_args()
+    main(args)
