@@ -1,5 +1,5 @@
 import io
-import multiprocessing
+import multiprocessing as mp
 import queue
 import sys
 
@@ -23,14 +23,14 @@ def generate_vid_id(vid_dir):
 
 class Collector:
 
-    def __init__(self, vid_dir: str, img_dir: str, img_queue: multiprocessing.Queue, sig_queue: multiprocessing.Queue):
+    def __init__(self, vid_dir: str, img_dir: str, img_queue: mp.Queue, shutdown_event: mp.Event):
         self.logger = make_logger('collector')
         self.logger.info('initializing Collector')
         self.definitions = definitions
         self.vid_dir, self.img_dir = vid_dir, img_dir
         self.running = False
         self.img_queue = img_queue
-        self.sig_queue = sig_queue
+        self.shutdown_event = shutdown_event
         os.makedirs(img_dir, exist_ok=True)
         os.makedirs(vid_dir, exist_ok=True)
 
@@ -45,7 +45,7 @@ class Collector:
             cam.start_recording(os.path.join(self.vid_dir, f'{vid_id}.h264'))
             self.running = True
             self.logger.info(f'initializing still captures at {self.definitions.WAIT_TIME} second intervals')
-            while cam.recording:
+            while not self.shutdown_event:
                 stream = io.BytesIO()
                 cam.wait_recording(self.definitions.WAIT_TIME)
                 img_path = os.path.join(self.img_dir, f'{current_time_ms()}.jpg')
@@ -59,15 +59,16 @@ class Collector:
                     self.img_queue.put((img_path, img))
                 except queue.Full:
                     self.logger.warn('img_queue full, cannot add path to queue')
-                if not self.sig_queue.empty():
-                    sig = self.sig_queue.get()
-                    if sig == 'STOP':
-                        break
                 stream.close()
+        self.cleanup()
+
+    def cleanup(self):
         self.logger.info('exiting data collection')
-        self.running = False
+        pass
 
 
-def start_collection_mp(vid_dir: str, img_dir: str, img_queue: multiprocessing.Queue, sig_queue: multiprocessing.Queue):
-    collector = Collector(vid_dir, img_dir, img_queue, sig_queue)
-    collector.collect_data()
+def start_collection_mp(vid_dir: str, img_dir: str,
+                        img_queue: mp.Queue, shutdown_event: mp.Event,
+                        vid_id=None):
+    collector = Collector(vid_dir, img_dir, img_queue, shutdown_event)
+    collector.collect_data(vid_id)

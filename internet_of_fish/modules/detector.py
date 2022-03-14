@@ -1,4 +1,4 @@
-import multiprocessing
+import multiprocessing as mp
 import os
 import time
 from collections import namedtuple
@@ -32,10 +32,9 @@ class HitCounter:
         self.hits = 0
 
 
-
 class Detector:
 
-    def __init__(self, model_path, label_path, img_queue: multiprocessing.Queue):
+    def __init__(self, model_path, label_path, img_queue: mp.Queue, shutdown_event: mp.Event):
         self.logger = make_logger('detector')
         self.logger.info('initializing detector')
         self.interpreter = make_interpreter(model_path)
@@ -44,6 +43,7 @@ class Detector:
         self.ids = {val: key for key, val in self.labels.items()}
         self.hit_counter = HitCounter()
         self.img_queue = img_queue
+        self.shutdown_event = shutdown_event
         self.avg_timer = Averager()
 
     def detect(self, img):
@@ -94,6 +94,13 @@ class Detector:
             self.hit_counter.increment()
             return True
 
+    def filter_dets(self, dets):
+        fish_dets = [d for d in dets if d.id == self.ids['fish']][:definitions.MAX_FISH]
+        pipe_det = [d for d in dets if d.id == self.ids['pipe']][:1]
+        self.logger.debug(f'detections filtered. {len(fish_dets)} fish detections '
+                          f'and {len(pipe_det)} pipe detections found')
+        return fish_dets, pipe_det
+
     def notify(self, img_dir):
         # TODO: write notification function
         pass
@@ -102,14 +109,11 @@ class Detector:
         """continuously run detection on images in the order their paths are added to the multiprocessing queue"""
         self.logger.info('continuous detection starting in queue mode')
         buffer = []
-        while True:
+        while not self.shutdown_event.is_set():
             self.logger.debug('waiting for image')
             img_path, img = self.img_queue.get()
             fname = os.path.split(img_path)[-1]
             self.logger.debug(f'image and path aquired from queue: {fname}')
-            if img_path == 'STOP':
-                self.logger.info('stop signal encountered, exiting detection')
-                break
             dets = self.detect(img)
             self.logger.debug(f'detection complete for {fname}. {len(dets)} detections')
             fish_dets, pipe_det = self.filter_dets(dets)
@@ -124,23 +128,19 @@ class Detector:
                 self.hit_counter.reset()
             if len(buffer) > definitions.IMG_BUFFER:
                 buffer.pop(0)
+        [self.overlay_boxes(be) for be in buffer]
+        self.cleanup()
+
+    def cleanup(self):
         self.logger.info('continuous detection exiting')
         if self.avg_timer.avg is not None:
             self.logger.info(f'average inference time: {self.avg_timer.avg * 1000}ms')
         else:
             self.logger.info('cannot calculate inference time because detection never ran successfully')
-        [self.overlay_boxes(be) for be in buffer]
-
-    def filter_dets(self, dets):
-        fish_dets = [d for d in dets if d.id == self.ids['fish']][:definitions.MAX_FISH]
-        pipe_det = [d for d in dets if d.id == self.ids['pipe']][:1]
-        self.logger.debug(f'detections filtered. {len(fish_dets)} fish detections '
-                          f'and {len(pipe_det)} pipe detections found')
-        return fish_dets, pipe_det
 
 
-def start_detection_mp(model_path, label_path, img_queue: multiprocessing.Queue):
-    detector = Detector(model_path, label_path, img_queue)
+def start_detection_mp(model_path, label_path, img_queue: mp.Queue, shutdown_event: mp.Event):
+    detector = Detector(model_path, label_path, img_queue, shutdown_event)
     detector.queue_detect()
 
 

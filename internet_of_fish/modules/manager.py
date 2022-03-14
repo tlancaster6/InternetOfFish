@@ -17,8 +17,9 @@ class Manager:
         self.project_id, self.model = project_id, model
         self.vid_dir = os.path.join(definitions.DATA_DIR, project_id, 'Videos')
         self.img_dir = os.path.join(definitions.DATA_DIR, project_id, 'Images')
+
         self.img_queue = mp.Queue()
-        self.collector_sig_queue = mp.Queue()
+        self.shutdown_event = mp.Event()
 
         self.detection_process = None
         self.collection_process = None
@@ -33,6 +34,7 @@ class Manager:
             print(f'error locating model files:\n{e}')
 
     def collect_and_detect(self, iterlimit=None):
+        """run simultaneous collection and detection"""
         self.start_collection()
         self.start_detection()
         iters = 0
@@ -56,8 +58,7 @@ class Manager:
                 sys.exit()
             iters += 1
             self.logger.debug(f'manager iters = {iters}')
-        self.stop_collection()
-        self.stop_detection()
+        self.shutdown()
         self.process_video()
         self.upload_video()
 
@@ -70,45 +71,38 @@ class Manager:
             self.collect_and_detect()
 
     def start_collection(self):
+        """start collection as a multiprocessing Process"""
         self.logger.info('starting collection')
         self.collection_process = mp.Process(target=start_collection_mp,
                                              args=(self.vid_dir, self.img_dir, self.img_queue,
-                                                   self.collector_sig_queue))
-        self.collection_process.daemon = True
+                                                   self.shutdown_event))
         self.collection_process.start()
         return self.collection_process
 
     def start_detection(self):
+        """start detection as a multiprocessing Process"""
         self.logger.info('starting detection')
         self.detection_process = mp.Process(target=start_detection_mp,
-                                            args=(*self.locate_model_files(self.model), self.img_queue,))
-        self.detection_process.daemon = True
+                                            args=(*self.locate_model_files(self.model),
+                                                  self.img_queue, self.shutdown_event))
         self.detection_process.start()
         return self.detection_process
 
-    def stop_detection(self):
-        """add a 'STOP' the detector's image queue, which will trigger the detection to exit elegantly"""
-        if self.detection_process is None:
-            self.logger.info('manager.stop_detection called, but no detection process was running')
-            return
-        self.img_queue.put(('STOP', 'STOP'))
-        self.detection_process.join()
-        self.detection_process = None
+    def shutdown(self):
+        self.shutdown_event.set()
 
-    def stop_collection(self):
-        """add a 'STOP' the collector's signal queue, which will trigger the collection to exit elegantly"""
-        if self.collection_process is None:
-            self.logger.info('manager.stop_collection called, but no collection process was running')
-            return
-        self.collector_sig_queue.put('STOP')
-        self.collection_process.join()
-        self.collection_process = None
+    def get_next_vid_id(self):
+        """generates a new video id (0001_vid, 0002_vid, etc) based on the videos already uploaded to Dropbox"""
+        # TODO: write this function
+        pass
 
     def process_video(self):
+        """converts any .h264 videos in the video directory to .mp4"""
         # TODO: write this function
         pass
 
     def upload_video(self):
+        """upload any .mp4 videos in the video directory to Dropbox"""
         # TODO: write this function
         pass
 
