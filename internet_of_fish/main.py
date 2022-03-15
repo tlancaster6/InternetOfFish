@@ -1,8 +1,12 @@
 import argparse, time, logging
+import os.path
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from internet_of_fish.modules.collector import CollectorWorker
 from internet_of_fish.modules.detector import DetectorWorker
 from internet_of_fish.modules.contexts import MainContext
 import internet_of_fish.modules.signals as iof_signals
+
 
 
 """
