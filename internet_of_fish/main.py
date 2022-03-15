@@ -16,7 +16,7 @@ def main(params):
     with mptools.MainContext(params) as main_ctx:
         if kill_after:
             die_time = time.time() + kill_after
-            main_ctx.log(logging.DEBUG, f"Application will be killed in {kill_after} seconds")
+            main_ctx.logger.log(logging.DEBUG, f"Application will be killed in {kill_after} seconds")
         else:
             die_time = None
 
@@ -44,13 +44,13 @@ def main(params):
             # elif event.msg_type == "REQUEST":
             #     request_handler(event, reply_q, main_ctx)
             elif event.msg_type == "FATAL":
-                main_ctx.log(logging.INFO, f"Fatal Event received: {event.msg}")
+                main_ctx.logger.log(logging.INFO, f"Fatal Event received: {event.msg}")
                 break
             elif event.msg_type == "END":
-                main_ctx.log(logging.INFO, f"Shutdown Event received: {event.msg}")
+                main_ctx.logger.log(logging.INFO, f"Shutdown Event received: {event.msg}")
                 break
             else:
-                main_ctx.log(logging.ERROR, f"Unknown Event: {event}")
+                main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
