@@ -1,4 +1,3 @@
-import multiprocessing as mp
 import os, logging, time
 from collections import namedtuple
 
@@ -10,10 +9,7 @@ from pycoral.adapters import detect
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
-
-from internet_of_fish.modules.utils import Averager
-from internet_of_fish.modules.workers import QueueProcWorker
-from internet_of_fish.modules import definitions
+from internet_of_fish.modules import definitions, mptools, utils
 
 BufferEntry = namedtuple('BufferEntry', ['cap_time', 'img', 'dets'])
 
@@ -33,7 +29,7 @@ class HitCounter:
         self.hits = 0
 
 
-class DetectorWorker(QueueProcWorker):
+class DetectorWorker(mptools.QueueProcWorker):
     MODELS_DIR = definitions.MODELS_DIR
     DATA_DIR = definitions.DATA_DIR
     MAX_FISH = definitions.MAX_FISH
@@ -41,8 +37,8 @@ class DetectorWorker(QueueProcWorker):
     IMG_BUFFER = definitions.IMG_BUFFER
 
     def init_args(self, args):
-        self.log(logging.DEBUG, f"Entering DetectorWorker.init_args : {args}")
-        self.img_q, self.proj_id, self.model_id = args
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.init_args : {args}")
+        self.img_q, self.model_id = args
         self.work_q = self.img_q
 
     def startup(self):
@@ -57,7 +53,7 @@ class DetectorWorker(QueueProcWorker):
         self.ids = {val: key for key, val in self.labels.items()}
 
         self.hit_counter = HitCounter()
-        self.avg_timer = Averager()
+        self.avg_timer = utils.Averager()
         self.buffer = []
 
     def main_func(self, q_item):

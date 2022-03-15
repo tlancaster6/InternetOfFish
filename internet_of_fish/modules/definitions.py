@@ -1,4 +1,6 @@
-import os
+import os, logging
+
+LOG_LEVEL = logging.DEBUG
 
 # filetree constants
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,10 +21,3 @@ IMG_BUFFER = 10  # number of sequential images that will be sent if a spawning e
 # hardware parameters
 RESOLUTION = (1296, 972)  # pi camera resolution
 FRAMERATE = 30  # pi camera framerate
-
-# program control constants (leave these alone if you aren't sure what they do)
-STOP_WAIT_SECS = 3.0
-STARTUP_WAIT_SECS = 3.0
-SHUTDOWN_WAIT_SECS = 3.0
-MAX_TERMINATE_CALLED = 3
-DEFAULT_POLLING_TIMEOUT = 0.02
