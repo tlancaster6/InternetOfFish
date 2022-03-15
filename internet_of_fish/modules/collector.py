@@ -6,7 +6,7 @@ from internet_of_fish.modules import definitions
 
 
 class CollectorWorker(mptools.TimerProcWorker):
-    INTERVAL_SECS = 1
+    INTERVAL_SECS = definitions.INTERVAL_SECS
     RESOLUTION = (1296, 972)  # pi camera resolution
     FRAMERATE = 30  # pi camera framerate
     DATA_DIR = definitions.DATA_DIR
@@ -42,5 +42,5 @@ class CollectorWorker(mptools.TimerProcWorker):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.shutdown")
         self.cam.stop_recording()
         self.cam.close()
-        self.img_q.safe_close()
+        self.img_q.drain()
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.shutdown")
