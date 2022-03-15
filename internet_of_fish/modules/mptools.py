@@ -246,7 +246,7 @@ class Proc:
         tries = NUM_TRIES
         while tries and self.proc.is_alive():
             self.proc.terminate()
-            time.sleep(0.01)
+            time.sleep(0.1)
             tries -= 1
 
         if self.proc.is_alive():
