@@ -31,7 +31,7 @@ def main(params):
 
         while not main_ctx.shutdown_event.is_set():
             if die_time and time.time() > die_time:
-                main_ctx.shutdown_event.set()
+                break
             event = main_ctx.event_queue.safe_get()
             if not event:
                 continue
@@ -47,6 +47,9 @@ def main(params):
                 main_ctx.logger.log(logging.INFO, f"Fatal Event received: {event.msg}")
                 break
             elif event.msg_type == "END":
+                main_ctx.logger.log(logging.INFO, f"End Event received: {event.msg}")
+                break
+            elif event.msg_type == "SHUTDOWN":
                 main_ctx.logger.log(logging.INFO, f"Shutdown Event received: {event.msg}")
                 break
             else:
