@@ -38,14 +38,14 @@ class DetectorWorker(mptools.QueueProcWorker):
 
     def init_args(self, args):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.init_args : {args}")
-        self.img_q, self.model_id = args
-        self.work_q = self.img_q
+        self.img_q, = args
+        self.work_q = self.img_q  # renaming to clarify that, for this class, the work queue is always the img queue
 
     def startup(self):
-        self.img_dir = os.path.join(self.DATA_DIR, self.proj_id, 'Images')
+        self.img_dir = os.path.join(self.DATA_DIR, self.params.proj_id, 'Images')
 
-        model_path = glob(os.path.join(self.MODELS_DIR, self.model_id, '*.tflite'))[0]
-        label_path = glob(os.path.join(self.MODELS_DIR, self.model_id, '*.txt'))[0]
+        model_path = glob(os.path.join(self.MODELS_DIR, self.params.model_id, '*.tflite'))[0]
+        label_path = glob(os.path.join(self.MODELS_DIR, self.params.model_id, '*.txt'))[0]
         self.interpreter = make_interpreter(model_path)
         self.interpreter.allocate_tensors()
 

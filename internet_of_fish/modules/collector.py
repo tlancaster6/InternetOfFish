@@ -19,7 +19,7 @@ class CollectorWorker(mptools.TimerProcWorker):
         self.cam = picamera.PiCamera()
         self.cam.resolution = self.RESOLUTION
         self.cam.framerate = self.FRAMERATE
-        vid_dir = os.path.join(self.DATA_DIR, self.proj_id, 'Videos')
+        vid_dir = os.path.join(self.DATA_DIR, self.params.proj_id, 'Videos')
         os.makedirs(vid_dir, exist_ok=True)
         self.cam.start_recording(os.path.join(vid_dir, f'{utils.current_time_iso()}.h264'))
 

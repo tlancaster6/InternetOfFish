@@ -26,8 +26,8 @@ def main(params):
         # send_q = main_ctx.MPQueue()
         # reply_q = main_ctx.MPQueue()
 
-        main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q, proj_id)
-        main_ctx.Proc('DETECT', detector.DetectorWorker, img_q, proj_id, model_id)
+        main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
+        main_ctx.Proc('DETECT', detector.DetectorWorker, img_q)
 
         while not main_ctx.shutdown_event.is_set():
             if die_time and time.time() > die_time:
