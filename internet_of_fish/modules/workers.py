@@ -1,5 +1,5 @@
 import logging, functools, sys, time, io, os
-from signals import default_signal_handler, init_signals, EventMessage, TerminateInterrupt
+from internet_of_fish.modules.signals import default_signal_handler, init_signals, EventMessage, TerminateInterrupt
 from internet_of_fish.modules.utils import _logger, _sleep_secs, _current_time_ms, _current_time_iso
 from internet_of_fish.modules import definitions
 import picamera
