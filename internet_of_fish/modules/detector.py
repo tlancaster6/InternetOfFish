@@ -137,7 +137,7 @@ class DetectorWorker(mptools.QueueProcWorker):
     def shutdown(self):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.shutdown")
         [self.overlay_boxes(be) for be in self.buffer]
-        self.img_q.drain()
+        self.img_q.safe_close()
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.shutdown")
 
 

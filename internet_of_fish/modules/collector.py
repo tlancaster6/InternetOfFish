@@ -42,5 +42,5 @@ class CollectorWorker(mptools.TimerProcWorker):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.shutdown")
         self.cam.stop_recording()
         self.cam.close()
-        self.img_q.drain()
+        self.img_q.safe_close()
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.shutdown")
