@@ -40,5 +40,6 @@ class CollectorWorker(mptools.TimerProcWorker):
 
     def shutdown(self):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.shutdown")
+        self.cam.stop_recording()
         self.cam.close()
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.shutdown")
