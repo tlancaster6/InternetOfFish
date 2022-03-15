@@ -45,6 +45,7 @@ class DetectorWorker(mptools.QueueProcWorker):
     def startup(self):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.startup")
         self.img_dir = os.path.join(self.DATA_DIR, self.params.proj_id, 'Images')
+        os.makedirs(self.img_dir, exist_ok=True)
 
         model_path = glob(os.path.join(self.MODELS_DIR, self.params.model_id, '*.tflite'))[0]
         label_path = glob(os.path.join(self.MODELS_DIR, self.params.model_id, '*.txt'))[0]
