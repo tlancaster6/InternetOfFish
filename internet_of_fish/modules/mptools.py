@@ -234,7 +234,7 @@ class Proc:
             raise RuntimeError(f"Process {name} failed to startup after {Proc.STARTUP_WAIT_SECS} seconds")
 
     def full_stop(self, wait_time=SHUTDOWN_WAIT_SECS):
-        self.logger.log(logging.DEBUG, f"Proc.full_stop stoping : {self.name}")
+        self.logger.log(logging.DEBUG, f"Proc.full_stop stopping : {self.name}")
         self.shutdown_event.set()
         self.proc.join(wait_time)
         if self.proc.is_alive():

@@ -54,6 +54,7 @@ def main(params):
                 break
             else:
                 main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
+        main_ctx.shutdown_event.set()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
