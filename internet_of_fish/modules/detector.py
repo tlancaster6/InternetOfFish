@@ -40,8 +40,10 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.init_args : {args}")
         self.img_q, = args
         self.work_q = self.img_q  # renaming to clarify that, for this class, the work queue is always the img queue
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.init_args")
 
     def startup(self):
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.startup")
         self.img_dir = os.path.join(self.DATA_DIR, self.params.proj_id, 'Images')
 
         model_path = glob(os.path.join(self.MODELS_DIR, self.params.model_id, '*.tflite'))[0]
@@ -55,8 +57,10 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.hit_counter = HitCounter()
         self.avg_timer = utils.Averager()
         self.buffer = []
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.startup")
 
     def main_func(self, q_item):
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.main_func")
         cap_time, img = q_item
         dets = self.detect(img)
         fish_dets, pipe_det = self.filter_dets(dets)
@@ -68,8 +72,10 @@ class DetectorWorker(mptools.QueueProcWorker):
             self.hit_counter.reset()
         if len(self.buffer) > self.IMG_BUFFER:
             self.buffer.pop(0)
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.main_func")
 
     def detect(self, img):
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.detect")
         """run detection on a single image"""
         start = time.time()
         _, scale = common.set_resized_input(
@@ -77,10 +83,12 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.interpreter.invoke()
         dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
         self.avg_timer.update(time.time() - start)
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.detect")
         return dets
 
     def overlay_boxes(self, buffer_entry: BufferEntry):
         """open an image, draw detection boxes, and replace the original image"""
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.overlay_boxes")
         draw = ImageDraw.Draw(buffer_entry.img)
         for det in buffer_entry.dets:
             bbox = det.bbox
@@ -90,9 +98,11 @@ class DetectorWorker(mptools.QueueProcWorker):
                       '%s\n%.2f' % (self.labels.get(det.id, det.id), det.score),
                       fill='red')
         buffer_entry.img.save(os.path.join(self.img_dir, f'{buffer_entry.cap_time}.jpg'))
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.overlay_boxes")
 
     def check_for_hit(self, fish_dets, pipe_det):
         """check for multiple fish intersecting with the pipe and adjust hit counter accordingly"""
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.check_for_hit")
         if (len(fish_dets) < 2) or (len(pipe_det) != 1):
             self.hit_counter.decrement()
             return False
@@ -103,22 +113,30 @@ class DetectorWorker(mptools.QueueProcWorker):
             intersect_count += intersect.valid
         if intersect_count < 2:
             self.hit_counter.decrement()
+            self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.check_for_hit")
             return False
         else:
             self.hit_counter.increment()
+            self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.check_for_hit")
             return True
 
     def filter_dets(self, dets):
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.filter_dets")
         fish_dets = [d for d in dets if d.id == self.ids['fish']][:self.MAX_FISH]
         pipe_det = [d for d in dets if d.id == self.ids['pipe']][:1]
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.filter_dets")
         return fish_dets, pipe_det
 
     def notify(self):
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.notify")
         # TODO: write notification function
         pass
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.notify")
 
     def shutdown(self):
+        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.shutdown")
         [self.overlay_boxes(be) for be in self.buffer]
+        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.shutdown")
 
 
 

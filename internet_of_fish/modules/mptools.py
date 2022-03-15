@@ -214,8 +214,8 @@ def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, even
 
 
 class Proc:
-    STARTUP_WAIT_SECS = 3.0
-    SHUTDOWN_WAIT_SECS = 3.0
+    STARTUP_WAIT_SECS = 10.0
+    SHUTDOWN_WAIT_SECS = 10.0
 
     def __init__(self, name, worker_class, shutdown_event, event_q, params, *args):
         self.params = params
