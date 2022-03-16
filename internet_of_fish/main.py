@@ -12,11 +12,10 @@ python3 main.py --pid test_project --model mobilenetv2
 """
 
 def main(params):
-    proj_id, model_id, kill_after = params.proj_id, params.model_id, params.kill_after
     with mptools.MainContext(params) as main_ctx:
-        if kill_after:
-            die_time = time.time() + kill_after
-            main_ctx.logger.log(logging.DEBUG, f"Application will be killed in {kill_after} seconds")
+        if params.kill_after:
+            die_time = time.time() + params.kill_after
+            main_ctx.logger.log(logging.DEBUG, f"Application will be killed in {params.kill_after} seconds")
         else:
             die_time = None
 
@@ -25,8 +24,10 @@ def main(params):
         img_q = main_ctx.MPQueue()
         # send_q = main_ctx.MPQueue()
         # reply_q = main_ctx.MPQueue()
-
-        main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
+        if params.source:
+            main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, params.source)
+        else:
+            main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
         main_ctx.Proc('DETECT', detector.DetectorWorker, img_q)
 
         while not main_ctx.shutdown_event.is_set():
@@ -60,5 +61,8 @@ if __name__ == '__main__':
     parser.add_argument('--proj_id', help='project id')
     parser.add_argument('--model_id', help='name of the model')
     parser.add_argument('--kill_after', default=None, type=int, help='optional. kill after specified number of seconds')
+    parser.add_argument('--source', default=None, type=str,
+                        help='optional. pass a path to a video file to perform detection on that video, '
+                             'rather than the camera stream')
     params = parser.parse_args()
     main(params)

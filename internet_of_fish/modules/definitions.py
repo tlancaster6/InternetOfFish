@@ -16,7 +16,7 @@ MAX_FISH = 5  # maximum number of fish detections that should be returned
 CONF_THRESH = 0.4  # classifier score threshold
 HIT_THRESH = 10  # hit counter threshold
 INTERVAL_SECS = 0.5  # time between image captures in seconds
-IMG_BUFFER = 100  # number of sequential images that will be sent if a spawning event is detected in queue mode
+IMG_BUFFER = int(10/INTERVAL_SECS)  # number of sequential images that will be sent if a spawning event is detected
 
 # hardware parameters
 RESOLUTION = (1296, 972)  # pi camera resolution
