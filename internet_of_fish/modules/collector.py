@@ -3,6 +3,8 @@ from PIL import Image
 from internet_of_fish.modules import mptools
 from internet_of_fish.modules import utils
 from internet_of_fish.modules import definitions
+import picamera
+import cv2
 
 
 class CollectorWorker(mptools.TimerProcWorker):
@@ -17,7 +19,6 @@ class CollectorWorker(mptools.TimerProcWorker):
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.init_args")
 
     def startup(self):
-        import picamera
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.startup")
         self.cam = picamera.PiCamera()
         self.cam.resolution = self.RESOLUTION
@@ -59,7 +60,6 @@ class VideoCollectorWorker(CollectorWorker):
 
     def startup(self):
         self.logger.log(logging.DEBUG, f"Entering VideoCollectorWorker.startup")
-        import cv2
         if not os.path.exists(self.video_file):
             self.locate_video()
         self.cam = cv2.VideoCapture(self.video_file)
