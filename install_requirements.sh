@@ -7,3 +7,11 @@ sudo apt-get update
 sudo apt-get install libedgetpu1-std
 sudo apt-get install python3-pycoral
 sudo pip3 install picamera
+sudo pip3 install opencv-python-headless
+sudo pip3 install -U numpy
+sudo apt-get install libatlas-base-dev
+#sudo apt-get install libjpeg-dev libpng-dev libtiff-dev
+#sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
+#sudo apt-get install libxvidcore-dev libx264-dev
+#sudo apt-get install libgtk2.0-dev
+#sudo apt-get install build-essential cmake pkg-config
