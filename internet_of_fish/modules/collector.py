@@ -71,10 +71,7 @@ class VideoCollectorWorker(CollectorWorker):
         if not os.path.exists(self.video_file):
             self.locate_video()
         self.cam = cv2.VideoCapture(self.video_file)
-        self.cam.read()
-        self.cam.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-        self.cap_rate = min(1, int(self.cam.get(cv2.CAP_PROP_FPS) * self.VIRTUAL_INTERVAL_SECS))
+        self.cap_rate = max(1, int(self.cam.get(cv2.CAP_PROP_FPS) * self.VIRTUAL_INTERVAL_SECS))
         self.logger.log(logging.INFO, f"Collector will add an image to the queue every {self.cap_rate} frame(s)")
         self.frame_count = 0
         self.active = True
