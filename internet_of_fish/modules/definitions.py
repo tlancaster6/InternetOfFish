@@ -1,7 +1,7 @@
 import os, logging
 
 # logging and debugging parameters
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 # filetree constants
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
