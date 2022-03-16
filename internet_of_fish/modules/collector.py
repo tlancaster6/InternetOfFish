@@ -48,6 +48,8 @@ class CollectorWorker(mptools.TimerProcWorker):
 
 
 class VideoCollectorWorker(CollectorWorker):
+    VIRTUAL_INTERVAL_SECS = definitions.INTERVAL_SECS
+    INTERVAL_SECS = 0.02
     """functions like a CollectorWorker, but gathers images from an existing file rather than a camera"""
 
     def init_args(self, args):
@@ -61,6 +63,9 @@ class VideoCollectorWorker(CollectorWorker):
         if not os.path.exists(self.video_file):
             self.locate_video()
         self.cam = cv2.VideoCapture(self.video_file)
+        self.cap_rate = min(1, int(self.cam.get(cv2.CAP_PROP_FPS) * self.VIRTUAL_INTERVAL_SECS))
+        self.logger.log(logging.INFO, f"Collector will add an image to the queue every {self.cap_rate} frame(s)")
+        self.frame_count = 0
         self.logger.log(logging.DEBUG, f"Exiting VideoCollectorWorker.startup")
 
     def main_func(self):
@@ -70,6 +75,8 @@ class VideoCollectorWorker(CollectorWorker):
         if ret:
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             self.img_q.safe_put((cap_time, img))
+            self.frame_count += self.cap_rate
+            self.cam.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
         else:
             pass
         self.logger.log(logging.DEBUG, f"Exiting VideoCollectorWorker.main_func")
