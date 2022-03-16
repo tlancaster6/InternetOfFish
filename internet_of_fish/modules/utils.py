@@ -35,6 +35,20 @@ def make_logger(name):
     return logger
 
 
+def sleep_until_morning():
+    curr_time = datetime.datetime.now()
+    next_start = (curr_time + datetime.timedelta(days=1))
+    next_start = next_start.replace(hour=definitions.START_HOUR, minute=0, second=0, microsecond=0)
+    if lights_on(curr_time):
+        return 0.02
+    return sleep_secs(600, (next_start - curr_time).total_seconds())
+
+def lights_on(t=None):
+    if t is None:
+        t = datetime.datetime.now()
+    return definitions.START_HOUR <= t.hour <= definitions.END_HOUR
+
+
 class Averager:
 
     def __init__(self):
