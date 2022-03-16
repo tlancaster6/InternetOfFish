@@ -77,6 +77,7 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.buffer.append(BufferEntry(cap_time, img, fish_dets + pipe_det))
         self.check_for_hit(fish_dets, pipe_det)
         if self.hit_counter.hits >= self.HIT_THRESH:
+            self.logger.log(logging.INFO, f"Hit threshold of {self.HIT_THRESH} exceeded, possible spawning event")
             [self.overlay_boxes(be) for be in self.buffer]
             self.notify()
             self.hit_counter.reset()
