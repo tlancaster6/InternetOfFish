@@ -1,11 +1,13 @@
 import logging
 import time, datetime
 from internet_of_fish.modules import definitions
-import os
+import os, socket
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
 os.makedirs(LOG_DIR, exist_ok=True)
 logging.getLogger('PIL').setLevel(logging.WARNING)
+
+
 
 
 def sleep_secs(max_sleep, end_time=999999999999999.9):
@@ -43,10 +45,24 @@ def sleep_until_morning():
         return 0.02
     return sleep_secs(600, (next_start - curr_time).total_seconds())
 
+
 def lights_on(t=None):
     if t is None:
         t = datetime.datetime.now()
     return definitions.START_HOUR <= t.hour <= definitions.END_HOUR
+
+
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    try:
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
 
 
 class Averager:

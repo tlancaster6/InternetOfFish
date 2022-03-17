@@ -53,7 +53,7 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.interpreter.allocate_tensors()
 
         self.labels = read_label_file(label_path)
-        self.ids = {val: key for key, val in self.labels.items()}
+        self.ids = {val: key for key, val in self.labels.item_dict()}
 
         self.hit_counter = HitCounter()
         self.avg_timer = utils.Averager()
