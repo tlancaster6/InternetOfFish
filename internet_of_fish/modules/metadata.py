@@ -1,124 +1,197 @@
 import os, json, sys, re, platform
 from internet_of_fish.modules import definitions, utils
 from datetime import datetime, date
+from typing import Union, Callable
+ 
 
+def flinput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None):
+    """customized user input function
 
-def flinput(prompt, options=None, simplify=True, match_string=None):
-    """formmated looped input"""
+    :param prompt: prompt to give the user, identical usage to the builtin input function. Required.
+    :type prompt: str
+    :param options: list of allowed user inputs. If simplify is true, ensure these are lowercase and without whitespace.
+                    If None (default) do not enforce an option set.
+    :type options: list[str]
+    :param simplify: if True, convert user input to lowercase and remove any whitespaces
+    :type simplify: bool
+    :param pattern: enforce that the user input matches the given regular expression pattern using re.fullmatch. If None
+                    (default) re matching is skipped
+    :type pattern: str
+    :param mapping: dictionary mapping user inputs to the actual values the function returns. If None (default) user
+                    input is returned directly. input loop will repeat until the user enters a value matching a key
+                    in the mapping dictionary.
+    :type mapping: dict
+    :param help_str: if user types "help", this string will be displayed and then the user will be queried again
+    :type help_str: str
+    :return: formatted and verified user input
+    :rtype: str
+    """
     while True:
         user_input = str(input(prompt))
+        if user_input == 'help':
+            print(help_str)
+            continue
         if simplify:
             user_input = user_input.lower().strip().replace(' ', '')
-        if options and user_input not in options:
+        if (options and user_input not in options) or (mapping and user_input not in mapping.keys()):
             print(f'invalid input. valid options are {" ".join(options)}')
-        if match_string and not re.match(match_string, user_input):
-            print(f'please provide an input formatted as {match_string}')
-        elif flinput(f'your input will be recorded as {user_input}. press "y" to accept, "n" to reenter', ['y', 'n']) == 'y':
+            continue
+        if pattern and not re.fullmatch(pattern, user_input):
+            print(f'pattern mistmatch. please provide an input formatted as {pattern}')
+            continue
+        if mapping:
+            user_input = mapping[user_input]
+        if flinput(f'your input will be recorded as {user_input}. '
+                   f'press "y" to accept, "n" to reenter', ['y', 'n']) == 'y':
             return user_input
         else:
             pass
 
 
-class Item:
+class MetaValue:
 
-    def __init__(self, key, value='NA', prompt=None, options=None, required=True,
-                 simplify=True, match_string='.+', help_str=None):
+    def __init__(self, key, value:Union[str, Callable]='NA', prompt=None, options=None, required=True,
+                 simplify=True, pattern='.+', mapping=None, help_str=None):
+        """data container for MetaDataDict entries that includes information required query the user about the value
+        and enforce various conditions on the value
+
+        :param key: short descriptor, used as a dict key when constructing a dictionary of MetaValue objects. Required
+        :type key: str
+        :param value: core piece of data being stored, or a Callable that returns a piece of core data. Default "NA"
+        :type value: Union[str, Callable]
+        :param prompt: custom prompt for querying the user. Defaults to f'enter a value for {key}'. see flinput
+        :type prompt: str
+        :param options: list of allowed user inputs. see flinput
+        :type options: list[str]
+        :param required: if True (default) this MetaValue is required for any functional usage of the class instance
+        :type required: bool
+        :param simplify: if True (default) format user input (see flinput for details)
+        :type simplify: bool
+        :param pattern: see flinput. Defaults to '.+', i.e., match any non-empty string
+        :type pattern: str
+        :param mapping: see flinput. Defaults to None
+        :type mapping: dict
+        :param help_str: any additional case-specific usage details go here
+        :type help_str: str
+        """
         self.key, self.value, self.options, self.required = key, value, options, required
-        self.simplify, self.match_string = simplify, match_string
+        self.simplify, self.pattern, self.mapping = simplify, pattern, mapping
         self.prompt = prompt if prompt else f'enter a value for {key}'
-        self.help_string = help_str if help_str else 'sorry, help string has not been written for this item'
+        self.help_string = '\n'.join([f'{key}: {val}' for key, val in self.__dict__] + [help_str])
 
     def confirm_with_user(self):
-        if flinput(f'value set automatically to f{self.value}. modify? (y, n)', ['y', 'n']) == 'y':
+        """show the user the current self.value, ask if they want to change it, and call query_user if so"""
+        if flinput(f'value set automatically to f{self.value}. is this correct? (y, n)', ['y', 'n']) == 'n':
             self.query_user()
 
     def query_user(self):
-        self.value = flinput(self.prompt, self.options, self.simplify, self.match_string)
+        """set self.value based on user input by calling flinput with current the promp, options, simplify, and pattern
+        attributes of MetaValue"""
+        self.value = flinput(self.prompt, self.options, self.simplify, self.pattern, self.mapping, self.help_string)
 
 
 class MetaDataDict:
 
     def __init__(self):
+        """dict-like class that holds a collection of MetaValue objects with various preset attributes, as well as
+        a few useful utility functions.
+
+        The MetaDataDict.contents houses the full dictionary of MetaValue objects, where each key in
+        MetaDataDict.contents matches the MetaValue.key attribute of the paired associated MetaValue object.
+        In practice, this class can be used much like a traditional dictionary by using square-bracket notation,
+        as MetaDataDict()[key] will return MetaDataDict().contents[key].value, and MetaDataDict()[key]=val will set
+        MetaDataDict().contents[key].value to val (with some caveats -- see __setitem__ and __getitem__ methods).
+        """
         self.logger = utils.make_logger('METADATA')
-        self.item_dict = {
-            'owner':       Item(key='item',
-                                prompt='enter your initials (first, middle, and last)',
-                                match_string='[a-z]{3}'),
-            'tank_id':     Item(key='tank_id',
-                                value=platform.node().split('-')[-1],
-                                prompt='enter the tank id (e.g., t003, t123, t123sv, t123asdf, etc.',
-                                match_string='^t\d{3}[a-zA-Z]*'),
-            'species':     Item(key='species',
-                                prompt='enter the species name or abbreviation thereof'),
-            'fish_type':   Item(key='fish_type',
-                                prompt='is the a rock, sand, or hybrid tank?',
-                                options=['rock', 'sand', 'rocksand', 'other']),
-            'n_fish':      Item(key='n_fish',
-                                prompt='how many fish are in this tank total? (enter NA to leave blank)',
-                                required=False,
-                                simplify=False),
-            'model_id':    Item(key='model_id',
-                                prompt='enter the name of the model you want to use (case sensitive)',
-                                options=os.listdir(definitions.MODELS_DIR),
-                                simplify=False,
-                                required=False),
-            'coral_color': Item(key='coral_color',
-                                prompt='what color is the coral in this tank?',
-                                options=['black', 'white', 'other'],
-                                required=False),
-            'bower_type':  Item(key='bower_type',
-                                prompt='is this a castle or pit species?',
-                                options=['castle', 'pit'],
-                                required=False),
-            'end_date':    Item(key='end_date',
-                                prompt='enter a date in ("yyyy-mm-dd" format) when this project should auto-terminate',
-                                match_string='^(20)\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])',
-                                required=False),
-            'notes':       Item(key='notes',
-                                prompt='enter any additional notes you want to make on this trial',
-                                simplify=False,
-                                required=False),
-            'created':     Item(key='created'),
-            'proj_id':     Item(key='proj_id'),
-            'ip_address':  Item(key='ip_address'),
-            'json_path':   Item(key='json_path')
+        self.contents = {
+            'owner':       MetaValue(key='owner',
+                                     prompt='enter your initials (first, middle, and last)',
+                                     pattern='[a-z]{3}'),
+            'tank_id':     MetaValue(key='tank_id',
+                                     value=platform.node().split('-')[-1],
+                                     prompt='enter the tank id (e.g., t003, t123, t123sv, t123asdf, etc.',
+                                     pattern='^t\d{3}[a-zA-Z]*'),
+            'species':     MetaValue(key='species',
+                                     prompt='enter the species name or abbreviation thereof'),
+            'fish_type':   MetaValue(key='fish_type',
+                                     prompt='is the a rock, sand, or hybrid tank?',
+                                     options=['rock', 'sand', 'rocksand', 'other']),
+            'n_fish':      MetaValue(key='n_fish',
+                                     prompt='how many fish are in this tank total? (enter NA to leave blank)',
+                                     required=False,
+                                     simplify=False),
+            'model_id':    MetaValue(key='model_id',
+                                     prompt='enter the name of the model you want to use (case sensitive)',
+                                     options=os.listdir(definitions.MODELS_DIR),
+                                     simplify=False,
+                                     required=False),
+            'coral_color': MetaValue(key='coral_color',
+                                     prompt='what color is the coral in this tank?',
+                                     options=['black', 'white', 'other'],
+                                     required=False),
+            'bower_type':  MetaValue(key='bower_type',
+                                     prompt='is this a castle or pit species?',
+                                     options=['castle', 'pit'],
+                                     required=False),
+            'end_date':    MetaValue(key='end_date',
+                                     prompt='enter a date ("yyyy-mm-dd" format) when this project will auto-terminate',
+                                     pattern='^(20)\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])',
+                                     required=False),
+            'stopped':     MetaValue(key='stopped',
+                                     required=False),
+            'notes':       MetaValue(key='notes',
+                                     prompt='enter any additional notes you want to make on this trial (if any)',
+                                     simplify=False,
+                                     required=False),
+            'created':     MetaValue(key='created',
+                                     value=datetime.isoformat(datetime.now())),
+            'ip_address':  MetaValue(key='ip_address',
+                                     value=utils.get_ip()),
+            'json_path':   MetaValue(key='json_path'),
         }
+
+        # add a few special MetaValue objects that generate their values dynamically
+        created_shortform = datetime.fromisoformat(self["created"]).strftime("%m%d%y")
+        data_dir = definitions.DATA_DIR
+        self.contents.update({
+            'proj_id':   MetaValue(key='proj_id',
+                                   value=lambda: f'{self["owner"]}_{self["tank_id"]}_{created_shortform}',
+                                   required=False),
+            'json_path': MetaValue(key='json_path',
+                                   value=lambda: os.path.join(data_dir, self['proj_id'], f'{self["proj_id"]}.json'))
+        })
 
     def __getitem__(self, key):
         """once the MetaDataDict object is created, this function allows for it to be used like a traditional dict,
         such that MetaDataDict()['key'] is equivalent to MetaDataDict().item_dict['key'].value"""
         try:
-            return eval(self.item_dict[key].value)
+            return eval(self.contents[key].value)
         except NameError:
-            return self.item_dict[key].value
+            return self.contents[key].value
 
     def __setitem__(self, key, value):
-        """if we have a __getitems__, might as well have a __setitems__"""
+        """if we have a __getitems__, might as well have a __setitems__. slightly stricter than the base dict
+        equivalent (for example, does not allow setting of an item for which a key does not already exist.)"""
         value = str(value)
-        if key not in self.item_dict.keys():
+        if key not in self.contents.keys():
             self.logger.warning(f'attempted to set non-existant key {key} in MetaDataDict')
             return
-        elif not re.match(self.item_dict[key].match_string, value):
-            self.logger.warning(f'attempted to set {key} to {value}, but value did not match {self.item_dict[key].match_string}')
-        elif value not in self.item_dict[key].options:
-            self.logger.warning(f'attempted to set {key} to {value}, but value was not in {self.item_dict[key].options}')
+        elif not re.match(self.contents[key].match_string, value):
+            self.logger.warning(f'attempted to set {key} to {value}, but value did not match {self.contents[key].match_string}')
+        elif value not in self.contents[key].options:
+            self.logger.warning(f'attempted to set {key} to {value}, but value was not in {self.contents[key].options}')
         else:
-            self.item_dict[key].value = value
-
-    def autogen(self):
-        self['created'] = datetime.isoformat(datetime.now())
-        self['proj_id'] = f'{self["owner"]}_{self["tank_id"]}_{date.today().strftime("%m%d%y")}'
-        self['ip_address'] = utils.get_ip()
-        self['json_path'] = os.path.join(definitions.DATA_DIR, self['proj_id'], f'{self["proj_id"]}.json')
+            self.contents[key].value = value
 
     def verify(self):
         """loop through the item_dict and check that, if the required flag is set, the value of the item is not 'NA'"""
         missing_keys = []
-        for item in self.item_dict.values():
+        for item in self.contents.values():
             if item.required and item.value.upper() == 'NA':
                 missing_keys.append(item.key)
         if len(missing_keys) != 0:
-            self.logger.warning(f'the following metadata items must be set before starting data collection: {missing_keys}')
+            self.logger.warning(f'the following metadata items must be set before starting'
+                                f' data collection: {missing_keys}')
             return missing_keys
         else:
             self.logger.debug('metadata dictionary verified')
@@ -131,65 +204,88 @@ class MetaDataDict:
             self[key] = value
 
     def simplify(self):
-        return {key: self[key] for key in self.item_dict.keys()}
+        """return a simple dict composed of {MetaValue.key: MetaValue.value} for each MetaValue in self.contents"""
+        return {key: self[key] for key in self.contents.keys()}
 
 
 class MetaDataHandler(MetaDataDict):
-    """relatively thin wrapper around the MetaDataDict class that mostly handles the startup sequence"""
 
     def __init__(self, new_proj=True, json_path=None):
+        """
+        relatively thin wrapper around the MetaDataDict class that mostly handles the startup sequence for
+        user-initialization or automated initialization of project-specific values
+        :param new_proj: if True (default) program will query user for project-specific parameters. If False and
+                         json_path=None, it will attempt to read the most recently created json file in the data
+                         directory. If json_path is specified, this argument is ignored.
+        :type new_proj: bool
+        :param json_path: forces the MetaDataHandler to use the specified json file
+        :type json_path: str
+        """
         super().__init__()
 
         if json_path:
             self.json_path = json_path
+            if new_proj:
+                self.logger.warning('MetaDataHandler instantiated with both new_project=True and json_path specified. '
+                                    'Ignoring new_project=True')
         elif new_proj:
             self.json_path = self.generate_metadata()
         else:
             self.json_path = self.locate_newest_json()
-        self.item_dict.update(self.decode_metadata(self.json_path))
+        self.contents.update(self.decode_metadata(self.json_path))
 
 
     def decode_metadata(self, json_path):
+        """read a metadata json file"""
         with open(json_path, 'r') as f:
             return json.load(f)
 
-
     def generate_metadata(self):
+        """gather project-specific metadata from the user"""
         self.logger.info('gathering metadata from user')
-        metadict = self.item_dict
+        contents = self.contents
+        print('the program will now ask you a series of questions in order to generate the metadata json file for this'
+              'project. At any time, you may type "help" for additional details about a particular parameter\n')
         while True:
             # essential queries
             for key in ['owner', 'tank_id', 'species', 'fish_type', ]:
-                metadict[key].query_user()
+                contents[key].query_user()
 
             # case-specific queries
             if self['species_type'] == 'sand':
-                metadict['bower_type'].query_user()
+                contents['bower_type'].query_user()
             elif self['species_type'] in ['rock', 'rocksand']:
-                metadict['coral_color'].query_user()
+                contents['coral_color'].query_user()
 
             # optional queries
             for key in ['model_id', 'n_fish', 'notes']:
                 if flinput(f'would you like to set the {key} parameter? (y, n)', ['y', 'n']) == 'y':
-                    metadict[key].query_user()
+                    contents[key].query_user()
 
             if flinput('do you want to set an automated end date for this project? (y, n)', ['y', 'n']) == 'y':
                 while True:
-                    metadict['end_date'].query_user()
-                    if not date.fromisoformat(metadict['end']) > date.today():
+                    contents['end_date'].query_user()
+                    if not date.fromisoformat(contents['end']) > date.today():
                         print('the date you entered appears to be in the past. please try again')
                     else:
                         break
 
+            # confirm some of the autogenerated values with the user
+            print("\nyou will now be asked to confirm a few parameters that were generated automatically. "
+                  "Note that modifying these values may cause unexpected behavior\n")
+            for key in ['tank_id', 'proj_id', 'created', 'ip_address', 'json_path']:
+                contents[key].confirm_with_user()
+
             for key, val in self.simplify().items():
                 print(f'{key}: {val}')
             if flinput('is the above metadata correct? (type "yes" or "no")', ['yes', 'no']) == 'yes':
-                with open(metadict['json_path'], 'w') as f:
+                with open(contents['json_path'], 'w') as f:
                     json.dump(self.simplify(), f)
                     self.logger.info('metadata generated and save to .json file')
-                return metadict['json_path']
+                return contents['json_path']
 
     def locate_newest_json(self):
+        """locate the most recently created json file in the data dir (see definitions.py for data dir location)"""
         self.logger.info('attempting to locate existing metadata file')
         try:
             potential_projects = next(os.walk(definitions.DATA_DIR))[1]
