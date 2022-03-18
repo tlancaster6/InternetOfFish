@@ -114,9 +114,9 @@ class ProcWorker:
     int_handler = staticmethod(default_signal_handler)
     term_handler = staticmethod(default_signal_handler)
 
-    def __init__(self, name, startup_event, shutdown_event, event_q, params, *args):
+    def __init__(self, name, startup_event, shutdown_event, event_q, metadata, *args):
         self.name = name
-        self.params = params
+        self.metadata = metadata
         self.logger = make_logger(name)
         self.startup_event = startup_event
         self.shutdown_event = shutdown_event
@@ -208,8 +208,8 @@ class QueueProcWorker(ProcWorker):
 
 # -- Process Wrapper
 
-def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, event_q, params, *args):
-    proc_worker = proc_worker_class(name, startup_evt, shutdown_evt, event_q, params, *args)
+def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, event_q, metadata, *args):
+    proc_worker = proc_worker_class(name, startup_evt, shutdown_evt, event_q, metadata, *args)
     return proc_worker.run()
 
 
@@ -217,14 +217,14 @@ class Proc:
     STARTUP_WAIT_SECS = 10.0
     SHUTDOWN_WAIT_SECS = 10.0
 
-    def __init__(self, name, worker_class, shutdown_event, event_q, params, *args):
-        self.params = params
+    def __init__(self, name, worker_class, shutdown_event, event_q, metadata, *args):
+        self.metadata = metadata
         self.logger = make_logger(name)
         self.name = name
         self.shutdown_event = shutdown_event
         self.startup_event = mp.Event()
         self.proc = mp.Process(target=proc_worker_wrapper,
-                               args=(worker_class, name, self.startup_event, shutdown_event, event_q, params, *args))
+                               args=(worker_class, name, self.startup_event, shutdown_event, event_q, metadata, *args))
         self.logger.log(logging.DEBUG, f"Proc.__init__ starting : {name}")
         self.proc.start()
         started = self.startup_event.wait(timeout=Proc.STARTUP_WAIT_SECS)
@@ -268,8 +268,8 @@ class Proc:
 class MainContext:
     STOP_WAIT_SECS = 3.0
 
-    def __init__(self, params):
-        self.params = params
+    def __init__(self, metadata: dict):
+        self.metadata = metadata
         self.procs = []
         self.queues = []
         self.logger = make_logger('MainContext')
@@ -290,7 +290,7 @@ class MainContext:
         return not exc_type
 
     def Proc(self, name, worker_class, *args):
-        proc = Proc(name, worker_class, self.shutdown_event, self.event_queue, self.params, *args)
+        proc = Proc(name, worker_class, self.shutdown_event, self.event_queue, self.metadata, *args)
         self.procs.append(proc)
         return proc
 

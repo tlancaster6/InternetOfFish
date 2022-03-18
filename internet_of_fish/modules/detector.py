@@ -44,11 +44,11 @@ class DetectorWorker(mptools.QueueProcWorker):
 
     def startup(self):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.startup")
-        self.img_dir = os.path.join(self.DATA_DIR, self.params.proj_id, 'Images')
+        self.img_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Images')
         os.makedirs(self.img_dir, exist_ok=True)
 
-        model_path = glob(os.path.join(self.MODELS_DIR, self.params.model_id, '*.tflite'))[0]
-        label_path = glob(os.path.join(self.MODELS_DIR, self.params.model_id, '*.txt'))[0]
+        model_path = glob(os.path.join(self.MODELS_DIR, self.metadata['model_id'], '*.tflite'))[0]
+        label_path = glob(os.path.join(self.MODELS_DIR, self.metadata['model_id'], '*.txt'))[0]
         self.interpreter = make_interpreter(model_path)
         self.interpreter.allocate_tensors()
 

@@ -2,21 +2,21 @@ from internet_of_fish.modules import mptools, collector, detector, utils, upload
 import time, logging
 
 
-def active_mode(params):
-    with mptools.MainContext(params) as main_ctx:
+def active_mode(metadata):
+    with mptools.MainContext(metadata) as main_ctx:
         main_ctx.logger.log(logging.INFO, "Application entering active mode")
         # set up a timed kill condition, if necessary
-        if params.kill_after:
-            die_time = time.time() + params.kill_after
-            main_ctx.logger.log(logging.INFO, f"Application will be killed in {params.kill_after} seconds")
+        if metadata['kill_after']:
+            die_time = time.time() + metadata['kill_after']
+            main_ctx.logger.log(logging.INFO, f"Application will be killed in {metadata['kill_after']} seconds")
         else:
             die_time = None
 
         # initialize important objects (signals, queues, processes, etc)
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         img_q = main_ctx.MPQueue()
-        if params.source:
-            main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, params.source)
+        if metadata['source']:
+            main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, metadata['source'])
         else:
             main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
         main_ctx.Proc('DETECT', detector.DetectorWorker, img_q)
@@ -39,7 +39,7 @@ def active_mode(params):
             else:
                 main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
 
-        if params.source or params.kill_after:
+        if metadata['source'] or metadata['kill_after']:
             main_ctx.logger.log(logging.INFO, f'exiting application because either source or kill_after was set')
             return
         elif event and event.msg_type == 'FATAL':
@@ -48,11 +48,11 @@ def active_mode(params):
         else:
             main_ctx.logger.log(logging.INFO, f'entering passive mode in ten seconds')
             time.sleep(10)
-    passive_mode(params)
+    passive_mode(metadata)
 
 
-def passive_mode(params):
-    with mptools.MainContext(params) as main_ctx:
+def passive_mode(metadata):
+    with mptools.MainContext(metadata) as main_ctx:
         main_ctx.logger.log(logging.INFO, "Application entering passive mode")
         upload_q = main_ctx.MPQueue()
         main_ctx.Proc('UPLOAD', uploader.UploaderWorker, upload_q)
@@ -68,7 +68,7 @@ def passive_mode(params):
             else:
                 main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
         main_ctx.logger.log(logging.INFO, f'entering active mode')
-    active_mode(params)
+    active_mode(metadata)
 
 
 

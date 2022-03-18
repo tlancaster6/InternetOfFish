@@ -23,7 +23,7 @@ class CollectorWorker(mptools.TimerProcWorker):
         self.cam = picamera.PiCamera()
         self.cam.resolution = self.RESOLUTION
         self.cam.framerate = self.FRAMERATE
-        vid_dir = os.path.join(self.DATA_DIR, self.params.proj_id, 'Videos')
+        vid_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Videos')
         os.makedirs(vid_dir, exist_ok=True)
         self.cam.start_recording(os.path.join(vid_dir, f'{utils.current_time_iso()}.h264'))
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.startup")
@@ -99,7 +99,7 @@ class VideoCollectorWorker(CollectorWorker):
         self.logger.log(logging.DEBUG, f"Entering VideoCollectorWorker.locate_video")
         path_elements = [definitions.HOME_DIR,
                          * os.path.relpath(self.DATA_DIR, definitions.HOME_DIR).split(os.sep),
-                         self.params.proj_id,
+                         self.metadata['proj_id'],
                          'Videos']
         for i in range(len(path_elements)):
             potential_path = os.path.join(*path_elements[:i], self.video_file)
