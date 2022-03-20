@@ -1,4 +1,4 @@
-from internet_of_fish.modules import mptools, collector, detector, utils, uploader
+from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier
 import time, logging
 
 
@@ -15,11 +15,14 @@ def active_mode(metadata):
         # initialize important objects (signals, queues, processes, etc)
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         img_q = main_ctx.MPQueue()
+        notification_q = main_ctx.MPQueue()
+
         if metadata['source']:
             main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, metadata['source'])
         else:
             main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
-        main_ctx.Proc('DETECT', detector.DetectorWorker, img_q)
+        main_ctx.Proc('DETECT', detector.DetectorWorker, img_q, notification_q)
+        main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
 
         # keep checking the event queue until this loop gets broken
         while not main_ctx.shutdown_event.is_set():

@@ -1,7 +1,7 @@
 import logging
 import time, datetime
 from internet_of_fish.modules import definitions
-import os, socket
+import os, socket, cv2
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -63,6 +63,31 @@ def get_ip():
     finally:
         s.close()
     return IP
+
+
+def jpgs_to_mp4(img_dir, dest_dir, fps=10):
+    """create a video from a directory of images
+
+    :param img_dir: folder containing images to combine into a video. Files should be named such that sorting
+                    them alphanumerically puts them in the correct time order
+    :type img_dir: str
+    :param dest_dir: folder where the video will go
+    :type dest_dir: str
+    :param fps: framerate (frames per second) for the new video. Default 10
+    :type fps: int
+    :return vid_path: path to newly created video
+    :rtype: str
+    """
+    imgs = sorted([img for img in os.listdir(img_dir) if img.endswith(".jpg")])
+    frame = cv2.imread(os.path.join(img_dir, imgs[0]))
+    height, width, layers = frame.shape
+    vid_path = os.path.join(dest_dir, f'{os.path.splitext(imgs[0])[0]}.mp4')
+    video = cv2.VideoWriter(vid_path, 0, fps, (width, height))
+    for img in imgs:
+        video.write(cv2.imread(os.path.join(img_dir, img)))
+    cv2.destroyAllWindows()
+    video.release()
+    return vid_path
 
 
 class Averager:

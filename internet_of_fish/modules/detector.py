@@ -32,17 +32,16 @@ class HitCounter:
 class DetectorWorker(mptools.QueueProcWorker):
     MODELS_DIR = definitions.MODELS_DIR
     DATA_DIR = definitions.DATA_DIR
-    MAX_FISH = definitions.MAX_FISH
     HIT_THRESH = definitions.HIT_THRESH
     IMG_BUFFER = definitions.IMG_BUFFER
 
     def init_args(self, args):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.init_args : {args}")
-        self.img_q, = args
-        self.work_q = self.img_q  # renaming to clarify that, for this class, the work queue is always the img queue
+        self.work_q, self.notification_q = args
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.init_args")
 
     def startup(self):
+        self.max_fish = definitions.MAX_FISH if self.metadata['n_fish'] == 'None' else int(self.metadata['max_fish'])
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.startup")
         self.img_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Images')
         os.makedirs(self.img_dir, exist_ok=True)
@@ -133,7 +132,7 @@ class DetectorWorker(mptools.QueueProcWorker):
 
     def filter_dets(self, dets):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.filter_dets")
-        fish_dets = [d for d in dets if d.id == self.ids['fish']][:self.MAX_FISH]
+        fish_dets = [d for d in dets if d.id == self.ids['fish']][:self.max_fish]
         pipe_det = [d for d in dets if d.id == self.ids['pipe']][:1]
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.filter_dets")
         return fish_dets, pipe_det
@@ -148,7 +147,7 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.shutdown")
         [self.overlay_boxes(be) for be in self.buffer]
         self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
-        self.img_q.safe_close()
+        self.work_q.safe_close()
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.shutdown")
 
 
