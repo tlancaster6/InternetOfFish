@@ -41,7 +41,7 @@ def active_mode(metadata):
                 break
             else:
                 main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
-
+        main_ctx.logger.debug(f'shutdown event set: {main_ctx.shutdown_event.is_set()}')
         if (metadata['source'] != 'None') or (metadata['kill_after'] != 'None'):
             main_ctx.logger.log(logging.INFO, f'exiting application because either source or kill_after was set')
             return
@@ -51,7 +51,7 @@ def active_mode(metadata):
         else:
             main_ctx.logger.log(logging.INFO, f'entering passive mode in ten seconds')
             time.sleep(10)
-    passive_mode(metadata)
+            # passive_mode(metadata)
 
 
 def passive_mode(metadata):
