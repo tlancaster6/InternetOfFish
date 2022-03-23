@@ -17,7 +17,7 @@ def active_mode(metadata):
         img_q = main_ctx.MPQueue()
         notification_q = main_ctx.MPQueue()
 
-        if metadata['source']:
+        if metadata['source'] != 'None':
             main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, metadata['source'])
         else:
             main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
@@ -42,7 +42,7 @@ def active_mode(metadata):
             else:
                 main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
 
-        if metadata['source'] or metadata['kill_after']:
+        if (metadata['source'] != 'None') or (metadata['kill_after'] != 'None'):
             main_ctx.logger.log(logging.INFO, f'exiting application because either source or kill_after was set')
             return
         elif event and event.msg_type == 'FATAL':
