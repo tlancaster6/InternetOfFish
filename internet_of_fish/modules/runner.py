@@ -57,19 +57,23 @@ def active_mode(metadata):
 def passive_mode(metadata):
     with mptools.MainContext(metadata) as main_ctx:
         main_ctx.logger.log(logging.INFO, "Application entering passive mode")
-        upload_q = main_ctx.MPQueue()
-        main_ctx.Proc('UPLOAD', uploader.UploaderWorker, upload_q)
+        if utils.lights_on():
+            main_ctx.logger.warning(f'entered passive mode at {utils.current_time_iso()}, but utils.light_on returned '
+                                    f'True. Re-entering active mode without uploading')
+        else:
+            main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
 
-        while not main_ctx.shutdown_event.is_set():
-            if utils.lights_on():
-                break
-            event = main_ctx.event_queue.safe_get()
-            if not event:
-                sleep_time = utils.sleep_until_morning()
-                main_ctx.logger.log(logging.DEBUG, f"Event queue empty. Going back to sleep for {sleep_time} seconds")
-                time.sleep(sleep_time)
-            else:
-                main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
+            while not main_ctx.shutdown_event.is_set():
+                if utils.lights_on():
+                    break
+                event = main_ctx.event_queue.safe_get()
+                if not event:
+                    sleep_time = utils.sleep_until_morning()
+                    main_ctx.logger.log(logging.DEBUG, f"Event queue empty. Going back to sleep for "
+                                                       f"{sleep_time} seconds")
+                    time.sleep(sleep_time)
+                else:
+                    main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
         main_ctx.logger.log(logging.INFO, f'entering active mode')
     active_mode(metadata)
 

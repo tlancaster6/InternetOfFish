@@ -7,6 +7,7 @@ import sys
 import time
 from queue import Empty, Full
 from internet_of_fish.modules.utils import make_logger
+from typing import Any
 
 """modified from https://github.com/PamelaM/mptools"""
 
@@ -18,25 +19,50 @@ MAX_SLEEP_SECS = 0.02
 
 class MPQueue(mpq.Queue):
 
-    # -- See StackOverflow Article :
-    #   https://stackoverflow.com/questions/39496554/cannot-subclass-multiprocessing-queue-in-python-3-5
-    #
-    # -- tldr; mp.Queue is a _method_ that returns an mpq.Queue object.  That object
-    # requires a context for proper operation, so this __init__ does that work as well.
     def __init__(self, *args, **kwargs):
+        """
+        flexible queue object built on the multiprocessing.queues.Queue class.
+        :param args: positional arguments passed to the parent class __init__
+        :param kwargs: keyword args passed to the parent class __init__
+        """
         ctx = mp.get_context()
         super().__init__(*args, **kwargs, ctx=ctx)
 
     def safe_get(self, timeout=DEFAULT_POLLING_TIMEOUT):
+        """
+        similar to the base .get() method, but more robust. In situations where .get() would raise an Empty
+        exception, this method catches the exception and returns None. This method also obscures the .get() block
+        argument, and prevents it from being set to True when timeout. This avoids the scenario where a call to .get()
+        blocks indefinitely, essentially freezing up the queue.
+        :param timeout: Max number of seconds to wait for an item to appear in the queue before instead returning None.
+               Defaults to DEFAULT_POLLING_TIMEOUT. If set to None,
+        :type timeout: float
+        :return: returns the next item in the queue, or returns None in the event of an Empty exception
+        """
         try:
             if timeout is None:
+                # get an item from the queue immediately, raise an Empty exception if the queue is currently empty
                 return self.get(block=False)
             else:
+                # get an item from the queue, waiting up to "timeout" seconds for the queue to be nonempty. Raise an
+                # Empty exception after the timeout expires
                 return self.get(block=True, timeout=timeout)
         except Empty:
+            # catch the Empty exception that might be raised by either of the above self.get calls, and return None
             return None
 
     def safe_put(self, item, timeout=DEFAULT_POLLING_TIMEOUT):
+        """
+        similar to the .put() base class, but more robust. In situations where .put() would raise the Full exception,
+        this method catches the exception and instead returns False. Also obscures the .put() block keyword argument
+        to prevent the safe_put command from blocking indefinitely.
+        :param item: item to place in the queue
+        :type item: Any
+        :param timeout: max time to wait for a spot to open up in the queue before instead returning False
+        :type timeout: float
+        :return: return True if the item was put in the queue successfully, False if the queue was full
+        :rtype: bool
+        """
         try:
             self.put(item, block=False, timeout=timeout)
             return True
@@ -44,12 +70,22 @@ class MPQueue(mpq.Queue):
             return False
 
     def drain(self):
+        """
+        safely remove all items from the queue without processing them. Useful for smoothly shutting down other
+        processes that are using a queue.
+        """
         item = self.safe_get()
         while item:
             yield item
             item = self.safe_get()
 
     def safe_close(self):
+        """
+        safely drain the queue, then close it, then join the thread to free up resources. Returns the number of items
+        that were drained from the queue, which may be diagnostically helpful in some contexts.
+        :return: the number of items that were drained from the queue and discarded before exiting
+        :rtype: int
+        """
         num_left = sum(1 for __ in self.drain())
         self.close()
         self.join_thread()
@@ -57,14 +93,37 @@ class MPQueue(mpq.Queue):
 
 
 # -- useful function
-def _sleep_secs(max_sleep, end_time=999999999999999.9):
-    # Calculate time left to sleep, no less than 0
+def sleep_secs(max_sleep, end_time=999999999999999.9):
+    """
+    Calculate time left to sleep in seconds. The returned value will be >=0, <=max_sleep, and will never exceed the
+    number of seconds between the current time and the specified end_time.
+    :param max_sleep: max sleep time. Useful for enforcing that a process checks in periodically to see if it needs to
+                      wake up. units: seconds
+    :type max_sleep: float
+    :param end_time: the return value of this function will never exceed the difference between the current time and
+                     this time. Useful for setting a hard limit on end time. Expressed in seconds since epoch, like the
+                     return value from time.time(). Defaults to a number large enough to be many years in the future
+                     regardless of operating system
+    :type end_time: float
+    :return: sleep time, in seconds, such that 0<=ret<=max_sleep and ret<=(end_time=time.time())
+    :rtype: float
+    """
     return max(0.0, min(end_time - time.time(), max_sleep))
 
 
 # -- Standard Event Queue manager
 class EventMessage:
     def __init__(self, msg_src, msg_type, msg):
+        """
+        simple data container of the type expected by an event queue (see MainContext for more detail on event queues)
+        :param msg_src: process, class, or function that generated the message.
+        :type msg_src: str
+        :param msg_type: used to determine the proper response to the message. Common values include 'SHUTDOWN' and
+                        'FATAL'.
+        :type msg_type: str
+        :param msg: additional information about the message, used mostly for logging
+        :type msg: str
+        """
         self.id = time.time()
         self.msg_src = msg_src
         self.msg_type = msg_type
@@ -180,7 +239,7 @@ class TimerProcWorker(ProcWorker):
         self.logger.log(logging.DEBUG, "Entering TimerProcWorker.main_loop")
         next_time = time.time() + self.INTERVAL_SECS
         while not self.shutdown_event.is_set():
-            sleep_secs = _sleep_secs(self.MAX_SLEEP_SECS, next_time)
+            sleep_secs = sleep_secs(self.MAX_SLEEP_SECS, next_time)
             time.sleep(sleep_secs)
             if time.time() > next_time:
                 self.logger.log(logging.DEBUG, f"TimerProcWorker.main_loop : calling main_func")
@@ -308,7 +367,7 @@ class MainContext:
 
         # -- Wait up to STOP_WAIT_SECS for all processes to complete
         for proc in self.procs:
-            join_secs = _sleep_secs(self.STOP_WAIT_SECS, end_time)
+            join_secs = sleep_secs(self.STOP_WAIT_SECS, end_time)
             proc.proc.join(join_secs)
 
         # -- Clear the procs list and _terminate_ any procs that

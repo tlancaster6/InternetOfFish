@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, posixpath
 
 # logging and debugging parameters
 LOG_LEVEL = logging.INFO
@@ -11,6 +11,8 @@ MODELS_DIR = os.path.join(BASE_DIR, 'models')
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 HOME_DIR = os.path.expanduser('~')
 DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
+CLOUD_HOME_DIR = 'cichlidVideo:BioSci-McGrath/Apps'
+CLOUD_DATA_DIR = posixpath.join(CLOUD_HOME_DIR, 'CichlidPiData', '__ProjectData')
 
 # project-specific parameters
 MAX_FISH = 5  # maximum number of fish detections that should be returned
