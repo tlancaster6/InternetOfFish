@@ -239,8 +239,7 @@ class TimerProcWorker(ProcWorker):
         self.logger.log(logging.DEBUG, "Entering TimerProcWorker.main_loop")
         next_time = time.time() + self.INTERVAL_SECS
         while not self.shutdown_event.is_set():
-            sleep_secs = sleep_secs(self.MAX_SLEEP_SECS, next_time)
-            time.sleep(sleep_secs)
+            time.sleep(sleep_secs(self.MAX_SLEEP_SECS, next_time))
             if time.time() > next_time:
                 self.logger.log(logging.DEBUG, f"TimerProcWorker.main_loop : calling main_func")
                 self.main_func()
