@@ -24,5 +24,5 @@ if __name__ == '__main__':
     parser.add_argument('--source', default=None, type=str,
                         help='optional. pass a path to a video file to perform detection on that video, '
                              'rather than the camera stream. If None (default) the camera stream is used.')
-    args = parser.parse_args()
-    main(args)
+    args_ = parser.parse_args()
+    main(args_)
