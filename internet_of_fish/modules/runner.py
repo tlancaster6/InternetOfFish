@@ -6,7 +6,7 @@ def active_mode(metadata):
     with mptools.MainContext(metadata) as main_ctx:
         main_ctx.logger.log(logging.INFO, "Application entering active mode")
         # set up a timed kill condition, if necessary
-        if metadata['kill_after']:
+        if metadata['kill_after'] != 'None':
             die_time = time.time() + int(metadata['kill_after'])
             main_ctx.logger.log(logging.INFO, f"Application will be killed in {metadata['kill_after']} seconds")
         else:
