@@ -48,7 +48,7 @@ def make_logger(name):
         level=LOG_LEVEL,
         datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger(name)
-    handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='w')
+    handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
     handler.setLevel(LOG_LEVEL)
     logger.addHandler(handler)
     return logger
