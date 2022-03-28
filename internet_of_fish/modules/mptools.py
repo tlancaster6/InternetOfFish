@@ -340,6 +340,7 @@ class MainContext:
         return self
 
     def _handle_interrupt(self):
+        self.logger.debug(f'keyboard interrupt detected')
         sys.exit()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
