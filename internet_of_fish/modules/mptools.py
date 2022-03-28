@@ -335,13 +335,7 @@ class MainContext:
         self.event_queue = self.MPQueue()
 
     def __enter__(self):
-        signal.signal(signal.SIGINT, self._handle_interrupt)
-        signal.signal(signal.SIGTERM, self._handle_interrupt)
         return self
-
-    def _handle_interrupt(self):
-        self.logger.debug(f'keyboard interrupt detected')
-        sys.exit()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logger.debug(f'exiting main context\nexception type: {exc_type}\nexception_value: {exc_val}')

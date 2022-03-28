@@ -5,12 +5,16 @@ from internet_of_fish.modules import runner, utils, metadata
 
 
 def main(args):
-    metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after, source=args.source)
-    metadata_simple = metadata_handler.simplify()
-    if utils.lights_on() or args.source:
-        runner.active_mode(metadata_simple)
-    else:
-        runner.passive_mode(metadata_simple)
+    try:
+        metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after, source=args.source)
+        metadata_simple = metadata_handler.simplify()
+        if utils.lights_on() or args.source:
+            runner.active_mode(metadata_simple)
+        else:
+            runner.passive_mode(metadata_simple)
+    except KeyboardInterrupt:
+        print('Keyboard Interrupt Detected. Exiting')
+        sys.exit()
 
 
 if __name__ == '__main__':
