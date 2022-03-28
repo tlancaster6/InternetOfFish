@@ -338,9 +338,9 @@ class MainContext:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.logger.debug(f'exiting main context\nexception type: {exc_type}\nexception_value: {exc_val}')
         if exc_type:
             self.logger.log(logging.ERROR, f"Exception: {exc_val}", exc_info=(exc_type, exc_val, exc_tb))
-
         self._stopped_procs_result = self.stop_procs()
         self._stopped_queues_result = self.stop_queues()
 
