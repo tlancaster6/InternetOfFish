@@ -49,11 +49,12 @@ def make_logger(name):
         level=LOG_LEVEL,
         datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger(name)
-    if not logger.hasHandlers():
-        handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
-        handler.setLevel(LOG_LEVEL)
-        handler.setFormatter(LOG_FMT)
-        logger.addHandler(handler)
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
+    handler.setLevel(LOG_LEVEL)
+    handler.setFormatter(LOG_FMT)
+    logger.addHandler(handler)
     return logger
 
 
