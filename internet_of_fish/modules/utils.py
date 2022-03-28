@@ -4,6 +4,7 @@ from internet_of_fish.modules import definitions
 import os, socket, cv2, subprocess
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
+LOG_FMT = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 os.makedirs(LOG_DIR, exist_ok=True)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
@@ -43,14 +44,12 @@ def make_logger(name):
     """
     if not os.path.exists(definitions.LOG_DIR):
         os.makedirs(definitions.LOG_DIR, exist_ok=True)
-    logging.basicConfig(
-        format='%(asctime)s %(levelname)-8s %(message)s',
-        level=LOG_LEVEL,
-        datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger(name)
-    handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
-    handler.setLevel(LOG_LEVEL)
-    logger.addHandler(handler)
+    if not logger.hasHandlers():
+        handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
+        handler.setLevel(LOG_LEVEL)
+        handler.setFormatter(LOG_FMT)
+        logger.addHandler(handler)
     return logger
 
 
