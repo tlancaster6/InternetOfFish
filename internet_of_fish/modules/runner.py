@@ -96,11 +96,8 @@ class RunnerWorker(mptools.ProcWorker):
         self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
 
     def hard_shutdown(self):
-        for _ in range(3):
-            self.main_ctx.stop_procs(kill_persistents=True)
-            self.main_ctx.stop_queues(kill_persistents=True)
-            if (not self.main_ctx.procs) and (not self.main_ctx.queues):
-                break
+        self.main_ctx.stop_procs(kill_persistents=True)
+        self.main_ctx.stop_queues(kill_persistents=True)
         sys.exit(0)
 
     def soft_shutdown(self):
