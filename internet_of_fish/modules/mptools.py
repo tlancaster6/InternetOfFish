@@ -345,7 +345,7 @@ class MainContext:
         if exc_type:
             self.logger.log(logging.ERROR, f"Exception: {exc_val}", exc_info=(exc_type, exc_val, exc_tb))
         self._stopped_procs_result = self.stop_procs(kill_persistents=True)
-        self._stopped_queues_result = self.stop_queues()
+        self._stopped_queues_result = self.stop_queues(kill_persistents=True)
 
         # -- Don't eat exceptions that reach here.
         return not exc_type
@@ -378,6 +378,7 @@ class MainContext:
         return q
 
     def stop_procs(self, kill_persistents=False):
+        self.logger.debug(f'stopping procs with kill_persistents={kill_persistents}')
         if kill_persistents:
             self.shutdown_event.set()
             self.procs.extend(self.persistent_procs)
@@ -413,6 +414,7 @@ class MainContext:
         return num_failed, num_terminated
 
     def stop_queues(self, kill_persistents=False):
+        self.logger.debug(f'stopping queues with kill_persistents={kill_persistents}')
         num_items_left = 0
         if kill_persistents:
             self.shutdown_event.set()
