@@ -1,20 +1,20 @@
 import os.path
 import sys, argparse
+import time
+
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-from internet_of_fish.modules import runner, utils, metadata, mptools
+from internet_of_fish.modules import runner, metadata, mptools
 
 
 def main(args):
     metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after, source=args.source)
     metadata_simple = metadata_handler.simplify()
-
     with mptools.MainContext(metadata_simple) as main_ctx:
+        mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
+        main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx, persistent=True)
+        main_ctx.logger.info('Runner process successfully initiated')
         while not main_ctx.shutdown_event.is_set():
-            try:
-                runner.active_mode(main_ctx)
-                runner.passive_mode(main_ctx)
-            except KeyboardInterrupt:
-                sys.exit(1)
+            time.sleep(5)
 
 
 if __name__ == '__main__':

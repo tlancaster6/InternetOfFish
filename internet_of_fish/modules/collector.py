@@ -45,7 +45,7 @@ class CollectorWorker(mptools.TimerProcWorker):
         if not utils.lights_on():
             self.active = False
             self.logger.log(logging.INFO, "Collector entering sleep mode (outside daytime hours)")
-            self.img_q.safe_put('SHUTDOWN')
+            self.img_q.safe_put('SOFT_SHUTDOWN')
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.main_func")
 
     def shutdown(self):
@@ -53,6 +53,7 @@ class CollectorWorker(mptools.TimerProcWorker):
         self.cam.stop_recording()
         self.cam.close()
         self.img_q.safe_close()
+        self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'collector shut down normally'))
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.shutdown")
 
 
@@ -92,7 +93,7 @@ class VideoCollectorWorker(CollectorWorker):
         else:
             self.active = False
             self.logger.log(logging.INFO, "VideoCollector entering sleep mode (no more frames to process)")
-            self.img_q.safe_put('SHUTDOWN')
+            self.img_q.safe_put('SOFT_SHUTDOWN')
         self.logger.log(logging.DEBUG, f"Exiting VideoCollectorWorker.main_func")
 
     def locate_video(self):
@@ -117,4 +118,5 @@ class VideoCollectorWorker(CollectorWorker):
         self.logger.log(logging.DEBUG, f"Entering VideoCollectorWorker.shutdown")
         self.cam.release()
         self.img_q.safe_close()
+        self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'Video Collector shut down normally'))
         self.logger.log(logging.DEBUG, f"Exiting VideoCollectorWorker.shutdown")

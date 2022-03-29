@@ -132,4 +132,6 @@ class UploaderWorker(ProcWorker):
             remainder = "\n".join(self.upload_list)
             self.logger.warning(f'exiting upload process, but the following files are still in the upload queue: \n'
                                 f'{remainder}')
+        else:
+            self.logger.info('no more items to upload. UploaderWorker shutting down')
         self.logger.debug('exiting UploadWorker.shutdown')

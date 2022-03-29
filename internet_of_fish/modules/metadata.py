@@ -348,5 +348,14 @@ class MetaDataHandler(MetaDataDict):
             end = start + float(self['kill_after'])
             self['end_date'], self['end_time'] = dt.datetime.isoformat(
                 dt.datetime.fromtimestamp(end), timespec='seconds').split('T')
+        elif self['end_date'] == 'None':
+            self['end_date'], self['end_time'] = dt.datetime.isoformat(
+                dt.datetime.max, timespec='seconds').split('T')
+        elif self['end_time'] == 'None':
+            self['end_time'] = dt.time.isoformat(dt.time.max, 'seconds')
+        else:
+            self.logger.warning(f'possible problem setting kill condition. end date set to {self["end_date"]}, '
+                                f'end time set to {self["end_time"]}')
+
 
 

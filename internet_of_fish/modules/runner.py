@@ -1,81 +1,112 @@
+import sys
+from typing import Tuple
+
 from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier
-import time, logging
+import time
+import datetime as dt
 
 
-def active_mode(main_ctx: mptools.MainContext):
-    metadata = main_ctx.metadata
-    main_ctx.logger.info("Application entering active mode")
-    # set up a timed kill condition, if necessary
-    if metadata['kill_after'] != 'None':
-        die_time = time.time() + int(metadata['kill_after'])
-        main_ctx.logger.log(logging.INFO, f"Application will be killed in {metadata['kill_after']} seconds")
-    else:
-        die_time = None
+class RunnerWorker(mptools.ProcWorker):
 
-    # initialize important objects (signals, queues, processes, etc)
-    mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
-    img_q = main_ctx.MPQueue()
-    notification_q = main_ctx.MPQueue()
+    def init_args(self, args: Tuple[mptools.MainContext,]):
+        self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
+        self.main_ctx, = args
+        self.logger.debug(f"Exiting RunnerWorker.init_args")
 
-    if metadata['source'] != 'None':
-        main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, metadata['source'])
-    else:
-        main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
-    main_ctx.Proc('DETECT', detector.DetectorWorker, img_q, notification_q)
-    main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
+    def startup(self):
+        self.logger.debug(f"Entering RunnerWorker.startup")
+        self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
+        self.curr_mode = 'active'
+        self.logger.debug(f"Exiting RunnerWorker.startup, die_time set to {self.die_time}")
 
-    # keep checking the event queue until this loop gets broken
-    while not main_ctx.shutdown_event.is_set():
-        # if die_time is exceeded, put a SHUTDOWN signal in the event queue
-        if die_time and time.time() > die_time:
-            main_ctx.event_queue.safe_put(mptools.EventMessage('main.py', 'SHUTDOWN', 'kill_after condition reached'))
-        # read an event from the event_queue and act accordingly
-        event = main_ctx.event_queue.safe_get()
+    def main_func(self):
+        self.logger.debug(f"Entering RunnerWorker.main_func")
+        if dt.datetime.now() > self.die_time:
+            self.logger.info(f"RunnerWorker injected a HARD_SHUTDOWN into the event queue")
+            self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'die_time exceeded'))
+
+        event = self.event_q.safe_get()
         if not event:
-            time.sleep(0.1)
-        elif event.msg_type == "FATAL":
-            main_ctx.logger.info(f"Fatal Event received: {event.msg}")
-            break
-        elif event.msg_type == "SHUTDOWN":
-            main_ctx.logger.info(f"Shutdown Event received: {event.msg}")
-            break
+            self.verify_mode()
+        elif event.msg_type in ['FATAL', 'HARD_SHUTDOWN']:
+            self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Executing hard shutdown')
+            self.shutdown()
+        elif event.msg_type == 'SOFT_SHUTDOWN':
+            self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Executing soft shutdown')
+            self.soft_shutdown()
+        elif event.msg_type == 'ENTER_ACTIVE_MODE':
+            self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Switching to active mode')
+            self.active_mode()
+        elif event.msg_type == 'ENTER_PASSIVE_MODE':
+            self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Switching to passive mode in 10 seconds')
+            self.passive_mode()
         else:
-            main_ctx.logger.error(f"Unknown Event: {event}")
-    main_ctx.logger.debug(f'shutdown event set: {main_ctx.shutdown_event.is_set()}')
-    if (metadata['source'] != 'None') or (metadata['kill_after'] != 'None'):
-        main_ctx.logger.info(f'exiting application because either source or kill_after was set')
-        return
-    elif event and event.msg_type == 'FATAL':
-        main_ctx.logger.info(f'exiting application due to fatal error')
-        return
-    else:
-        main_ctx.logger.log(logging.INFO, f'entering passive mode in ten seconds')
-        time.sleep(10)
-        # passive_mode(metadata)
+            self.logger.error(f"Unknown Event: {event}")
+        self.logger.debug(f"exiting RunnerWorker.main_func")
 
+    def shutdown(self):
+        self.soft_shutdown()
+        self.hard_shutdown()
 
-def passive_mode(main_ctx: mptools.MainContext):
-    metadata = main_ctx.metadata
-    main_ctx.logger.log(logging.INFO, "Application entering passive mode")
-    if utils.lights_on():
-        main_ctx.logger.warning(f'entered passive mode at {utils.current_time_iso()}, but utils.light_on returned '
-                                f'True. Re-entering active mode without uploading')
-    else:
-        main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
-
-        while not main_ctx.shutdown_event.is_set():
-            if utils.lights_on():
-                break
-            event = main_ctx.event_queue.safe_get()
-            if not event:
-                sleep_time = utils.sleep_until_morning()
-                main_ctx.logger.log(logging.DEBUG, f"Event queue empty. Going back to sleep for "
-                                                   f"{sleep_time} seconds")
-                time.sleep(sleep_time)
+    def verify_mode(self):
+        if self.curr_mode == 'active':
+            if self.expected_mode() == 'passive':
+                self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN', 'mode switch'))
+                self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'mode switch'))
             else:
-                main_ctx.logger.log(logging.ERROR, f"Unknown Event: {event}")
-    main_ctx.logger.log(logging.INFO, f'entering active mode')
-    active_mode(metadata)
+                time.sleep(0.1)
+        elif self.curr_mode == 'passive':
+            if self.expected_mode() == 'active':
+                self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN', 'mode switch'))
+                self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_ACTIVE_MODE', 'mode switch'))
+            else:
+                time.sleep(utils.sleep_until_morning())
+
+    def expected_mode(self):
+        if self.metadata['source']:
+            return self.curr_mode
+        elif utils.lights_on():
+            return 'active'
+        else:
+            return 'passive'
+
+    def active_mode(self):
+        self.curr_mode = 'active'
+        img_q = self.main_ctx.MPQueue()
+        notification_q = self.main_ctx.MPQueue()
+        if self.metadata['source'] != 'None':
+            self.main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, self.metadata['source'])
+        else:
+            self.main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
+        self.main_ctx.Proc('DETECT', detector.DetectorWorker, img_q, notification_q)
+        self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
+
+    def passive_mode(self):
+        self.curr_mode = 'passive'
+        time.sleep(10)
+        notification_q = self.main_ctx.MPQueue()
+        self.main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
+        self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
+
+    def hard_shutdown(self):
+        for _ in range(3):
+            self.main_ctx.stop_procs()
+            self.main_ctx.stop_queues()
+            if (not self.main_ctx.procs) and (not self.main_ctx.queues):
+                break
+        sys.exit()
+
+    def soft_shutdown(self):
+        time.sleep(1)
+        self.logger.debug(f'entering soft_shutdown. Terminating {len(self.main_ctx.procs)} processes and '
+                          f'{len(self.main_ctx.queues)} queues')
+        num_failed, num_terminated = self.main_ctx.stop_procs(kill_all=False)
+        num_items_left = self.main_ctx.stop_queues()
+        self.logger.debug(f'exiting soft_shutdown. {num_terminated} processes successfully terminated. {num_items_left}'
+                          f'items drained from queues.')
+        if num_failed:
+            self.logger.warning(f'during a soft shutdown, {num_failed} failed to terminate')
+
 
 
 

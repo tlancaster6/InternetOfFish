@@ -118,7 +118,7 @@ class EventMessage:
         simple data container of the type expected by an event queue (see MainContext for more detail on event queues)
         :param msg_src: process, class, or function that generated the message.
         :type msg_src: str
-        :param msg_type: used to determine the proper response to the message. Common values include 'SHUTDOWN' and
+        :param msg_type: used to determine the proper response to the message. Common values include 'SOFT_SHUTDOWN' and
                         'FATAL'.
         :type msg_type: str
         :param msg: additional information about the message, used mostly for logging
@@ -216,7 +216,7 @@ class ProcWorker:
             self.startup_event.set()
             self.main_loop()
             self.logger.log(logging.INFO, "Normal Shutdown")
-            self.event_q.safe_put(EventMessage(self.name, "SHUTDOWN", "Normal"))
+            self.event_q.safe_put(EventMessage(self.name, "SOFT_SHUTDOWN", "Normal"))
             return 0
         except BaseException as exc:
             # -- Catch ALL exceptions, even Terminate and Keyboard interrupt
@@ -318,6 +318,7 @@ class Proc:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.logger.debug(f'Proc.__exit__ called for {self.name}')
         self.full_stop()
         return not exc_type
 
@@ -330,6 +331,7 @@ class MainContext:
         self.metadata = metadata
         self.procs = []
         self.queues = []
+        self.persistent_procs = []
         self.logger = make_logger('MainContext')
         self.shutdown_event = mp.Event()
         self.event_queue = self.MPQueue()
@@ -341,15 +343,26 @@ class MainContext:
         self.logger.debug(f'exiting main context\nexception type: {exc_type}\nexception_value: {exc_val}')
         if exc_type:
             self.logger.log(logging.ERROR, f"Exception: {exc_val}", exc_info=(exc_type, exc_val, exc_tb))
-        self._stopped_procs_result = self.stop_procs()
+        self._stopped_procs_result = self.stop_procs(kill_all=True)
         self._stopped_queues_result = self.stop_queues()
 
         # -- Don't eat exceptions that reach here.
         return not exc_type
 
-    def Proc(self, name, worker_class, *args):
+    def Proc(self, name, worker_class, *args, **kwargs):
+        """
+
+        :param name:
+        :param worker_class:
+        :param args:
+        :param kwargs:
+        :return:
+        """
         proc = Proc(name, worker_class, self.shutdown_event, self.event_queue, self.metadata, *args)
-        self.procs.append(proc)
+        if 'persistent' in kwargs and kwargs['persistent']:
+            self.persistent_procs.append(proc)
+        else:
+            self.procs.append(proc)
         return proc
 
     def MPQueue(self, *args, **kwargs):
@@ -357,9 +370,11 @@ class MainContext:
         self.queues.append(q)
         return q
 
-    def stop_procs(self):
+    def stop_procs(self, kill_all=False):
         self.event_queue.safe_put(EventMessage("stop_procs", "END", "END"))
-        self.shutdown_event.set()
+        if kill_all:
+            self.shutdown_event.set()
+            self.procs.extend(self.persistent_procs)
         end_time = time.time() + self.STOP_WAIT_SECS
         num_terminated = 0
         num_failed = 0
