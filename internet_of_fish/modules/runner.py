@@ -96,8 +96,14 @@ class RunnerWorker(mptools.ProcWorker):
         self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
 
     def hard_shutdown(self):
-        self.main_ctx.stop_procs(kill_persistents=True)
-        self.main_ctx.stop_queues(kill_persistents=True)
+        time.sleep(1)
+        self.logger.debug(f'entering hard_shutdown. Terminating {len(self.main_ctx.procs)} processes and '
+                          f'{len(self.main_ctx.queues)} queues')
+        num_failed, num_terminated = self.main_ctx.stop_procs(kill_persistents=True)
+        num_items_left = self.main_ctx.stop_queues(kill_persistents=True)
+        self.logger.debug(f'exiting soft_shutdown. {num_terminated} processes successfully terminated. {num_items_left}'
+                          f'items drained from queues.')
+        self.logger.info(f'Program exiting')
         sys.exit(0)
 
     def soft_shutdown(self):
