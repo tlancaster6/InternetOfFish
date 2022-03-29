@@ -99,23 +99,25 @@ class RunnerWorker(mptools.ProcWorker):
         time.sleep(1)
         self.logger.debug(f'entering hard_shutdown. Terminating {len(self.main_ctx.procs)} processes and '
                           f'{len(self.main_ctx.queues)} queues')
-        num_failed, num_terminated = self.main_ctx.stop_procs(kill_persistents=True)
-        num_items_left = self.main_ctx.stop_queues(kill_persistents=True)
-        self.logger.debug(f'exiting soft_shutdown. {num_terminated} processes successfully terminated. {num_items_left}'
-                          f'items drained from queues.')
+        self.main_ctx.stop_procs(kill_persistents=True)
+        self.main_ctx.stop_queues(kill_persistents=True)
+        self.logger.debug(f'exiting hard shutdown.')
+        self.logger.debug(f'{len(self.main_ctx.queues)} queues and {len(self.main_ctx.procs)} processes still running')
+        self.logger.debug(f'{len(self.main_ctx.persistent_queues)} persistent queues '
+                          f'and {len(self.main_ctx.persistent_procs)} persistent processes still running')
         self.logger.info(f'Program exiting')
         sys.exit(0)
 
     def soft_shutdown(self):
         time.sleep(1)
-        self.logger.debug(f'entering soft_shutdown. Terminating {len(self.main_ctx.procs)} processes and '
+        self.logger.debug(f'entering soft_shutdown. Attempting to stop {len(self.main_ctx.procs)} processes and '
                           f'{len(self.main_ctx.queues)} queues')
-        num_failed, num_terminated = self.main_ctx.stop_procs()
-        num_items_left = self.main_ctx.stop_queues()
-        self.logger.debug(f'exiting soft_shutdown. {num_terminated} processes successfully terminated. {num_items_left}'
-                          f'items drained from queues.')
-        if num_failed:
-            self.logger.warning(f'during a soft shutdown, {num_failed} failed to terminate')
+        self.main_ctx.stop_procs()
+        self.main_ctx.stop_queues()
+        self.logger.debug('exiting soft_shutdown.')
+        self.logger.debug(f'{len(self.main_ctx.queues)} queues and {len(self.main_ctx.procs)} processes still running')
+        self.logger.debug(f'{len(self.main_ctx.persistent_queues)} persistent queues '
+                          f'and {len(self.main_ctx.persistent_procs)} persistent processes still running')
 
 
 
