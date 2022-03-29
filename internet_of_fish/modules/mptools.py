@@ -332,6 +332,7 @@ class MainContext:
         self.procs = []
         self.queues = []
         self.persistent_procs = []
+        self.persistent_queues = []
         self.logger = make_logger('MainContext')
         self.shutdown_event = mp.Event()
         self.event_queue = self.MPQueue()
@@ -343,7 +344,7 @@ class MainContext:
         self.logger.debug(f'exiting main context\nexception type: {exc_type}\nexception_value: {exc_val}')
         if exc_type:
             self.logger.log(logging.ERROR, f"Exception: {exc_val}", exc_info=(exc_type, exc_val, exc_tb))
-        self._stopped_procs_result = self.stop_procs(kill_all=True)
+        self._stopped_procs_result = self.stop_procs(kill_persistents=True)
         self._stopped_queues_result = self.stop_queues()
 
         # -- Don't eat exceptions that reach here.
@@ -367,14 +368,18 @@ class MainContext:
 
     def MPQueue(self, *args, **kwargs):
         q = MPQueue(*args, **kwargs)
-        self.queues.append(q)
+        if 'persistent' in kwargs and kwargs['persistent']:
+            self.persistent_queues.append(q)
+        else:
+            self.queues.append(q)
         return q
 
-    def stop_procs(self, kill_all=False):
+    def stop_procs(self, kill_persistents=False):
         self.event_queue.safe_put(EventMessage("stop_procs", "END", "END"))
-        if kill_all:
+        if kill_persistents:
             self.shutdown_event.set()
             self.procs.extend(self.persistent_procs)
+            self.persistent_procs = []
         end_time = time.time() + self.STOP_WAIT_SECS
         num_terminated = 0
         num_failed = 0
@@ -405,8 +410,12 @@ class MainContext:
         self.procs = still_running
         return num_failed, num_terminated
 
-    def stop_queues(self):
+    def stop_queues(self, kill_persistents=False):
         num_items_left = 0
+        if kill_persistents:
+            self.shutdown_event.set()
+            self.queues.extend(self.persistent_queues)
+            self.persistent_queues = []
         # -- Clear the queues list and close all associated queues
         for q in self.queues:
             num_items_left += sum(1 for __ in q.drain())

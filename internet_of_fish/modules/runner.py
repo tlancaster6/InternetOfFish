@@ -97,17 +97,17 @@ class RunnerWorker(mptools.ProcWorker):
 
     def hard_shutdown(self):
         for _ in range(3):
-            self.main_ctx.stop_procs()
-            self.main_ctx.stop_queues()
+            self.main_ctx.stop_procs(kill_persistents=True)
+            self.main_ctx.stop_queues(kill_persistents=True)
             if (not self.main_ctx.procs) and (not self.main_ctx.queues):
                 break
-        sys.exit()
+        sys.exit(0)
 
     def soft_shutdown(self):
         time.sleep(1)
         self.logger.debug(f'entering soft_shutdown. Terminating {len(self.main_ctx.procs)} processes and '
                           f'{len(self.main_ctx.queues)} queues')
-        num_failed, num_terminated = self.main_ctx.stop_procs(kill_all=False)
+        num_failed, num_terminated = self.main_ctx.stop_procs()
         num_items_left = self.main_ctx.stop_queues()
         self.logger.debug(f'exiting soft_shutdown. {num_terminated} processes successfully terminated. {num_items_left}'
                           f'items drained from queues.')
