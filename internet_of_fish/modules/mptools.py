@@ -375,7 +375,6 @@ class MainContext:
         return q
 
     def stop_procs(self, kill_persistents=False):
-        self.event_queue.safe_put(EventMessage("stop_procs", "END", "END"))
         if kill_persistents:
             self.shutdown_event.set()
             self.procs.extend(self.persistent_procs)
