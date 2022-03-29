@@ -19,13 +19,13 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--new_proj', action='store_true',
+    parser.add_argument('-n', '--new_proj', action='store_true',
                         help='indicates that a new project should be created. If this flag is omitted, the most'
                              'recently created project that is present on this device will be resumed')
-    parser.add_argument('--kill_after', default=None, type=int,
+    parser.add_argument('-k', '--kill_after', default=None, type=int,
                         help='optional. kill after specified number of seconds. If None (default) the app will run '
                              'continuously until it encounters a fatal error or is otherwise forced to shut down')
-    parser.add_argument('--source', default=None, type=str,
+    parser.add_argument('-s', '--source', default=None, type=str,
                         help='optional. pass a path to a video file to perform detection on that video, '
                              'rather than the camera stream. If None (default) the camera stream is used.')
     args_ = parser.parse_args()

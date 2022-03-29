@@ -142,7 +142,7 @@ class MetaDataDict:
                                      required=False),
             'end_date':    MetaValue(key='end_date',
                                      prompt='enter a date ("yyyy-mm-dd" format) when this project will auto-terminate',
-                                     pattern='^(20)\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])',
+                                     pattern='^\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])',
                                      required=False),
             'end_time':     MetaValue(key='end_time',
                                       pattern='\d\d:\d\d:\d\d',
