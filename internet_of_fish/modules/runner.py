@@ -16,8 +16,12 @@ class RunnerWorker(mptools.ProcWorker):
     def startup(self):
         self.logger.debug(f"Entering RunnerWorker.startup")
         self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
-        self.curr_mode = 'active'
-        self.logger.debug(f"Exiting RunnerWorker.startup, die_time set to {self.die_time}")
+        self.logger.debug(f"RunnerWorker.die_time set to {self.die_time}")
+        self.curr_mode = self.expected_mode()
+        self.logger.debug(f'RunnerWorker.curr_mode initialized as {self.curr_mode}')
+        self.event_q.safe_put(mptools.EventMessage(self.name, f'ENTER_{self.curr_mode.upper()}_MODE', 'kickstart'))
+        self.logger.debug(f'kickstarting RunnerWorker with ENTER_{self.curr_mode.upper()}_MODE')
+        self.logger.debug(f"Exiting RunnerWorker.startup")
 
     def main_func(self):
         self.logger.debug(f"Entering RunnerWorker.main_func")
@@ -64,7 +68,7 @@ class RunnerWorker(mptools.ProcWorker):
 
     def expected_mode(self):
         if self.metadata['source']:
-            return self.curr_mode
+            return self.curr_mode if self.curr_mode else 'active'
         elif utils.lights_on():
             return 'active'
         else:
