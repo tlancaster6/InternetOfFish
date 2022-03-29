@@ -67,8 +67,11 @@ class RunnerWorker(mptools.ProcWorker):
                 time.sleep(utils.sleep_until_morning())
 
     def expected_mode(self):
-        if self.metadata['source']:
-            return self.curr_mode if self.curr_mode else 'active'
+        if self.metadata['source'] != 'None':
+            try:
+                return self.curr_mode
+            except AttributeError:
+                return 'active'
         elif utils.lights_on():
             return 'active'
         else:
