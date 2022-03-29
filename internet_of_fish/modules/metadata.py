@@ -1,6 +1,5 @@
 import os, json, sys, re, platform, time
 from internet_of_fish.modules import definitions, utils
-from datetime import datetime, date
 import datetime as dt
 from typing import Union, Callable
  
@@ -260,7 +259,7 @@ class MetaDataHandler(MetaDataDict):
         md = self.decode_metadata(self.json_path)
         md.update(kwargs)
         self.quick_update(md)
-
+        self.set_kill_condition()
 
     def decode_metadata(self, json_path):
         """read a metadata json file"""
@@ -347,5 +346,7 @@ class MetaDataHandler(MetaDataDict):
         if self['kill_after'] != 'None':
             start = dt.datetime.fromisoformat(self['created']).timestamp()
             end = start + float(self['kill_after'])
+            self['end_date'], self['end_time'] = dt.datetime.isoformat(
+                dt.datetime.fromtimestamp(end), timespec='seconds').split('T')
 
 
