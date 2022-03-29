@@ -368,8 +368,9 @@ class MainContext:
         return proc
 
     def MPQueue(self, *args, **kwargs):
+        persistent = kwargs.pop('persistent') if 'persistent' in kwargs else False
         q = MPQueue(*args, **kwargs)
-        if 'persistent' in kwargs and kwargs['persistent']:
+        if persistent:
             self.persistent_queues.append(q)
             self.logger.debug(f'new persistent queue added. {len(self.persistent_queues)} total')
         else:
