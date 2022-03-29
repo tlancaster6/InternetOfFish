@@ -1,16 +1,20 @@
 import os.path
 import sys, argparse
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-from internet_of_fish.modules import runner, utils, metadata
+from internet_of_fish.modules import runner, utils, metadata, mptools
 
 
 def main(args):
     metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after, source=args.source)
     metadata_simple = metadata_handler.simplify()
-    if utils.lights_on() or args.source:
-        runner.active_mode(metadata_simple)
-    else:
-        runner.passive_mode(metadata_simple)
+
+    with mptools.MainContext(metadata_simple) as main_ctx:
+        while not main_ctx.shutdown_event.is_set():
+            try:
+                runner.active_mode(main_ctx)
+                runner.passive_mode(main_ctx)
+            except KeyboardInterrupt:
+                sys.exit(1)
 
 
 if __name__ == '__main__':
