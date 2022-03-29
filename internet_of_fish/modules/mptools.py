@@ -335,7 +335,7 @@ class MainContext:
         self.persistent_queues = []
         self.logger = make_logger('MainContext')
         self.shutdown_event = mp.Event()
-        self.event_queue = self.MPQueue()
+        self.event_queue = self.MPQueue(persistent=True)
 
     def __enter__(self):
         return self
@@ -361,8 +361,8 @@ class MainContext:
         """
         proc = Proc(name, worker_class, self.shutdown_event, self.event_queue, self.metadata, *args)
         if 'persistent' in kwargs and kwargs['persistent']:
-            self.logger.debug(f'new persistent proc added. {len(self.persistent_procs)} total')
             self.persistent_procs.append(proc)
+            self.logger.debug(f'new persistent proc added. {len(self.persistent_procs)} total')
         else:
             self.procs.append(proc)
         return proc
@@ -370,8 +370,8 @@ class MainContext:
     def MPQueue(self, *args, **kwargs):
         q = MPQueue(*args, **kwargs)
         if 'persistent' in kwargs and kwargs['persistent']:
-            self.logger.debug(f'new persistent queue added. {len(self.persistent_queues)} total')
             self.persistent_queues.append(q)
+            self.logger.debug(f'new persistent queue added. {len(self.persistent_queues)} total')
         else:
             self.queues.append(q)
         return q
