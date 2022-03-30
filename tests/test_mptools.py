@@ -57,12 +57,12 @@ def test_mpqueue_safe_get_empty(explicit_mpqueue):
 
 def test_mpqueue_drain(explicit_img_queue):
     explicit_img_queue.drain()
-    assert explicit_mpqueue.safe_get() is None
+    assert explicit_img_queue.safe_get() is None
 
 
 def test_mpqueue_safe_close(explicit_img_queue):
     explicit_img_queue.safe_close()
-    assert explicit_mpqueue._closed
+    assert explicit_img_queue._closed
 
 
 # Proc testing
@@ -81,7 +81,7 @@ def test_proc_init(explicit_proc_with_stdout_mocker):
     start = time.time()
     out = ''
     while (time.time()-start < 10) and ('Proc.__init__ starting : test_proc got True' not in out):
-        out = out + stdout_mocker.get_value()
+        out = out + stdout_mocker.getvalue()
     assert 'Proc.__init__ starting : test_proc got True' in out
 
 
