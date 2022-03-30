@@ -69,6 +69,8 @@ def test_lights_on(t):
                           ])
 def test_sleep_until_morning(mocker, curr_time, expected_time):
     lof = utils.lights_on(curr_time)
+    print(f'lof={lof}')
+    print(f'curr_time={curr_time}')
     mocker.patch('context.utils.lights_on', return_value=lof)
     mock_datetime = mocker.patch('context.utils.datetime.datetime')
     mock_datetime.now.return_value = curr_time
