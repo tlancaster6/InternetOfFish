@@ -75,6 +75,7 @@ def test_sleep_until_morning(mocker, curr_time, expected_time):
     print(f'lof={lof}')
     print(f'curr_time={curr_time}')
     mocker.patch('context.utils.lights_on', return_value=lof)
+    mocker.patch('context.time.time', return_value=datetime.datetime.timestamp(curr_time))
     mock_datetime = mocker.patch('context.utils.datetime.datetime')
     mock_datetime.now.return_value = curr_time
     assert utils.sleep_until_morning() == expected_time
