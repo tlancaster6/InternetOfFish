@@ -81,7 +81,7 @@ def test_jpgs_to_mp4(tmp_img_dir):
     assert os.path.exists(vid_dir)
 
 
-def test_averager_init(averager):
+def test_averager_init():
     averager = utils.Averager()
     assert (averager.count == 0) and (averager.avg is None)
 

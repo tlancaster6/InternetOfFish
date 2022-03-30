@@ -72,8 +72,8 @@ def explicit_proc_with_stdout_mocker(mocker):
     stdout_mocker.close()
 
 
-def test_proc_init(explicit_proc):
-    proc, stdout_mocker = explicit_proc
+def test_proc_init(explicit_proc_with_stdout_mocker):
+    proc, stdout_mocker = explicit_proc_with_stdout_mocker
     start = time.time()
     out = ''
     while (time.time()-start < 10) and ('Proc.__init__ starting : test_proc got True' not in out):
