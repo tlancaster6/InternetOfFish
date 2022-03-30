@@ -81,6 +81,7 @@ def test_proc_init(explicit_proc_with_stdout_mocker):
     start = time.time()
     out = ''
     while (time.time()-start < 10) and ('Proc.__init__ starting : test_proc got True' not in out):
+        time.sleep(1)
         out = out + stdout_mocker.getvalue()
     assert 'Proc.__init__ starting : test_proc got True' in out
 
