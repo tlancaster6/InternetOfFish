@@ -1,7 +1,6 @@
 import os.path
 
 import pytest
-from unittest.mock import patch
 from context import utils, definitions
 import datetime, logging, shutil
 from numpy.random import rand
@@ -46,8 +45,9 @@ def test_current_time_ms(mocker):
 
 
 def test_current_time_iso(mocker):
+    mock_val = datetime.datetime(2000, 1, 1, 12, 0, 0, 10)
     mock_datetime = mocker.patch('context.utils.datetime.datetime')
-    mock_datetime.now.return_value = datetime.datetime(2000, 1, 1, 12, 0, 0, 10)
+    mock_datetime.now.return_value = mock_val
     assert utils.current_time_iso() == '2000-01-01T12:00:00'
 
 
@@ -65,10 +65,11 @@ def test_lights_on(t):
 @pytest.mark.parametrize('curr_time,expected_time',
                          [(datetime.datetime(2000, 1, 1, 12, 0, 0), 0),
                           (datetime.datetime(2000, 1, 1, definitions.START_HOUR - 1, 59, 59), 1),
-                          (datetime.datetime(2000, 1, 1, definitions.END_HOUR, 0, 0), 600),
+                          (datetime.datetime(2000, 1, 1, definitions.END_HOUR, 1, 0), 600),
                           ])
 def test_sleep_until_morning(mocker, curr_time, expected_time):
-    mocker.patch('context.utils.lights_on', return_value=utils.lights_on(curr_time))
+    lof = utils.lights_on(curr_time)
+    mocker.patch('context.utils.lights_on', return_value=lof)
     mock_datetime = mocker.patch('context.utils.datetime.datetime')
     mock_datetime.now.return_value = curr_time
     assert utils.sleep_until_morning() == expected_time

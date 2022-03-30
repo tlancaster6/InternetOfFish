@@ -8,6 +8,7 @@ sudo apt-get install libedgetpu1-std
 sudo apt-get install python3-pycoral
 sudo pip3 install picamera
 sudo pip3 install opencv-python-headless
+sudo pip3 install ffmpeg
 sudo pip3 install -U numpy
 sudo apt-get install libatlas-base-dev
 #sudo apt-get install libjpeg-dev libpng-dev libtiff-dev
