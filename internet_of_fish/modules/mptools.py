@@ -78,7 +78,6 @@ class MPQueue(mpq.Queue):
             print(item)
             yield item
             item = self.safe_get()
-        item = self.safe_get()
 
     def safe_close(self):
         """
