@@ -26,13 +26,17 @@ def explicit_mpqueue():
 
 
 @pytest.fixture
-def explicit_img_queue(explicit_mpqueue):
+def explicit_img_queue():
+    q = mptools.MPQueue()
     cap_time = utils.current_time_ms()
     for _ in range(10):
         img = random_image()
-        explicit_mpqueue.safe_put((cap_time, img))
+        q.safe_put((cap_time, img))
         cap_time += 500
-    yield explicit_mpqueue
+    yield q
+    if not q._closed:
+        q.drain()
+        q.safe_close()
 
 
 @pytest.mark.parametrize('item', ['a', 1.1, random_image()])
@@ -66,7 +70,7 @@ def test_mpqueue_safe_close(explicit_img_queue):
 def explicit_proc_with_stdout_mocker(mocker):
     mocker.patch('context.utils.LOG_LEVEL', logging.DEBUG)
     stdout_mocker = mocker.patch('sys.stdout', new_callable=StringIO)
-    proc = mptools.Proc('test_proc', mptools.Proc, mp.Event(), mptools.MPQueue(), {})
+    proc = mptools.Proc('test_proc', mptools.ProcWorker, mp.Event(), mptools.MPQueue(), {})
     yield proc, stdout_mocker
     proc.full_stop()
     stdout_mocker.close()
