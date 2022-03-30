@@ -74,11 +74,11 @@ class MPQueue(mpq.Queue):
         processes that are using a queue.
         """
         item = self.safe_get()
-        print(item)
         while item is not None:
             print(item)
             yield item
             item = self.safe_get()
+        item = self.safe_get()
 
     def safe_close(self):
         """
