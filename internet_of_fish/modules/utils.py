@@ -58,6 +58,20 @@ def make_logger(name):
     return logger
 
 
+def lights_on(t=None):
+    """
+    checks if the current time fall within the valid recording timeframe, as specified by definitions.START_HOUR and
+    definitions.END_HOUR.
+    :param t: time to check. If None (default) the current time returned by datetime.datetime.now() is used
+    :type t: datetime.datetime
+    :return: True if t is within the valid recording timeframe, False otherwise
+    :rtype: bool
+    """
+    if t is None:
+        t = datetime.datetime.now()
+    return definitions.START_HOUR <= t.hour <= definitions.END_HOUR
+
+
 def sleep_until_morning():
     """returns a positive sleep time, not exceeding the time until lights on (as specified by definitions.START_HOUR),
     but also no longer than 600 seconds. This function can be used to sleep a process for ten minute intervals until
@@ -72,20 +86,6 @@ def sleep_until_morning():
         curr_time = (curr_time + datetime.timedelta(days=1))
     next_start = curr_time.replace(hour=definitions.START_HOUR, minute=0, second=0, microsecond=0)
     return sleep_secs(600, next_start.timestamp())
-
-
-def lights_on(t=None):
-    """
-    checks if the current time fall within the valid recording timeframe, as specified by definitions.START_HOUR and
-    definitions.END_HOUR.
-    :param t: time to check. If None (default) the current time returned by datetime.datetime.now() is used
-    :type t: datetime.datetime
-    :return: True if t is within the valid recording timeframe, False otherwise
-    :rtype: bool
-    """
-    if t is None:
-        t = datetime.datetime.now()
-    return definitions.START_HOUR <= t.hour <= definitions.END_HOUR
 
 
 def get_ip():
