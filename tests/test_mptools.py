@@ -51,18 +51,13 @@ def test_mpqueue_safe_get_empty(explicit_mpqueue):
     assert explicit_mpqueue.safe_get() is None
 
 
-def test_mpqueue_drain(explicit_mpqueue):
-    for i in range(10):
-        explicit_mpqueue.safe_put(i)
-        time.sleep(1)
-    explicit_mpqueue.drain()
+def test_mpqueue_drain(explicit_img_queue):
+    explicit_img_queue.drain()
     assert explicit_mpqueue.safe_get() is None
 
 
-def test_mpqueue_safe_close(explicit_mpqueue):
-    for i in range(10):
-        explicit_mpqueue.safe_put(i)
-    explicit_mpqueue.safe_close()
+def test_mpqueue_safe_close(explicit_img_queue):
+    explicit_img_queue.safe_close()
     assert explicit_mpqueue._closed
 
 
