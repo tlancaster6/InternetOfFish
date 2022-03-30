@@ -56,8 +56,8 @@ def test_mpqueue_safe_get_empty(explicit_mpqueue):
 
 
 def test_mpqueue_drain(explicit_img_queue):
-    explicit_img_queue.safe_get()
     explicit_img_queue.drain()
+    explicit_img_queue.safe_get()
     assert explicit_img_queue.safe_get() is None
 
 
@@ -68,22 +68,20 @@ def test_mpqueue_safe_close(explicit_img_queue):
 
 # Proc testing
 @pytest.fixture
-def explicit_proc_with_stdout_mocker(mocker):
+def explicit_proc(mocker):
     mocker.patch('context.utils.LOG_LEVEL', logging.DEBUG)
-    stdout_mocker = mocker.patch('context.utils.sys.stdout', new_callable=StringIO)
     proc = mptools.Proc('test_proc', mptools.ProcWorker, mp.Event(), mptools.MPQueue(), {})
-    yield proc, stdout_mocker
+    yield proc
     proc.full_stop()
-    stdout_mocker.close()
 
 
-def test_proc_init(explicit_proc_with_stdout_mocker):
-    proc, stdout_mocker = explicit_proc_with_stdout_mocker
+def test_proc_init(explicit_proc, capsys):
+    proc = explicit_proc
     start = time.time()
     out = ''
     while (time.time()-start < 10) and ('Proc.__init__ starting : test_proc got True' not in out):
         time.sleep(1)
-        out = out + stdout_mocker.getvalue()
+
     assert 'Proc.__init__ starting : test_proc got True' in out
 
 
