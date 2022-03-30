@@ -77,6 +77,7 @@ class MPQueue(mpq.Queue):
         while item:
             yield item
             item = self.safe_get()
+        time.sleep(0.2)
 
     def safe_close(self):
         """
