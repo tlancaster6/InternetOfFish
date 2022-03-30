@@ -30,6 +30,8 @@ class RunnerWorker(mptools.ProcWorker):
             self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'die_time exceeded'))
 
         event = self.event_q.safe_get()
+        if event:
+            self.logger.debug(f'Runner received event: {event}')
         if not event:
             self.verify_mode()
         elif event.msg_type in ['FATAL', 'HARD_SHUTDOWN']:
