@@ -55,7 +55,6 @@ def test_mpqueue_drain(explicit_mpqueue):
     for i in range(10):
         explicit_mpqueue.safe_put(i)
     explicit_mpqueue.drain()
-    time.sleep(0.2)
     assert explicit_mpqueue.safe_get() is None
 
 
