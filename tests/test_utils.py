@@ -56,10 +56,13 @@ def test_make_logger_return_type(mocker):
     assert type(utils.make_logger('test')) == logging.Logger
 
 
-@pytest.mark.parametrize('t', [int(i) for i in range(24)])
-def test_lights_on(t):
+@pytest.mark.parametrize('t,lof', [(definitions.START_HOUR-1, False),
+                                   (definitions.END_HOUR+1, False),
+                                   (definitions.START_HOUR, True),
+                                   (definitions.END_HOUR, False)])
+def test_lights_on(t, lof):
     t = datetime.datetime(2000, 1, 1, t, 0, 0)
-    assert utils.lights_on(t) == (definitions.START_HOUR <= t.hour <= definitions.END_HOUR)
+    assert utils.lights_on(t) == lof
 
 
 @pytest.mark.parametrize('curr_time,expected_time',

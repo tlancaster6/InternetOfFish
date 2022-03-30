@@ -69,7 +69,7 @@ def lights_on(t=None):
     """
     if t is None:
         t = datetime.datetime.now()
-    return definitions.START_HOUR <= t.hour <= definitions.END_HOUR
+    return definitions.START_HOUR <= t.hour < definitions.END_HOUR
 
 
 def sleep_until_morning():
@@ -82,9 +82,11 @@ def sleep_until_morning():
     if lights_on():
         return 0
     curr_time = datetime.datetime.now()
+    print(curr_time)
     if curr_time.hour > definitions.END_HOUR:
         curr_time = (curr_time + datetime.timedelta(days=1))
     next_start = curr_time.replace(hour=definitions.START_HOUR, minute=0, second=0, microsecond=0)
+    print(next_start)
     return sleep_secs(600, next_start.timestamp())
 
 
