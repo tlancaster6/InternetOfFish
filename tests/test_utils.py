@@ -87,7 +87,7 @@ def test_averager_init(averager):
     assert (averager.count == 0) and (averager.avg is None)
 
 
-@pytest.mark.parametrize('update_vals', [(0,), (0, 1), (0, 1, 2), (rand(0.36, 12, -10))])
+@pytest.mark.parametrize('update_vals', [([0]), ([0, 1]), ([0, 1, 2]), ([0.36, 12, -10])])
 def test_averager_update(averager, update_vals):
     for val in update_vals:
         averager.update(val)
