@@ -2,7 +2,28 @@ import os.path
 import pytest
 import datetime
 import logging
+import shutil
+from numpy.random import rand
 from context import utils, definitions
+from PIL import Image
+
+@pytest.fixture
+def tmp_dir():
+    tmp_dir = os.path.realpath('./tmp')
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir)
+    os.makedirs(tmp_dir)
+    yield tmp_dir
+    shutil.rmtree(tmp_dir)
+
+
+@pytest.fixture
+def tmp_img_dir(tmp_dir):
+    for i in range(10):
+        imarray = rand(100, 100, 3) * 255
+        im = Image.fromarray(imarray.astype('uint8')).convert('RGB')
+        im.save(os.path.join(tmp_dir, f'{i}.jpg'))
+    yield tmp_dir
 
 
 @pytest.mark.parametrize('curr_time,max_sleep,end_time,expected_time',
@@ -61,11 +82,13 @@ def test_jpgs_to_mp4(tmp_img_dir):
 
 
 def test_averager_init(averager):
+    averager = utils.Averager()
     assert (averager.count == 0) and (averager.avg is None)
 
 
 @pytest.mark.parametrize('update_vals', [([0]), ([0, 1]), ([0, 1, 2]), ([0.36, 12, -10])])
-def test_averager_update(averager, update_vals):
+def test_averager_update(update_vals):
+    averager = utils.Averager()
     for val in update_vals:
         averager.update(val)
     assert averager.count == len(update_vals)

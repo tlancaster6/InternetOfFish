@@ -6,8 +6,7 @@ import signal
 import sys
 import time
 from queue import Empty, Full
-from internet_of_fish.modules.utils import make_logger
-from typing import Any
+from internet_of_fish.modules import utils
 
 """modified from https://github.com/PamelaM/mptools"""
 
@@ -176,7 +175,7 @@ class ProcWorker:
     def __init__(self, name, startup_event, shutdown_event, event_q, metadata, *args):
         self.name = name
         self.metadata = metadata
-        self.logger = make_logger(name)
+        self.logger = utils.make_logger(name)
         self.startup_event = startup_event
         self.shutdown_event = shutdown_event
         self.event_q = event_q
@@ -277,7 +276,7 @@ class Proc:
 
     def __init__(self, name, worker_class, shutdown_event, event_q, metadata, *args):
         self.metadata = metadata
-        self.logger = make_logger(name)
+        self.logger = utils.make_logger(name)
         self.name = name
         self.shutdown_event = shutdown_event
         self.startup_event = mp.Event()
@@ -333,7 +332,7 @@ class MainContext:
         self.queues = []
         self.persistent_procs = []
         self.persistent_queues = []
-        self.logger = make_logger('MainContext')
+        self.logger = utils.make_logger('MainContext')
         self.shutdown_event = mp.Event()
         self.event_queue = self.MPQueue(persistent=True)
 
