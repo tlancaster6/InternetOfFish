@@ -126,7 +126,6 @@ def jpgs_to_mp4(img_dir, dest_dir, fps=10):
     video = cv2.VideoWriter(vid_path, 0, fps, (width, height))
     for img in imgs:
         video.write(cv2.imread(os.path.join(img_dir, img)))
-    cv2.destroyAllWindows()
     video.release()
     return vid_path
 
