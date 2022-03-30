@@ -82,11 +82,9 @@ def sleep_until_morning():
     if lights_on():
         return 0
     curr_time = datetime.datetime.now()
-    print(curr_time)
     if curr_time.hour >= definitions.END_HOUR:
         curr_time = (curr_time + datetime.timedelta(days=1))
     next_start = curr_time.replace(hour=definitions.START_HOUR, minute=0, second=0, microsecond=0)
-    print(next_start)
     return sleep_secs(600, next_start.timestamp())
 
 
@@ -125,7 +123,8 @@ def jpgs_to_mp4(img_dir, dest_dir, fps=10):
     frame = cv2.imread(os.path.join(img_dir, imgs[0]))
     height, width, layers = frame.shape
     vid_path = os.path.join(dest_dir, f'{os.path.splitext(imgs[0])[0]}.mp4')
-    video = cv2.VideoWriter(vid_path, 0, fps, (width, height))
+    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    video = cv2.VideoWriter(vid_path, fourcc, fps, (width, height))
     for img in imgs:
         video.write(cv2.imread(os.path.join(img_dir, img)))
     video.release()
