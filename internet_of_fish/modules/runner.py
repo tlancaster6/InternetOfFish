@@ -1,3 +1,4 @@
+import datetime
 import sys
 from typing import Tuple
 
@@ -128,6 +129,16 @@ class RunnerWorker(mptools.ProcWorker):
         self.logger.debug(f'{len(self.secondary_ctx.queues)} queues and {len(self.secondary_ctx.procs)} processes still running')
         self.secondary_ctx = None
         self.logger.debug('exiting soft_shutdown.')
+
+
+class TestingRunnerWorker(RunnerWorker):
+
+    def expected_mode(self):
+        mode_map = {'active': 'passive', 'passive': 'active'}
+        if not dt.datetime.now().minute % 3:
+            return mode_map[self.curr_mode]
+        else:
+            return self.curr_mode
 
 
 
