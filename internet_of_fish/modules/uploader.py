@@ -136,6 +136,7 @@ class UploaderWorker(ProcWorker):
         items in the upload_list.
         """
         self.logger.debug('entering UploadWorker.shutdown')
+        self.event_q.close()
         if len(self.upload_list) != 0:
             remainder = "\n".join(self.upload_list)
             self.logger.warning(f'exiting upload process, but the following files are still in the upload queue: \n'
