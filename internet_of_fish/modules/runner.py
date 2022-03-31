@@ -123,9 +123,10 @@ class RunnerWorker(mptools.ProcWorker):
                           f'{len(self.secondary_ctx.queues)} queues')
         self.secondary_ctx.stop_procs()
         self.secondary_ctx.stop_queues()
+        self.logger.debug(f'{len(self.secondary_ctx.queues)} queues and {len(self.secondary_ctx.procs)} processes still running')
         self.secondary_ctx = None
         self.logger.debug('exiting soft_shutdown.')
-        self.logger.debug(f'{len(self.secondary_ctx.queues)} queues and {len(self.secondary_ctx.procs)} processes still running')
+
 
 
 
