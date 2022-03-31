@@ -4,6 +4,7 @@ from typing import Tuple
 from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier
 import time
 import datetime as dt
+import multiprocessing as mp
 
 
 class RunnerWorker(mptools.ProcWorker):
@@ -11,12 +12,13 @@ class RunnerWorker(mptools.ProcWorker):
     def init_args(self, args: Tuple[mptools.MainContext,]):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
         self.main_ctx, = args
+        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata)
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def startup(self):
+        self.logger.debug(f"Entering RunnerWorker.startup")
         self.collect_proc, self.detect_proc, self.upload_proc, self.notify_proc = None, None, None, None
         self.img_q, self.notification_q = None, None
-        self.logger.debug(f"Entering RunnerWorker.startup")
         self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
         self.logger.debug(f"RunnerWorker.die_time set to {self.die_time}")
         self.curr_mode = self.expected_mode()
@@ -24,6 +26,7 @@ class RunnerWorker(mptools.ProcWorker):
         self.event_q.safe_put(mptools.EventMessage(self.name, f'ENTER_{self.curr_mode.upper()}_MODE', 'kickstart'))
         self.logger.debug(f'kickstarting RunnerWorker with ENTER_{self.curr_mode.upper()}_MODE')
         self.logger.debug(f"Exiting RunnerWorker.startup")
+
 
     def main_func(self):
         self.logger.debug(f"Entering RunnerWorker.main_func")
@@ -38,7 +41,7 @@ class RunnerWorker(mptools.ProcWorker):
             self.verify_mode()
         elif event.msg_type in ['FATAL', 'HARD_SHUTDOWN']:
             self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Executing hard shutdown')
-            self.shutdown()
+            self.hard_shutdown()
         elif event.msg_type == 'SOFT_SHUTDOWN':
             self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Executing soft shutdown')
             self.soft_shutdown()
@@ -83,48 +86,45 @@ class RunnerWorker(mptools.ProcWorker):
 
     def active_mode(self):
         self.curr_mode = 'active'
-        self.img_q = self.main_ctx.MPQueue()
-        self.notification_q = self.main_ctx.MPQueue()
+        self.img_q = self.secondary_ctx.MPQueue()
+        self.notification_q = self.secondary_ctx.MPQueue()
         if self.metadata['source'] != 'None':
-            self.collect_proc = self.main_ctx.Proc(
+            self.collect_proc = self.secondary_ctx.Proc(
                 'COLLECT', collector.VideoCollectorWorker, self.img_q, self.metadata['source'])
         else:
-            self.collect_proc = self.main_ctx.Proc(
+            self.collect_proc = self.secondary_ctx.Proc(
                 'COLLECT', collector.CollectorWorker, self.img_q)
-        self.detect_proc = self.main_ctx.Proc(
+        self.detect_proc = self.secondary_ctx.Proc(
             'DETECT', detector.DetectorWorker, self.img_q)
-        self.notify_proc = self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
+        self.notify_proc = self.secondary_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def passive_mode(self):
         self.curr_mode = 'passive'
         time.sleep(10)
-        self.notification_q = self.main_ctx.MPQueue()
-        self.upload_proc = self.main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
-        self.notify_proc = self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
+        self.notification_q = self.secondary_ctx.MPQueue()
+        self.upload_proc = self.secondary_ctx.Proc('UPLOAD', uploader.UploaderWorker)
+        self.notify_proc = self.secondary_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def hard_shutdown(self):
         time.sleep(1)
         self.soft_shutdown()
         self.logger.debug(f'entering hard_shutdown. Terminating {len(self.main_ctx.procs)} processes and '
                           f'{len(self.main_ctx.queues)} queues')
-        self.main_ctx.stop_procs(kill_persistents=True)
-        self.main_ctx.stop_queues(kill_persistents=True)
+        self.main_ctx.stop_procs()
+        self.main_ctx.stop_queues()
         self.logger.debug(f'exiting hard shutdown.')
         self.logger.debug(f'{len(self.main_ctx.queues)} queues and {len(self.main_ctx.procs)} processes still running')
-        self.logger.debug(f'{len(self.main_ctx.persistent_queues)} persistent queues '
-                          f'and {len(self.main_ctx.persistent_procs)} persistent processes still running')
         self.logger.info(f'Program exiting')
 
     def soft_shutdown(self):
         time.sleep(1)
-        self.logger.debug(f'entering soft_shutdown. Attempting to stop {len(self.main_ctx.procs)} processes and '
-                          f'{len(self.main_ctx.queues)} queues')
-        self.main_ctx.stop_procs()
-        self.main_ctx.stop_queues()
+        self.logger.debug(f'entering soft_shutdown. Attempting to stop {len(self.secondary_ctx.procs)} processes and '
+                          f'{len(self.secondary_ctx.queues)} queues')
+        self.secondary_ctx.stop_procs()
+        self.secondary_ctx.stop_queues()
         self.logger.debug('exiting soft_shutdown.')
-        self.logger.debug(f'{len(self.main_ctx.queues)} queues and {len(self.main_ctx.procs)} processes still running')
-        self.logger.debug(f'{len(self.main_ctx.persistent_queues)} persistent queues '
-                          f'and {len(self.main_ctx.persistent_procs)} persistent processes still running')
+        self.logger.debug(f'{len(self.secondary_ctx.queues)} queues and {len(self.secondary_ctx.procs)} processes still running')
+
 
 
 

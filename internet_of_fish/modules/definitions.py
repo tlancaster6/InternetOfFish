@@ -21,7 +21,7 @@ HIT_THRESH = 10  # hit counter threshold
 INTERVAL_SECS = 0.5  # time between image captures in seconds
 IMG_BUFFER = int(10/INTERVAL_SECS)  # number of sequential images that will be sent if a spawning event is detected
 START_HOUR = 8  # hour when data collection starts. e.g., if START_HOUR=8, collection starts at 8:00am
-END_HOUR = 14  # hour when data collection ends. e.g., if END_HOUR=19, collection stops at 7:00pm
+END_HOUR = 16  # hour when data collection ends. e.g., if END_HOUR=19, collection stops at 7:00pm
 
 # hardware parameters
 RESOLUTION = (1296, 972)  # pi camera resolution

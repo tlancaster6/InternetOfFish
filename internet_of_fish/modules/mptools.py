@@ -334,11 +334,9 @@ class MainContext:
         self.metadata = metadata
         self.procs = []
         self.queues = []
-        self.persistent_procs = []
-        self.persistent_queues = []
-        self.logger = utils.make_logger('MainContext')
+        self.logger = self._init_logger()
         self.shutdown_event = mp.Event()
-        self.event_queue = self.MPQueue(persistent=True)
+        self.event_queue = self.MPQueue()
 
     def __enter__(self):
         return self
@@ -347,8 +345,8 @@ class MainContext:
         self.logger.debug(f'exiting main context\nexception type: {exc_type}\nexception_value: {exc_val}')
         if exc_type:
             self.logger.log(logging.ERROR, f"Exception: {exc_val}", exc_info=(exc_type, exc_val, exc_tb))
-        self._stopped_procs_result = self.stop_procs(kill_persistents=True)
-        self._stopped_queues_result = self.stop_queues(kill_persistents=True)
+        self._stopped_procs_result = self.stop_procs()
+        self._stopped_queues_result = self.stop_queues()
 
         # -- Don't eat exceptions that reach here.
         return not exc_type
@@ -363,29 +361,17 @@ class MainContext:
         :return:
         """
         proc = Proc(name, worker_class, self.shutdown_event, self.event_queue, self.metadata, *args)
-        if 'persistent' in kwargs and kwargs['persistent']:
-            self.persistent_procs.append(proc)
-            self.logger.debug(f'new persistent proc added. {len(self.persistent_procs)} total')
-        else:
-            self.procs.append(proc)
+        self.procs.append(proc)
         return proc
 
     def MPQueue(self, *args, **kwargs):
-        persistent = kwargs.pop('persistent') if 'persistent' in kwargs else False
         q = MPQueue(*args, **kwargs)
-        if persistent:
-            self.persistent_queues.append(q)
-            self.logger.debug(f'new persistent queue added. {len(self.persistent_queues)} total')
-        else:
-            self.queues.append(q)
+        self.queues.append(q)
         return q
 
-    def stop_procs(self, kill_persistents=False):
-        self.logger.debug(f'stopping procs with kill_persistents={kill_persistents}')
-        if kill_persistents:
-            self.shutdown_event.set()
-            self.procs.extend(self.persistent_procs)
-            self.persistent_procs = []
+    def stop_procs(self):
+        self.logger.debug(f'stopping procs')
+        self.shutdown_event.set()
         end_time = time.time() + self.STOP_WAIT_SECS
         num_terminated = 0
         num_failed = 0
@@ -416,13 +402,10 @@ class MainContext:
         self.procs = still_running
         return num_failed, num_terminated
 
-    def stop_queues(self, kill_persistents=False):
-        self.logger.debug(f'stopping queues with kill_persistents={kill_persistents}')
+    def stop_queues(self):
+        self.logger.debug(f'stopping queues')
         num_items_left = 0
-        if kill_persistents:
-            self.shutdown_event.set()
-            self.queues.extend(self.persistent_queues)
-            self.persistent_queues = []
+        self.shutdown_event.set()
         # -- Clear the queues list and close all associated queues
         for q in self.queues:
             num_items_left += sum(1 for __ in q.drain())
@@ -433,3 +416,17 @@ class MainContext:
             q = self.queues.pop(0)
             q.join_thread()
         return num_items_left
+
+    def _init_logger(self):
+        utils.make_logger('MAINCONTEXT')
+
+
+
+class SecondaryContext(MainContext):
+
+    def __init__(self, metadata):
+        super().__init__(metadata)
+
+    def _init_logger(self):
+        return utils.make_logger('SECONDARYCONTEXT')
+
