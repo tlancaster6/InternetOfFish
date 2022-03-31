@@ -20,4 +20,4 @@ def test_runner_subproc_mocks(mocker, testing_context):
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         # mocker.patch('runner.collector.CollectorWorker')
         # mocker.patch('runner.detector.DetectorWorker')
-        print(type(runner.collector.CollectorWorker))
+        assert type(runner.collector.CollectorWorker) is mocker.MagicMock
