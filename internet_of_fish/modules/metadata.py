@@ -141,10 +141,12 @@ class MetaDataDict:
                                      options=['castle', 'pit'],
                                      required=False),
             'end_date':    MetaValue(key='end_date',
+                                     value=dt.date.isoformat(dt.date.max),
                                      prompt='enter a date ("yyyy-mm-dd" format) when this project will auto-terminate',
                                      pattern='^\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])',
                                      required=False),
             'end_time':     MetaValue(key='end_time',
+                                      value=dt.time.isoformat(dt.time.max, 'seconds'),
                                       pattern='\d\d:\d\d:\d\d',
                                       required=False),
             'notes':       MetaValue(key='notes',
@@ -260,6 +262,7 @@ class MetaDataHandler(MetaDataDict):
         md.update(kwargs)
         self.quick_update(md)
         self.set_kill_condition()
+        self.verify()
 
     def decode_metadata(self, json_path):
         """read a metadata json file"""
