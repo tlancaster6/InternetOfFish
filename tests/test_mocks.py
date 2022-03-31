@@ -16,5 +16,5 @@ import pytest
 #     yield mptools.MainContext(mock_metadata)
 
 def test_runner_subproc_mocks(mocker):
-    mocker.patch('detector.HitCounter')
+    mocker.patch('context.detector.HitCounter')
     assert type(detector.HitCounter()) == mocker.MagicMock
