@@ -21,7 +21,7 @@ def testing_context(mock_metadata):
 def test_runner_startup(mocker, testing_context, mode):
     with testing_context as main_ctx:
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
-        mocker.patch('context.runner.RunnerWorker.return_value.expected_mode', return_value=mode)
+        runner_patch = mocker.patch('context.runner.RunnerWorker.return_value.expected_mode', return_value=mode)
         mocker.patch('context.runner.RunnerWorker.return_value.logger.debug', new_callable=print)
         mocker.patch('context.runner.collector.CollectorWorker.return_value')
         mocker.patch('context.runner.detector.DetectorWorker.return_value')

@@ -17,4 +17,4 @@ import pytest
 
 def test_runner_subproc_mocks(mocker):
     mocker.patch('context.detector.HitCounter')
-    assert type(detector.HitCounter()) == mocker.MagicMock
+    assert type(detector.HitCounter()) is mocker.MagicMock
