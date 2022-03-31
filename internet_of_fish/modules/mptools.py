@@ -419,7 +419,7 @@ class MainContext:
         return num_items_left
 
     def _init_logger(self):
-        utils.make_logger('MAINCONTEXT')
+        return utils.make_logger('MAINCONTEXT')
 
 
 
