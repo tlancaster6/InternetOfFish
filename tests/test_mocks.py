@@ -18,6 +18,6 @@ def testing_context(mock_metadata):
 def test_runner_subproc_mocks(mocker, testing_context):
     with testing_context as main_ctx:
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
-        mocker.patch('context.runner.collector.CollectorWorker')
-        mocker.patch('context.runner.detector.DetectorWorker')
+        mocker.patch('runner.collector.CollectorWorker')
+        mocker.patch('runner.detector.DetectorWorker')
         print(type(runner.collector.CollectorWorker))
