@@ -147,7 +147,8 @@ class DetectorWorker(mptools.QueueProcWorker):
     def shutdown(self):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.shutdown")
         [self.overlay_boxes(be) for be in self.buffer]
-        self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
+        if self.avg_timer.avg:
+            self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
         self.work_q.safe_close()
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.shutdown")
 

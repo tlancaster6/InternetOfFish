@@ -54,7 +54,7 @@ def test_runner_soft_shutdown(mocker, testing_context, mode):
         runner_proc = main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx, persistent=True)
         runner_proc.startup_event.wait(10)
         main_ctx.event_queue.safe_put(mptools.EventMessage('test', 'SOFT_SHUTDOWN', ''))
-        runner_proc.shutdown_event.wait(10)
+        time.sleep(10)
         assert not runner_proc.shutdown_event.is_set()
         assert runner_proc.proc.is_alive()
         if mode == 'active':

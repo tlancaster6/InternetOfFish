@@ -53,7 +53,7 @@ class CollectorWorker(mptools.TimerProcWorker):
         self.cam.stop_recording()
         self.cam.close()
         self.img_q.safe_close()
-        self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'collector shut down normally'))
+        # self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'collector shut down normally'))
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.shutdown")
 
 
