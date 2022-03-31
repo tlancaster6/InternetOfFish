@@ -11,19 +11,23 @@ class UploaderWorker(ProcWorker):
         called automatically when when the upload process runs. Builds up a list of files to upload, based on
         approximate locations and file extensions. This function can be expanded to upload additional files/file types.
         """
+        self.logger.debug('entering UploadWorker.startup')
         self.upload_list = []
         proj_dir = os.path.join(definitions.DATA_DIR, self.metadata['proj_id'])
         self.upload_list.extend(glob.glob(os.path.join(proj_dir, '**', '*.h264')))
         self.upload_list.extend(glob.glob(os.path.join(proj_dir, '**', '*.mp4')))
+        self.logger.debug('exiting UploadWorker.startup')
 
     def main_loop(self):
         """
         While the master shutdown event is unset and there are items left in the upload list, use the main function
         to upload them.
         """
+        self.logger.debug('entering UploadWorker.main_loop')
         while (not self.shutdown_event.is_set()) and (len(self.upload_list) > 0):
             item = self.upload_list.pop(0)
             self.main_func(item)
+        self.logger.debug('exiting UploadWorker.main_loop')
 
     def main_func(self, item):
         """
@@ -40,6 +44,7 @@ class UploaderWorker(ProcWorker):
                 # if it's a h264, convert it to an mp4
                 try:
                     mp4_path = self.h264_to_mp4(item)
+                    self.logger.debug(f'converting {item} to {mp4_path}')
                     if mp4_path:
                         self.upload_list.append(mp4_path)
                         break
@@ -50,9 +55,11 @@ class UploaderWorker(ProcWorker):
             else:
                 # otherwise, upload the file and delete the local copy
                 try:
+                    self.logger.debug(f'uploading {item} to {self.local_to_cloud(item)}')
                     cmnd = ['rclone', 'copyto', item, self.local_to_cloud(item)]
                     out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
                     if self.exists_cloud(item):
+                        self.logger.debug(f'successfully uploaded {item}. deleting local copy')
                         os.remove(item)
                         break
                     else:
@@ -117,9 +124,10 @@ class UploaderWorker(ProcWorker):
                    str(definitions.FRAMERATE), mp4_path]
         out = subprocess.run(command, capture_output=True, encoding='utf-8')
         if (os.path.exists(mp4_path)) and (os.path.getsize(mp4_path) > os.path.getsize(h264_path)):
+            self.logger.debug(f'successfully converted {h264_path} to {mp4_path}')
             return mp4_path
         else:
-            self.logger.debug(f'failed to convert {os.path.basename(h264_path)}.\n{out.stderr}')
+            self.logger.warning(f'failed to convert {os.path.basename(h264_path)}.\n{out.stderr}')
             return None
 
     def shutdown(self):

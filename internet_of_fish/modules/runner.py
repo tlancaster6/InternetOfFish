@@ -70,7 +70,9 @@ class RunnerWorker(mptools.ProcWorker):
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN', 'mode switch'))
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_ACTIVE_MODE', 'mode switch'))
             else:
-                time.sleep(utils.sleep_until_morning())
+                sleep_time = utils.sleep_until_morning()
+                self.logger.debug(f'no change in mode. going back to sleep for {sleep_time} seconds')
+                time.sleep(sleep_time)
 
     def expected_mode(self):
         if self.metadata['source'] != 'None':

@@ -334,9 +334,9 @@ class MainContext:
         self.metadata = metadata
         self.procs = []
         self.queues = []
-        self.logger = self._init_logger()
         self.shutdown_event = mp.Event()
         self.event_queue = self.MPQueue()
+        self.logger = self._init_logger()
 
     def __enter__(self):
         return self
@@ -422,14 +422,15 @@ class MainContext:
         return utils.make_logger('MAINCONTEXT')
 
 
-
 class SecondaryContext(MainContext):
 
     def __init__(self, metadata, event_q=None):
+        self.logger.debug('entering SecondaryContext.init')
         super().__init__(metadata)
         # the secondary and main contexts usually share the same event queue (achieved by passing the main context
         # event queue as "event_q" during instantiation of the SecondaryContext). Otherwise, default to a new queue
         self.event_queue = event_q if event_q else MPQueue()
+        self.logger.debug('new SecondaryContext initialized')
 
     def _init_logger(self):
         return utils.make_logger('SECONDARYCONTEXT')
