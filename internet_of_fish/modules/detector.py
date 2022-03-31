@@ -37,7 +37,7 @@ class DetectorWorker(mptools.QueueProcWorker):
 
     def init_args(self, args):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.init_args : {args}")
-        self.work_q, self.notification_q = args
+        self.work_q, = args
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.init_args")
 
     def startup(self):
@@ -149,7 +149,8 @@ class DetectorWorker(mptools.QueueProcWorker):
         [self.overlay_boxes(be) for be in self.buffer]
         if self.avg_timer.avg:
             self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
-        self.work_q.safe_close()
+        self.work_q.close()
+        self.event_q.close()
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.shutdown")
 
 

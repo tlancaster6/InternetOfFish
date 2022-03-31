@@ -356,9 +356,6 @@ class MetaDataHandler(MetaDataDict):
                 dt.datetime.max, timespec='seconds').split('T')
         elif self['end_time'] == 'None':
             self['end_time'] = dt.time.isoformat(dt.time.max, 'seconds')
-        else:
-            self.logger.warning(f'possible problem setting kill condition. end date set to {self["end_date"]}, '
-                                f'end time set to {self["end_time"]}')
 
 
 

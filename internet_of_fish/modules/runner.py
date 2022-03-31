@@ -91,7 +91,7 @@ class RunnerWorker(mptools.ProcWorker):
             self.collect_proc = self.main_ctx.Proc(
                 'COLLECT', collector.CollectorWorker, self.img_q)
         self.detect_proc = self.main_ctx.Proc(
-            'DETECT', detector.DetectorWorker, self.img_q, self.notification_q)
+            'DETECT', detector.DetectorWorker, self.img_q)
         self.notify_proc = self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def passive_mode(self):
