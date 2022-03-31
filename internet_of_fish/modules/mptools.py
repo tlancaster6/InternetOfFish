@@ -38,6 +38,8 @@ class MPQueue(mpq.Queue):
         :type timeout: float
         :return: returns the next item in the queue, or returns None in the event of an Empty exception
         """
+        if self._closed:
+            return
         try:
             if timeout is None:
                 # get an item from the queue immediately, raise an Empty exception if the queue is currently empty
@@ -62,6 +64,8 @@ class MPQueue(mpq.Queue):
         :return: return True if the item was put in the queue successfully, False if the queue was full
         :rtype: bool
         """
+        if self._closed:
+            return
         try:
             self.put(item, block=False, timeout=timeout)
             return True

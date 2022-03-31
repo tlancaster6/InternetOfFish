@@ -53,7 +53,6 @@ class RunnerWorker(mptools.ProcWorker):
         self.logger.debug(f"exiting RunnerWorker.main_func")
 
     def shutdown(self):
-        self.soft_shutdown()
         self.hard_shutdown()
 
     def verify_mode(self):
@@ -104,6 +103,7 @@ class RunnerWorker(mptools.ProcWorker):
 
     def hard_shutdown(self):
         time.sleep(1)
+        self.soft_shutdown()
         self.logger.debug(f'entering hard_shutdown. Terminating {len(self.main_ctx.procs)} processes and '
                           f'{len(self.main_ctx.queues)} queues')
         self.main_ctx.stop_procs(kill_persistents=True)
