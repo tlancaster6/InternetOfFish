@@ -66,8 +66,8 @@ class DetectorWorker(mptools.QueueProcWorker):
             return
         if (type(q_item) == str) and (q_item == 'SOFT_SHUTDOWN'):
             self.logger.log(logging.INFO, 'Detector entering sleep mode (SOFT_SHUTDOWN trigger encountered in img_q)')
-            self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN',
-                                                       'passing SOFT_SHUTDOWN queue from img_q to event_q'))
+            # self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN',
+            #                                            'passing SOFT_SHUTDOWN queue from img_q to event_q'))
             self.active = False
             return
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.main_func")
