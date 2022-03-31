@@ -12,11 +12,11 @@ class RunnerWorker(mptools.ProcWorker):
     def init_args(self, args: Tuple[mptools.MainContext,]):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
         self.main_ctx, = args
-        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata)
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def startup(self):
         self.logger.debug(f"Entering RunnerWorker.startup")
+        self.secondary_ctx = None
         self.collect_proc, self.detect_proc, self.upload_proc, self.notify_proc = None, None, None, None
         self.img_q, self.notification_q = None, None
         self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
@@ -62,7 +62,6 @@ class RunnerWorker(mptools.ProcWorker):
         if self.curr_mode == 'active':
             if self.expected_mode() == 'passive':
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN', 'mode switch'))
-                time.sleep(10)
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'mode switch'))
             else:
                 time.sleep(0.1)
@@ -85,6 +84,7 @@ class RunnerWorker(mptools.ProcWorker):
             return 'passive'
 
     def active_mode(self):
+        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q)
         self.curr_mode = 'active'
         self.img_q = self.secondary_ctx.MPQueue()
         self.notification_q = self.secondary_ctx.MPQueue()
@@ -99,6 +99,7 @@ class RunnerWorker(mptools.ProcWorker):
         self.notify_proc = self.secondary_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def passive_mode(self):
+        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q)
         self.curr_mode = 'passive'
         time.sleep(10)
         self.notification_q = self.secondary_ctx.MPQueue()
@@ -122,6 +123,7 @@ class RunnerWorker(mptools.ProcWorker):
                           f'{len(self.secondary_ctx.queues)} queues')
         self.secondary_ctx.stop_procs()
         self.secondary_ctx.stop_queues()
+        self.secondary_ctx = None
         self.logger.debug('exiting soft_shutdown.')
         self.logger.debug(f'{len(self.secondary_ctx.queues)} queues and {len(self.secondary_ctx.procs)} processes still running')
 
