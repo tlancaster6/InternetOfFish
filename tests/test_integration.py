@@ -18,7 +18,7 @@ def testing_context(mock_metadata):
     yield mptools.MainContext(mock_metadata)
 
 
-def test_daytime_startup(mocker):
+def test_daytime_startup(mocker, testing_context):
     mocker.patch('context.runner')
     with testing_context as main_ctx:
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
