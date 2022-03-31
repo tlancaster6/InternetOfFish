@@ -14,6 +14,8 @@ class RunnerWorker(mptools.ProcWorker):
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def startup(self):
+        self.collect_proc, self.detect_proc, self.upload_proc, self.notify_proc = None, None, None, None
+        self.img_q, self.notification_q = None, None
         self.logger.debug(f"Entering RunnerWorker.startup")
         self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
         self.logger.debug(f"RunnerWorker.die_time set to {self.die_time}")
@@ -81,21 +83,24 @@ class RunnerWorker(mptools.ProcWorker):
 
     def active_mode(self):
         self.curr_mode = 'active'
-        img_q = self.main_ctx.MPQueue()
-        notification_q = self.main_ctx.MPQueue()
+        self.img_q = self.main_ctx.MPQueue()
+        self.notification_q = self.main_ctx.MPQueue()
         if self.metadata['source'] != 'None':
-            self.main_ctx.Proc('COLLECT', collector.VideoCollectorWorker, img_q, self.metadata['source'])
+            self.collect_proc = self.main_ctx.Proc(
+                'COLLECT', collector.VideoCollectorWorker, self.img_q, self.metadata['source'])
         else:
-            self.main_ctx.Proc('COLLECT', collector.CollectorWorker, img_q)
-        self.main_ctx.Proc('DETECT', detector.DetectorWorker, img_q, notification_q)
-        self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
+            self.collect_proc = self.main_ctx.Proc(
+                'COLLECT', collector.CollectorWorker, self.img_q)
+        self.detect_proc = self.main_ctx.Proc(
+            'DETECT', detector.DetectorWorker, self.img_q, self.notification_q)
+        self.notify_proc = self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def passive_mode(self):
         self.curr_mode = 'passive'
         time.sleep(10)
-        notification_q = self.main_ctx.MPQueue()
-        self.main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
-        self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, notification_q)
+        self.notification_q = self.main_ctx.MPQueue()
+        self.upload_proce = self.main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
+        self.notify_proc = self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def hard_shutdown(self):
         time.sleep(1)
