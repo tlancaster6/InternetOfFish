@@ -26,7 +26,7 @@ def test_runner_startup(mocker, testing_context, mode):
         runner_proc = main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx, persistent=True)
         runner_proc.startup_event.wait(10)
         assert runner_proc.startup_event.is_set()
-        assert runner_proc.is_alive()
+        assert runner_proc.proc.is_alive()
 
 @pytest.mark.parametrize('mode', ['active', 'passive'])
 def test_runner_shutdown(mocker, testing_context, mode):
@@ -39,7 +39,7 @@ def test_runner_shutdown(mocker, testing_context, mode):
         main_ctx.event_queue.safe_put(mptools.EventMessage('test', 'SOFT_SHUTDOWN', ''))
         runner_proc.shutdown_event.wait(10)
         assert runner_proc.shutdown_event.is_set()
-        assert not runner_proc.is_alive()
+        assert not runner_proc.proc.is_alive()
 
 
 
