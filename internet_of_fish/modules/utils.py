@@ -4,7 +4,7 @@ from internet_of_fish.modules import definitions
 import os, socket, cv2
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
-LOG_FMT = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+LOG_FMT = logging.Formatter(fmt='%(name)s %(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 os.makedirs(LOG_DIR, exist_ok=True)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 

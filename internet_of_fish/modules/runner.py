@@ -59,6 +59,7 @@ class RunnerWorker(mptools.ProcWorker):
         if self.curr_mode == 'active':
             if self.expected_mode() == 'passive':
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN', 'mode switch'))
+                time.sleep(10)
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'mode switch'))
             else:
                 time.sleep(0.1)
@@ -98,7 +99,7 @@ class RunnerWorker(mptools.ProcWorker):
         self.curr_mode = 'passive'
         time.sleep(10)
         self.notification_q = self.main_ctx.MPQueue()
-        self.upload_proce = self.main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
+        self.upload_proc = self.main_ctx.Proc('UPLOAD', uploader.UploaderWorker)
         self.notify_proc = self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def hard_shutdown(self):

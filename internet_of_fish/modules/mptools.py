@@ -226,7 +226,6 @@ class ProcWorker:
             # -- Catch ALL exceptions, even Terminate and Keyboard interrupt
             self.logger.log(logging.ERROR, f"Exception Shutdown: {exc}", exc_info=True)
             self.event_q.safe_put(EventMessage(self.name, "FATAL", f"{exc}"))
-            # -- TODO: call raise if in some sort of interactive mode
             if type(exc) in (TerminateInterrupt, KeyboardInterrupt):
                 sys.exit(1)
             else:
