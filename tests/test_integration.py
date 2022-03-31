@@ -23,6 +23,7 @@ def test_runner_startup(mocker, testing_context, mode):
     with testing_context as main_ctx:
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         mocker.patch('context.runner.RunnerWorker.return_value.expected_mode', return_value=mode)
+        mocker.patch('context.runner.RunnerWorker.return_value.logger.info', new_callable=print)
         runner_proc = main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx, persistent=True)
         runner_proc.startup_event.wait(10)
         assert runner_proc.startup_event.is_set()
@@ -34,6 +35,7 @@ def test_runner_hard_shutdown(mocker, testing_context, mode):
     with testing_context as main_ctx:
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         mocker.patch('context.runner.RunnerWorker.return_value.expected_mode', return_value=mode)
+        mocker.patch('context.runner.RunnerWorker.return_value.logger.info', new_callable=print)
         runner_proc = main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx, persistent=True)
         runner_proc.startup_event.wait(10)
         main_ctx.event_queue.safe_put(mptools.EventMessage('test', 'HARD_SHUTDOWN', ''))
@@ -48,13 +50,21 @@ def test_runner_soft_shutdown(mocker, testing_context, mode):
     with testing_context as main_ctx:
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         mocker.patch('context.runner.RunnerWorker.return_value.expected_mode', return_value=mode)
+        mocker.patch('context.runner.RunnerWorker.return_value.logger.info', new_callable=print)
         runner_proc = main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx, persistent=True)
         runner_proc.startup_event.wait(10)
         main_ctx.event_queue.safe_put(mptools.EventMessage('test', 'SOFT_SHUTDOWN', ''))
         runner_proc.shutdown_event.wait(10)
         assert not runner_proc.shutdown_event.is_set()
-        assert not main_ctx.procs
         assert runner_proc.proc.is_alive()
+        if mode == 'active':
+            assert runner_proc.detector_proc and not runner_proc.detector_proc.proc.is_alive()
+            assert runner_proc.collector_proc and not runner_proc.collector_proc.proc.is_alive()
+            assert runner_proc.notifier_proc and not runner_proc.notifier_proc.proc.is_alive()
+        elif mode == 'passive':
+            assert runner_proc.uploader_proc and not runner_proc.uploader_proc.proc.is_alive()
+            assert runner_proc.notifier_proc and not runner_proc.notifier_proc.proc.is_alive()
+
 
 
 

@@ -113,7 +113,6 @@ class RunnerWorker(mptools.ProcWorker):
         self.logger.debug(f'{len(self.main_ctx.persistent_queues)} persistent queues '
                           f'and {len(self.main_ctx.persistent_procs)} persistent processes still running')
         self.logger.info(f'Program exiting')
-        sys.exit(0)
 
     def soft_shutdown(self):
         time.sleep(1)
