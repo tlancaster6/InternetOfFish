@@ -134,6 +134,11 @@ class RunnerWorker(mptools.ProcWorker):
 class TestingRunnerWorker(RunnerWorker):
 
     def expected_mode(self):
+        try:
+            self.curr_mode
+        except AttributeError:
+            self.curr_mode = 'active'
+            return self.curr_mode
         mode_map = {'active': 'passive', 'passive': 'active'}
         if not dt.datetime.now().minute % 3:
             return mode_map[self.curr_mode]
