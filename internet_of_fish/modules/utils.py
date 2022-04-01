@@ -139,6 +139,19 @@ def cleanup(proj_id):
     [os.remove(f) for f in allfiles]
 
 
+def remove_empty_dirs(parent_dir, remove_root=False):
+    if not os.path.isdir(parent_dir):
+        return
+    children = os.listdir(parent_dir)
+    if children:
+        for child in children:
+            fullpath = os.path.join(parent_dir, child)
+            if os.path.isdir(fullpath):
+                remove_empty_dirs(fullpath, remove_root=True)
+    elif remove_root:
+        os.rmdir(parent_dir)
+
+
 class Averager:
 
     def __init__(self):

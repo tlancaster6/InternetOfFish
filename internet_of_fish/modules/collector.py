@@ -9,11 +9,11 @@ import cv2
 
 class CollectorWorker(mptools.TimerProcWorker):
     INTERVAL_SECS = definitions.INTERVAL_SECS
-    RESOLUTION = (1296, 972)  # pi camera resolution
-    FRAMERATE = 30  # pi camera framerate
+    RESOLUTION = definitions.RESOLUTION  # pi camera resolution
+    FRAMERATE = definitions.FRAMERATE  # pi camera framerate
     DATA_DIR = definitions.DATA_DIR
-    MAX_VIDEO_LEN = (definitions.END_HOUR - definitions.START_HOUR) * 3600
-    ANNOTATE_FRAMENUMBER = True
+    MAX_VIDEO_LEN = definitions.MAX_VIDEO_LEN
+    ANNOTATE_FRAMENUMBER = definitions.ANNOTATE_FRAMENUMBER
 
     def init_args(self, args):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.init_args : {args}")

@@ -13,6 +13,7 @@ HOME_DIR = os.path.expanduser('~')
 DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
 CLOUD_HOME_DIR = 'cichlidVideo:BioSci-McGrath/Apps'
 CLOUD_DATA_DIR = posixpath.join(CLOUD_HOME_DIR, 'CichlidPiData', '__ProjectData')
+END_FILE = os.path.join(HOME_DIR, 'END')
 
 # project-specific parameters
 MAX_FISH = 5  # maximum number of fish detections that should be returned
@@ -30,3 +31,5 @@ FRAMERATE = 30  # pi camera framerate
 # app parameters. may be internally over-ridden by certain classes/processes
 MAX_UPLOAD_WORKERS = 3
 MAX_TRIES = 3
+MAX_VIDEO_LEN = (END_HOUR - START_HOUR) * 3600
+ANNOTATE_FRAMENUMBER = True

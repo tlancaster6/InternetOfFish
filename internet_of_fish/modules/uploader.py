@@ -6,7 +6,7 @@ import os, pathlib, subprocess
 class UploaderWorker(QueueProcWorker):
     MAX_TRIES = definitions.MAX_TRIES
 
-    def main_func(self, target):
+    def main_func(self, target, delete_json=False):
         """
         takes items (file paths) in sequence from the upload_list and either uploads or processes them. If the file has
         a .h264 extension, it is converted to an mp4, and the mp4 added to the end of the upload_list. Otherwise, the
@@ -36,8 +36,10 @@ class UploaderWorker(QueueProcWorker):
                     cmnd = ['rclone', 'copyto', target, self.local_to_cloud(target)]
                     out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
                     if self.exists_cloud(target):
-                        self.logger.debug(f'successfully uploaded {target}. deleting local copy')
-                        os.remove(target)
+                        self.logger.debug(f'successfully uploaded {target}')
+                        if not target.endswith('.json') or delete_json:
+                            self.logger.debug(f'deleting {target}')
+                            os.remove(target)
                         break
                     else:
                         self.logger.debug(f'failed to upload {os.path.basename(target)}: {out.stderr}')
@@ -118,3 +120,19 @@ class UploaderWorker(QueueProcWorker):
         self.event_q.close()
         self.work_q.close()
         self.logger.debug('exiting UploaderWorker.shutdown')
+
+
+class EndUploaderWorker(UploaderWorker):
+    """identical to UploaderWorker, except that it will delete the json file after uploading it"""
+
+    def main_loop(self):
+        self.logger.debug("Entering QueueProcWorker.main_loop")
+        while not self.shutdown_event.is_set():
+            item = self.work_q.safe_get()
+            if not item:
+                continue
+            self.logger.debug(f"QueueProcWorker.main_loop received '{item}' message")
+            if item == "END":
+                break
+            else:
+                self.main_func(item, True)

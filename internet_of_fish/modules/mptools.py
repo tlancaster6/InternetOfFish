@@ -328,7 +328,7 @@ class Proc:
 
 # -- Main Wrappers
 class MainContext:
-    STOP_WAIT_SECS = 3.0
+    STOP_WAIT_SECS = 10.0
 
     def __init__(self, metadata: dict):
         self.metadata = metadata
