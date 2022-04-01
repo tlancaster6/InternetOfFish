@@ -133,13 +133,15 @@ class TestingRunnerWorker(RunnerWorker):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
         self.main_ctx, = args
         self.curr_mode = 'active'
+        self.offset = dt.datetime.now().minute
         patch('collector.utils.lights_on', new_callable=lambda _: True if self.curr_mode == 'active' else False)
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def expected_mode(self):
 
         mode_map = {'active': 'passive', 'passive': 'active'}
-        if not dt.datetime.now().minute % 3:
+        if not (dt.datetime.now().minute - self.offset) % 5:
+            self.logger.debug('switching mode on 5-minute marker')
             return mode_map[self.curr_mode]
         else:
             return self.curr_mode
