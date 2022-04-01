@@ -141,7 +141,7 @@ class TestingRunnerWorker(RunnerWorker):
 
         mode_map = {'active': 'passive', 'passive': 'active'}
         if not (dt.datetime.now().minute - self.offset) % 5:
-            self.logger.debug('switching mode on 5-minute marker')
+            self.logger.debug('switching mode on 5-minute marker\n')
             return mode_map[self.curr_mode]
         else:
             return self.curr_mode
