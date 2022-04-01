@@ -13,9 +13,9 @@ def main(args):
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         if args.test:
             main_ctx.logger.warning('program starting in stress-test mode. Not intended for normal data collection')
-            main_ctx.Proc('RUN', runner.TestingRunnerWorker, main_ctx, persistent=True)
+            main_ctx.Proc('RUN', runner.TestingRunnerWorker, main_ctx)
         else:
-            main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx, persistent=True)
+            main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx)
         main_ctx.logger.info('Runner process successfully initiated')
         while not main_ctx.shutdown_event.is_set():
             time.sleep(5)

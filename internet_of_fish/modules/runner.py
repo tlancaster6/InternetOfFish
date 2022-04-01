@@ -10,6 +10,8 @@ class RunnerWorker(mptools.ProcWorker):
     def init_args(self, args: Tuple[mptools.MainContext,]):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
         self.main_ctx, = args
+        self.curr_mode = self.expected_mode()
+        self.logger.debug(f'RunnerWorker.curr_mode initialized as {self.curr_mode}')
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def startup(self):
@@ -19,8 +21,6 @@ class RunnerWorker(mptools.ProcWorker):
         self.img_q, self.notification_q = None, None
         self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
         self.logger.debug(f"RunnerWorker.die_time set to {self.die_time}")
-        self.curr_mode = self.expected_mode()
-        self.logger.debug(f'RunnerWorker.curr_mode initialized as {self.curr_mode}')
         self.event_q.safe_put(mptools.EventMessage(self.name, f'ENTER_{self.curr_mode.upper()}_MODE', 'kickstart'))
         self.logger.debug(f'kickstarting RunnerWorker with ENTER_{self.curr_mode.upper()}_MODE')
         self.logger.debug(f"Exiting RunnerWorker.startup")
