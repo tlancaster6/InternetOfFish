@@ -3,7 +3,7 @@ import sys, argparse
 import time
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-from internet_of_fish.modules import runner, metadata, mptools
+from internet_of_fish.modules import runner, metadata, mptools, utils
 
 
 def main(args):
@@ -11,6 +11,9 @@ def main(args):
                                                 testing=args.testing)
     metadata_simple = metadata_handler.simplify()
     with mptools.MainContext(metadata_simple) as main_ctx:
+        if args.cleanup:
+            main_ctx.logger.info(f'clearing logs and removing leftover data for {metadata_simple["proj_id"]}')
+            utils.cleanup(metadata_simple['proj_id'])
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         if args.testing:
             main_ctx.logger.warning('program starting in stress-test mode. Not intended for normal data collection')
@@ -36,5 +39,9 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--testing', action='store_true',
                         help='setting this flag puts the program into stress testing mode, causing the day-night cycle'
                              'to occur once every 6 minutes, rather than once every 24 hours')
+    parser.add_argument('-c', '--cleanup', action='store_true',
+                        help='setting this flag will delete any existing logfiles, as well as the video and image'
+                             'directories (but not the metadata jason file) of whichever project runs. Useful for'
+                             'quickly resetting the environment between testing runs')
     args_ = parser.parse_args()
     main(args_)

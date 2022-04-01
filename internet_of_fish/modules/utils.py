@@ -1,3 +1,4 @@
+import glob
 import logging
 import time, datetime
 from internet_of_fish.modules import definitions
@@ -128,6 +129,14 @@ def jpgs_to_mp4(img_paths, dest_dir, fps=1//definitions.INTERVAL_SECS):
         video.write(cv2.imread(img_path))
     video.release()
     return vid_path
+
+
+def cleanup(proj_id):
+    logfiles = glob.glob(os.path.join(definitions.LOG_DIR, '*.log'))
+    vidfiles = glob.glob(os.path.join(definitions.DATA_DIR, proj_id, 'Videos', '*'))
+    imgfiles = glob.glob(os.path.join(definitions.DATA_DIR, proj_id, 'Images', '*'))
+    allfiles = logfiles + vidfiles + imgfiles
+    [os.remove(f) for f in allfiles]
 
 
 class Averager:

@@ -143,12 +143,10 @@ class MetaDataDict:
             'end_date':    MetaValue(key='end_date',
                                      value=dt.date.isoformat(dt.date.max),
                                      prompt='enter a date ("yyyy-mm-dd" format) when this project will auto-terminate',
-                                     pattern='^\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])',
-                                     required=False),
+                                     pattern='^\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])'),
             'end_time':     MetaValue(key='end_time',
                                       value=dt.time.isoformat(dt.time.max, 'seconds'),
-                                      pattern='\d\d:\d\d:\d\d',
-                                      required=False),
+                                      pattern='\d\d:\d\d:\d\d'),
             'notes':       MetaValue(key='notes',
                                      prompt='enter any additional notes you want to make on this trial, '
                                             'or press enter to leave blank',
@@ -160,14 +158,17 @@ class MetaDataDict:
                                      value=utils.get_ip()),
             'kill_after':  MetaValue(key='kill_after',
                                      pattern='\d+',
+                                     required=False,
                                      help_str='if set, the project will attempt to terminate after the given number of '
                                               'seconds. Used mostly for testing'),
             'source':      MetaValue(key='source',
                                      pattern='.+\.mp4',
+                                     required=False,
                                      help_str='path to source video, for analyzing an '
                                               'existing video instead of the camera input'),
             'testing':     MetaValue(key='testing',
-                                     value='False')
+                                     value='False',
+                                     required=False)
         }
 
         # add a few special MetaValue objects that generate their values dynamically
