@@ -27,12 +27,8 @@ class CollectorWorker(mptools.TimerProcWorker):
         os.makedirs(vid_dir, exist_ok=True)
         self.cam.start_recording(os.path.join(vid_dir, f'{utils.current_time_iso()}.h264'))
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.startup")
-        self.active = True
 
     def main_func(self):
-        if not self.active:
-            time.sleep(1)
-            return
         cap_time = utils.current_time_ms()
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.main_func")
         stream = io.BytesIO()
@@ -42,10 +38,6 @@ class CollectorWorker(mptools.TimerProcWorker):
         img.load()
         self.img_q.safe_put((cap_time, img))
         stream.close()
-        if not utils.lights_on():
-            self.active = False
-            self.logger.log(logging.INFO, "Collector entering sleep mode (outside daytime hours)")
-            self.img_q.safe_put('SOFT_SHUTDOWN')
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.main_func")
 
     def shutdown(self):

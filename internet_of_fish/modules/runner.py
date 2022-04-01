@@ -59,13 +59,11 @@ class RunnerWorker(mptools.ProcWorker):
     def verify_mode(self):
         if self.curr_mode == 'active':
             if self.expected_mode() == 'passive':
-                self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN', 'mode switch'))
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'mode switch'))
             else:
                 time.sleep(0.1)
         elif self.curr_mode == 'passive':
             if self.expected_mode() == 'active':
-                self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN', 'mode switch'))
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_ACTIVE_MODE', 'mode switch'))
             else:
                 sleep_time = utils.sleep_until_morning()
@@ -84,6 +82,8 @@ class RunnerWorker(mptools.ProcWorker):
             return 'passive'
 
     def active_mode(self):
+        if self.secondary_ctx:
+            self.soft_shutdown()
         self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q)
         self.curr_mode = 'active'
         self.img_q = self.secondary_ctx.MPQueue()
@@ -107,7 +107,6 @@ class RunnerWorker(mptools.ProcWorker):
         self.notify_proc = self.secondary_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def hard_shutdown(self):
-        time.sleep(1)
         self.soft_shutdown()
         self.logger.debug(f'entering hard_shutdown.')
         self.main_ctx.stop_procs()
@@ -116,7 +115,6 @@ class RunnerWorker(mptools.ProcWorker):
         self.logger.info(f'Program exiting')
 
     def soft_shutdown(self):
-        time.sleep(1)
         self.logger.debug(f'entering soft_shutdown')
         if not self.secondary_ctx:
             self.logger.debug('secondary context has already been shut down')
@@ -124,6 +122,7 @@ class RunnerWorker(mptools.ProcWorker):
         self.secondary_ctx.stop_procs()
         self.secondary_ctx.stop_queues()
         self.secondary_ctx = None
+        self.event_q.drain()
         self.logger.debug('exiting soft_shutdown.')
 
 
@@ -134,8 +133,6 @@ class TestingRunnerWorker(RunnerWorker):
         self.main_ctx, = args
         self.curr_mode = 'active'
         self.offset = dt.datetime.now().minute
-        patch('internet_of_fish.main.runner.collector.utils.lights_on', True)
-        # new_callable=lambda _: True if self.curr_mode == 'active' else False
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def expected_mode(self):

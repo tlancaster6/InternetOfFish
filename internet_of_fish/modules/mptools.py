@@ -220,7 +220,7 @@ class ProcWorker:
             self.startup_event.set()
             self.main_loop()
             self.logger.log(logging.INFO, "Normal Shutdown")
-            self.event_q.safe_put(EventMessage(self.name, "SOFT_SHUTDOWN", "Normal"))
+            # self.event_q.safe_put(EventMessage(self.name, "SOFT_SHUTDOWN", "Normal"))
             return 0
         except BaseException as exc:
             # -- Catch ALL exceptions, even Terminate and Keyboard interrupt

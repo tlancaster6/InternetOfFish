@@ -7,7 +7,8 @@ from internet_of_fish.modules import runner, metadata, mptools
 
 
 def main(args):
-    metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after, source=args.source)
+    metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after, source=args.source,
+                                                testing=args.testing)
     metadata_simple = metadata_handler.simplify()
     with mptools.MainContext(metadata_simple) as main_ctx:
         mptools.init_signals(main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)

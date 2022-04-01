@@ -165,7 +165,9 @@ class MetaDataDict:
             'source':      MetaValue(key='source',
                                      pattern='.+\.mp4',
                                      help_str='path to source video, for analyzing an '
-                                              'existing video instead of the camera input')
+                                              'existing video instead of the camera input'),
+            'testing':     MetaValue(key='testing',
+                                     value='False')
         }
 
         # add a few special MetaValue objects that generate their values dynamically

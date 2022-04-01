@@ -57,19 +57,9 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.hit_counter = HitCounter()
         self.avg_timer = utils.Averager()
         self.buffer = []
-        self.active = True
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.startup")
 
     def main_func(self, q_item):
-        if not self.active:
-            time.sleep(1)
-            return
-        if (type(q_item) == str) and (q_item == 'SOFT_SHUTDOWN'):
-            self.logger.log(logging.INFO, 'Detector entering sleep mode (SOFT_SHUTDOWN trigger encountered in img_q)')
-            # self.event_q.safe_put(mptools.EventMessage(self.name, 'SOFT_SHUTDOWN',
-            #                                            'passing SOFT_SHUTDOWN queue from img_q to event_q'))
-            self.active = False
-            return
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.main_func")
         cap_time, img = q_item
         dets = self.detect(img)
@@ -146,7 +136,7 @@ class DetectorWorker(mptools.QueueProcWorker):
 
     def shutdown(self):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.shutdown")
-        # [self.overlay_boxes(be) for be in self.buffer]
+        [self.overlay_boxes(be) for be in self.buffer]
         if self.avg_timer.avg:
             self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
         self.work_q.close()
