@@ -127,19 +127,21 @@ class RunnerWorker(mptools.ProcWorker):
 
 
 class TestingRunnerWorker(RunnerWorker):
+    MODE_SWITCH_INTERVAL = 180
 
     def init_args(self, args: Tuple[mptools.MainContext,]):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
         self.main_ctx, = args
         self.curr_mode = 'active'
-        self.offset = dt.datetime.now().minute
+        self.mode_start = time.time()
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def expected_mode(self):
 
         mode_map = {'active': 'passive', 'passive': 'active'}
-        if not (dt.datetime.now().minute - self.offset) % 5:
-            self.logger.debug('switching mode on 5-minute marker\n')
+        if (time.time() - self.mode_start) > self. MODE_SWITCH_INTERVAL:
+            self.logger.debug(f'switching mode on {self.MODE_SWITCH_INTERVAL//60}-minute marker\n')
+            self.mode_start = time.time()
             return mode_map[self.curr_mode]
         else:
             return self.curr_mode
