@@ -85,7 +85,7 @@ def sleep_until_morning():
     if curr_time.hour >= definitions.END_HOUR:
         curr_time = (curr_time + datetime.timedelta(days=1))
     next_start = curr_time.replace(hour=definitions.START_HOUR, minute=0, second=0, microsecond=0)
-    return sleep_secs(600, next_start.timestamp())
+    return sleep_secs(60, next_start.timestamp())
 
 
 def get_ip():
