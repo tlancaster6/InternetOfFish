@@ -2,7 +2,7 @@ from typing import Tuple
 from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier
 import time
 import datetime as dt
-from mock import patch
+from unittest.mock import patch
 
 
 class RunnerWorker(mptools.ProcWorker):
