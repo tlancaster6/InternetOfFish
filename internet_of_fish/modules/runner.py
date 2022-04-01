@@ -134,7 +134,8 @@ class TestingRunnerWorker(RunnerWorker):
         self.main_ctx, = args
         self.curr_mode = 'active'
         self.offset = dt.datetime.now().minute
-        patch('collector.utils.lights_on', new_callable=lambda _: True if self.curr_mode == 'active' else False)
+        patch('internet_of_fish.main.runner.collector.utils.lights_on', True)
+        # new_callable=lambda _: True if self.curr_mode == 'active' else False
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def expected_mode(self):
