@@ -18,33 +18,25 @@ class UploaderWorker(QueueProcWorker):
         tries_left = self.MAX_TRIES
         while not self.shutdown_event.is_set() and tries_left:
             if target.endswith('.h264'):
-                # if it's a h264, convert it to an mp4
-                try:
-                    mp4_path = self.h264_to_mp4(target)
-                    self.logger.debug(f'converting {target} to {mp4_path}')
-                    if mp4_path:
-                        self.work_q.safe_put(mp4_path)
-                        break
-                    else:
-                        self.logger.debug(f'failed to convert {os.path.basename(target)}')
-                except Exception as e:
-                    self.logger.debug(f'unexpected exception {e}')
-            else:
-                # otherwise, upload the file and delete the local copy
-                try:
-                    self.logger.debug(f'uploading {target} to {self.local_to_cloud(target)}')
-                    cmnd = ['rclone', 'copyto', target, self.local_to_cloud(target)]
-                    out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
-                    if self.exists_cloud(target):
-                        self.logger.debug(f'successfully uploaded {target}')
-                        if not target.endswith('.json') or delete_json:
-                            self.logger.debug(f'deleting {target}')
-                            os.remove(target)
-                        break
-                    else:
-                        self.logger.debug(f'failed to upload {os.path.basename(target)}: {out.stderr}')
-                except Exception as e:
-                    self.logger.debug(f'unexpected exception {e}')
+                mp4_path = self.h264_to_mp4(target)
+                if mp4_path:
+                    target = mp4_path
+                else:
+                    continue
+            try:
+                self.logger.debug(f'uploading {target} to {self.local_to_cloud(target)}')
+                cmnd = ['rclone', 'copyto', target, self.local_to_cloud(target)]
+                out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
+                if self.exists_cloud(target):
+                    self.logger.debug(f'successfully uploaded {target}')
+                    if not target.endswith('.json') or delete_json:
+                        self.logger.debug(f'deleting {target}')
+                        os.remove(target)
+                    break
+                else:
+                    self.logger.debug(f'failed to upload {os.path.basename(target)}: {out.stderr}')
+            except Exception as e:
+                self.logger.debug(f'unexpected exception {e}')
             tries_left -= 1
 
         else:
@@ -101,14 +93,18 @@ class UploaderWorker(QueueProcWorker):
         mp4_path = h264_path.replace('.h264', '.mp4')
         command = ['ffmpeg', '-r', str(definitions.FRAMERATE), '-i', h264_path, '-threads', '1', '-c:v', 'copy', '-r',
                    str(definitions.FRAMERATE), mp4_path]
-        out = subprocess.run(command, capture_output=True, encoding='utf-8')
-        if os.path.exists(mp4_path):
-            if os.path.getsize(mp4_path) > os.path.getsize(h264_path):
-                self.logger.debug(f'successfully converted {h264_path} to {mp4_path}')
-                return mp4_path
-            else:
-                os.remove(mp4_path)
-        self.logger.warning(f'failed to convert {os.path.basename(h264_path)}.\n{out.stderr}')
+        try:
+            out = subprocess.run(command, capture_output=True, encoding='utf-8')
+            if os.path.exists(mp4_path):
+                if os.path.getsize(mp4_path) > os.path.getsize(h264_path):
+                    self.logger.debug(f'successfully converted {h264_path} to {mp4_path}')
+                    os.remove(h264_path)
+                    return mp4_path
+                else:
+                    os.remove(mp4_path)
+                    raise Exception(out.stderr)
+        except Exception as e:
+            self.logger.warning(f'failed to convert {os.path.basename(h264_path)}.\n{e}')
         return None
 
     def shutdown(self):

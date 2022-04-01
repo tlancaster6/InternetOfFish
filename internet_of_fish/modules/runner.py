@@ -4,6 +4,7 @@ import time
 import datetime as dt
 import os
 import glob
+import subprocess as sp
 
 
 class RunnerWorker(mptools.ProcWorker):
@@ -43,7 +44,8 @@ class RunnerWorker(mptools.ProcWorker):
         if not event:
             self.verify_mode()
         elif event.msg_type == 'FATAL':
-            self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Executing hard shutdown')
+            self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Rebooting machine')
+            sp.run(['shutdown', '-r', '+5'])
             self.hard_shutdown()
         elif event.msg_type in 'HARD_SHUTDOWN':
             self.logger.info(f'{event.msg.title().replace("_", " ")} event received. Executing hard shutdown')
