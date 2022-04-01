@@ -26,3 +26,7 @@ END_HOUR = 18  # hour when data collection ends. e.g., if END_HOUR=19, collectio
 # hardware parameters
 RESOLUTION = (1296, 972)  # pi camera resolution
 FRAMERATE = 30  # pi camera framerate
+
+# app parameters. may be internally over-ridden by certain classes/processes
+MAX_UPLOAD_WORKERS = 3
+MAX_TRIES = 3

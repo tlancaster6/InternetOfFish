@@ -12,6 +12,8 @@ class CollectorWorker(mptools.TimerProcWorker):
     RESOLUTION = (1296, 972)  # pi camera resolution
     FRAMERATE = 30  # pi camera framerate
     DATA_DIR = definitions.DATA_DIR
+    MAX_VIDEO_LEN = (definitions.END_HOUR - definitions.START_HOUR) * 3600
+    ANNOTATE_FRAMENUMBER = True
 
     def init_args(self, args):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.init_args : {args}")
@@ -20,12 +22,11 @@ class CollectorWorker(mptools.TimerProcWorker):
 
     def startup(self):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.startup")
-        self.cam = picamera.PiCamera()
-        self.cam.resolution = self.RESOLUTION
-        self.cam.framerate = self.FRAMERATE
-        vid_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Videos')
-        os.makedirs(vid_dir, exist_ok=True)
-        self.cam.start_recording(os.path.join(vid_dir, f'{utils.current_time_iso()}.h264'))
+        self.cam = self.init_camera()
+        self.vid_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Videos')
+        os.makedirs(self.vid_dir, exist_ok=True)
+        self.cam.start_recording(self.generate_vid_path())
+        self.last_split = time.time()
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.startup")
 
     def main_func(self):
@@ -38,15 +39,32 @@ class CollectorWorker(mptools.TimerProcWorker):
         img.load()
         self.img_q.safe_put((cap_time, img))
         stream.close()
+        if (time.time() - self.last_split) > self.MAX_VIDEO_LEN:
+            self.split_recording()
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.main_func")
 
     def shutdown(self):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.shutdown")
         self.cam.stop_recording()
         self.cam.close()
+        self.img_q.safe_put('END')
         self.img_q.close()
         self.event_q.close()
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.shutdown")
+
+    def init_camera(self):
+        cam = picamera.PiCamera()
+        cam.resolution = self.RESOLUTION
+        cam.framerate = self.FRAMERATE
+        cam.annotate_frame_num = self.ANNOTATE_FRAMENUMBER
+        return cam
+
+    def generate_vid_path(self):
+        return os.path.join(self.vid_dir, f'{utils.current_time_iso()}.h264')
+
+    def split_recording(self):
+        self.cam.split_recording(self.generate_vid_path())
+        self.last_split = time.time()
 
 
 class VideoCollectorWorker(CollectorWorker):

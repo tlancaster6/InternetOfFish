@@ -424,13 +424,14 @@ class MainContext:
 
 class SecondaryContext(MainContext):
 
-    def __init__(self, metadata, event_q=None):
+    def __init__(self, metadata, event_q=None, name='SECONDARYCONTEXT'):
         super().__init__(metadata)
         # the secondary and main contexts usually share the same event queue (achieved by passing the main context
         # event queue as "event_q" during instantiation of the SecondaryContext). Otherwise, default to a new queue
+        self.name = name.upper()
         self.event_queue = event_q if event_q else MPQueue()
-        self.logger.debug('new SecondaryContext initialized')
+        self.logger.debug(f'new SecondaryContext initialized as {name}')
 
     def _init_logger(self):
-        return utils.make_logger('SECONDARYCONTEXT')
+        return utils.make_logger(self.name)
 

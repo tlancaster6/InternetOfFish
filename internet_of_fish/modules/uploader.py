@@ -1,69 +1,46 @@
-from internet_of_fish.modules.mptools import ProcWorker
+from internet_of_fish.modules.mptools import QueueProcWorker
 from internet_of_fish.modules import definitions
-import os, pathlib, subprocess, glob
+import os, pathlib, subprocess
 
 
-class UploaderWorker(ProcWorker):
-    MAX_TRIES = 3
+class UploaderWorker(QueueProcWorker):
+    MAX_TRIES = definitions.MAX_TRIES
 
-    def startup(self):
-        """
-        called automatically when when the upload process runs. Builds up a list of files to upload, based on
-        approximate locations and file extensions. This function can be expanded to upload additional files/file types.
-        """
-        self.logger.debug('entering UploadWorker.startup')
-        self.upload_list = []
-        proj_dir = os.path.join(definitions.DATA_DIR, self.metadata['proj_id'])
-        self.upload_list.extend(glob.glob(os.path.join(proj_dir, '**', '*.h264')))
-        self.upload_list.extend(glob.glob(os.path.join(proj_dir, '**', '*.mp4')))
-        self.logger.debug('exiting UploadWorker.startup')
-
-    def main_loop(self):
-        """
-        While the master shutdown event is unset and there are items left in the upload list, use the main function
-        to upload them.
-        """
-        self.logger.debug('entering UploadWorker.main_loop')
-        while (not self.shutdown_event.is_set()) and (len(self.upload_list) > 0):
-            item = self.upload_list.pop(0)
-            self.main_func(item)
-        self.logger.debug('exiting UploadWorker.main_loop')
-
-    def main_func(self, item):
+    def main_func(self, target):
         """
         takes items (file paths) in sequence from the upload_list and either uploads or processes them. If the file has
         a .h264 extension, it is converted to an mp4, and the mp4 added to the end of the upload_list. Otherwise, the
         file is uploaded to Dropbox using rclone. This function will attempt to upload/process a given item
         self.MAX_TRIES number of times before failing, but will not throw an exception that might halt the program.
         :param item: path to file to process/upload. Ideally a full path
-        :type item: str
+        :type target: str
         """
         tries_left = self.MAX_TRIES
-        while tries_left:
-            if item.endswith('.h264'):
+        while not self.shutdown_event.is_set() and tries_left:
+            if target.endswith('.h264'):
                 # if it's a h264, convert it to an mp4
                 try:
-                    mp4_path = self.h264_to_mp4(item)
-                    self.logger.debug(f'converting {item} to {mp4_path}')
+                    mp4_path = self.h264_to_mp4(target)
+                    self.logger.debug(f'converting {target} to {mp4_path}')
                     if mp4_path:
-                        self.upload_list.append(mp4_path)
+                        self.work_q.safe_put(mp4_path)
                         break
                     else:
-                        self.logger.debug(f'failed to convert {os.path.basename(item)}')
+                        self.logger.debug(f'failed to convert {os.path.basename(target)}')
                 except Exception as e:
                     self.logger.debug(f'unexpected exception {e}')
             else:
                 # otherwise, upload the file and delete the local copy
                 try:
-                    self.logger.debug(f'uploading {item} to {self.local_to_cloud(item)}')
-                    cmnd = ['rclone', 'copyto', item, self.local_to_cloud(item)]
+                    self.logger.debug(f'uploading {target} to {self.local_to_cloud(target)}')
+                    cmnd = ['rclone', 'copyto', target, self.local_to_cloud(target)]
                     out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
-                    if self.exists_cloud(item):
-                        self.logger.debug(f'successfully uploaded {item}. deleting local copy')
-                        os.remove(item)
+                    if self.exists_cloud(target):
+                        self.logger.debug(f'successfully uploaded {target}. deleting local copy')
+                        os.remove(target)
                         break
                     else:
-                        self.logger.debug(f'failed to upload {os.path.basename(item)}: {out.stderr}')
+                        self.logger.debug(f'failed to upload {os.path.basename(target)}: {out.stderr}')
                 except Exception as e:
                     self.logger.debug(f'unexpected exception {e}')
             tries_left -= 1
@@ -72,7 +49,7 @@ class UploaderWorker(ProcWorker):
             # this else clause should only executes if the while loop exited because it ran out of tries
             # (tries_left = 0). If the loop instead hits a break statement (due to a successful upload or conversion)
             # this clause gets skipped.
-            self.logger.warning(f'failed three times to process {os.path.basename(item)}. Moving on')
+            self.logger.warning(f'failed three times to process {os.path.basename(target)}. Moving on')
 
     def exists_local(self, local_path):
         """
@@ -118,29 +95,26 @@ class UploaderWorker(ProcWorker):
         :return: path to newly-created mp4 file, or None if the conversion failed
         :rtype: str
         """
-        self.logger.debug('entering UploadWorker.h264_to_mp4')
+        self.logger.debug('entering UploaderWorker.h264_to_mp4')
         mp4_path = h264_path.replace('.h264', '.mp4')
         command = ['ffmpeg', '-r', str(definitions.FRAMERATE), '-i', h264_path, '-threads', '1', '-c:v', 'copy', '-r',
                    str(definitions.FRAMERATE), mp4_path]
         out = subprocess.run(command, capture_output=True, encoding='utf-8')
-        if (os.path.exists(mp4_path)) and (os.path.getsize(mp4_path) > os.path.getsize(h264_path)):
-            self.logger.debug(f'successfully converted {h264_path} to {mp4_path}')
-            return mp4_path
-        else:
-            self.logger.warning(f'failed to convert {os.path.basename(h264_path)}.\n{out.stderr}')
-            return None
+        if os.path.exists(mp4_path):
+            if os.path.getsize(mp4_path) > os.path.getsize(h264_path):
+                self.logger.debug(f'successfully converted {h264_path} to {mp4_path}')
+                return mp4_path
+            else:
+                os.remove(mp4_path)
+        self.logger.warning(f'failed to convert {os.path.basename(h264_path)}.\n{out.stderr}')
+        return None
 
     def shutdown(self):
         """
         prints some debugging information to the log before the process shuts down, especially if there are unprocessed
         items in the upload_list.
         """
-        self.logger.debug('entering UploadWorker.shutdown')
+        self.logger.debug('entering UploaderWorker.shutdown')
         self.event_q.close()
-        if len(self.upload_list) != 0:
-            remainder = "\n".join(self.upload_list)
-            self.logger.warning(f'exiting upload process, but the following files are still in the upload queue: \n'
-                                f'{remainder}')
-        else:
-            self.logger.info('no more items to upload. UploaderWorker shutting down')
-        self.logger.debug('exiting UploadWorker.shutdown')
+        self.work_q.close()
+        self.logger.debug('exiting UploaderWorker.shutdown')

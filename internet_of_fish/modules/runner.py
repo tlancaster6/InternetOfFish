@@ -1,11 +1,13 @@
 from typing import Tuple
-from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier
+from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier, definitions
 import time
 import datetime as dt
-from unittest.mock import patch
+import os
+import glob
 
 
 class RunnerWorker(mptools.ProcWorker):
+    MAX_UPLOAD_WORKERS = definitions.MAX_UPLOAD_WORKERS
 
     def init_args(self, args: Tuple[mptools.MainContext,]):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
@@ -18,7 +20,7 @@ class RunnerWorker(mptools.ProcWorker):
         self.logger.debug(f"Entering RunnerWorker.startup")
         self.secondary_ctx = None
         self.collect_proc, self.detect_proc, self.upload_proc, self.notify_proc = None, None, None, None
-        self.img_q, self.notification_q = None, None
+        self.img_q, self.notification_q, self.upload_q = None, None, None
         self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
         self.logger.debug(f"RunnerWorker.die_time set to {self.die_time}")
         self.event_q.safe_put(mptools.EventMessage(self.name, f'ENTER_{self.curr_mode.upper()}_MODE', 'kickstart'))
@@ -83,7 +85,7 @@ class RunnerWorker(mptools.ProcWorker):
 
     def active_mode(self):
         self.soft_shutdown()
-        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q)
+        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q, 'ACTIVECONTEXT')
         self.curr_mode = 'active'
         self.img_q = self.secondary_ctx.MPQueue()
         self.notification_q = self.secondary_ctx.MPQueue()
@@ -99,12 +101,15 @@ class RunnerWorker(mptools.ProcWorker):
 
     def passive_mode(self):
         self.soft_shutdown()
-        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q)
+        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q, 'PASSIVECONTEXT')
         self.curr_mode = 'passive'
         time.sleep(10)
         self.notification_q = self.secondary_ctx.MPQueue()
-        self.upload_proc = self.secondary_ctx.Proc('UPLOAD', uploader.UploaderWorker)
         self.notify_proc = self.secondary_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
+        self.upload_q = self.secondary_ctx.MPQueue()
+        n_workers = self.queue_uploads()
+        for i in range(n_workers):
+            self.secondary_ctx.Proc(f'UPLOAD{i+1}', uploader.UploaderWorker, self.upload_q)
 
     def hard_shutdown(self):
         self.soft_shutdown()
@@ -127,6 +132,17 @@ class RunnerWorker(mptools.ProcWorker):
 
     def sleep_until_morning(self):
         return utils.sleep_until_morning()
+
+    def queue_uploads(self):
+        upload_list = []
+        proj_dir = os.path.join(definitions.DATA_DIR, self.metadata['proj_id'])
+        upload_list.extend(glob.glob(os.path.join(proj_dir, '**', '*.h264')))
+        upload_list.extend(glob.glob(os.path.join(proj_dir, '**', '*.mp4')))
+        n_workers = min(self.MAX_UPLOAD_WORKERS, len(upload_list))
+        if upload_list:
+            [self.upload_q.safe_put(upload) for upload in upload_list]
+            [self.upload_q.safe_put('END') for _ in range(n_workers)]
+        return n_workers
 
 
 class TestingRunnerWorker(RunnerWorker):
