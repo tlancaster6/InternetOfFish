@@ -133,7 +133,7 @@ class TestingRunnerWorker(RunnerWorker):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
         self.main_ctx, = args
         self.curr_mode = 'active'
-        patch.object(utils, 'lights_on', new_callable=lambda _: True if self.curr_mode == 'active' else False)
+        patch('utils.lights_on', new_callable=lambda _: True if self.curr_mode == 'active' else False)
         self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def expected_mode(self):
