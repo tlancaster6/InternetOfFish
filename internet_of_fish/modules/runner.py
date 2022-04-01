@@ -1,11 +1,8 @@
-import datetime
-import sys
 from typing import Tuple
-
 from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier
 import time
 import datetime as dt
-import multiprocessing as mp
+from mock import patch
 
 
 class RunnerWorker(mptools.ProcWorker):
@@ -132,12 +129,15 @@ class RunnerWorker(mptools.ProcWorker):
 
 class TestingRunnerWorker(RunnerWorker):
 
+    def init_args(self, args: Tuple[mptools.MainContext,]):
+        self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
+        self.main_ctx, = args
+        self.curr_mode = 'active'
+        patch.object(utils, 'lights_on', new_callable=lambda _: True if self.curr_mode == 'active' else False)
+        self.logger.debug(f"Exiting RunnerWorker.init_args")
+
     def expected_mode(self):
-        try:
-            self.curr_mode
-        except AttributeError:
-            self.curr_mode = 'active'
-            return self.curr_mode
+
         mode_map = {'active': 'passive', 'passive': 'active'}
         if not dt.datetime.now().minute % 3:
             return mode_map[self.curr_mode]
