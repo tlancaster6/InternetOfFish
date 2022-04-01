@@ -8,7 +8,7 @@ import time
 from queue import Empty, Full
 from internet_of_fish.modules import utils
 
-"""modified from https://github.com/PamelaM/mptools"""
+"""adapted from https://github.com/PamelaM/mptools"""
 
 DEFAULT_POLLING_TIMEOUT = 0.02
 MAX_SLEEP_SECS = 0.02

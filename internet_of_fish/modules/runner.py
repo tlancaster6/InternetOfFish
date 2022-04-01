@@ -66,7 +66,7 @@ class RunnerWorker(mptools.ProcWorker):
             if self.expected_mode() == 'active':
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_ACTIVE_MODE', 'mode switch'))
             else:
-                sleep_time = utils.sleep_until_morning()
+                sleep_time = self.sleep_until_morning()
                 self.logger.debug(f'no change in mode. going back to sleep for {sleep_time} seconds')
                 time.sleep(sleep_time)
 
@@ -82,8 +82,7 @@ class RunnerWorker(mptools.ProcWorker):
             return 'passive'
 
     def active_mode(self):
-        if self.secondary_ctx:
-            self.soft_shutdown()
+        self.soft_shutdown()
         self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q)
         self.curr_mode = 'active'
         self.img_q = self.secondary_ctx.MPQueue()
@@ -99,6 +98,7 @@ class RunnerWorker(mptools.ProcWorker):
         self.notify_proc = self.secondary_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.notification_q)
 
     def passive_mode(self):
+        self.soft_shutdown()
         self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q)
         self.curr_mode = 'passive'
         time.sleep(10)
@@ -125,6 +125,9 @@ class RunnerWorker(mptools.ProcWorker):
         self.event_q.drain()
         self.logger.debug('exiting soft_shutdown.')
 
+    def sleep_until_morning(self):
+        return utils.sleep_until_morning()
+
 
 class TestingRunnerWorker(RunnerWorker):
     MODE_SWITCH_INTERVAL = 180
@@ -145,6 +148,9 @@ class TestingRunnerWorker(RunnerWorker):
             return mode_map[self.curr_mode]
         else:
             return self.curr_mode
+
+    def sleep_until_morning(self):
+        return 10
 
 
 
