@@ -5,8 +5,6 @@ from internet_of_fish.modules import definitions
 import os, socket, cv2
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
-LOG_FMT = logging.Formatter(fmt='%(asctime)s %(name)-16s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-os.makedirs(LOG_DIR, exist_ok=True)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
 
@@ -43,19 +41,23 @@ def make_logger(name):
     :return: pre-configured logger
     :rtype: logging.Logger
     """
+    fmt = '%(asctime)s %(name)-16s %(levelname)-8s %(message)s'
+    datefmt = '%Y-%m-%d %H:%M:%S'
+    formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
     if not os.path.exists(definitions.LOG_DIR):
         os.makedirs(definitions.LOG_DIR, exist_ok=True)
-    logging.basicConfig(
-        format='%(asctime)s %(name)-16s %(levelname)-8s %(message)s',
-        level=LOG_LEVEL,
-        datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(format=fmt, level=LOG_LEVEL, datefmt=datefmt)
     logger = logging.getLogger(name)
     if logger.hasHandlers():
         logger.handlers.clear()
-    handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
-    handler.setLevel(LOG_LEVEL)
-    handler.setFormatter(LOG_FMT)
-    logger.addHandler(handler)
+    debug_handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
+    debug_handler.setLevel(logging.DEBUG)
+    debug_handler.setFormatter(formatter)
+    logger.addHandler(debug_handler)
+    summary_handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'SUMMARY.log'), mode='a')
+    summary_handler.setLevel(logging.INFO)
+    summary_handler.setFormatter(formatter)
+    logger.addHandler(summary_handler)
     return logger
 
 
@@ -133,8 +135,9 @@ def jpgs_to_mp4(img_paths, dest_dir, fps=1//definitions.INTERVAL_SECS):
 
 def cleanup(proj_id):
     logfiles = glob.glob(os.path.join(definitions.LOG_DIR, '*.log'))
-    vidfiles = glob.glob(os.path.join(definitions.DATA_DIR, proj_id, 'Videos', '*'))
-    imgfiles = glob.glob(os.path.join(definitions.DATA_DIR, proj_id, 'Images', '*'))
+    logfiles.extend(glob.glob(os.path.join(definitions.PROJ_LOG_DIR(proj_id), '*.log')))
+    vidfiles = glob.glob(os.path.join(definitions.PROJ_VID_DIR(proj_id), '*'))
+    imgfiles = glob.glob(os.path.join(definitions.PROJ_IMG_DIR(proj_id), '*'))
     allfiles = logfiles + vidfiles + imgfiles
     [os.remove(f) for f in allfiles]
 
@@ -150,6 +153,15 @@ def remove_empty_dirs(parent_dir, remove_root=False):
                 remove_empty_dirs(fullpath, remove_root=True)
     elif remove_root:
         os.rmdir(parent_dir)
+
+def create_project_tree(proj_id):
+    for dir_func in [definitions.PROJ_DIR,
+                     definitions.PROJ_IMG_DIR,
+                     definitions.PROJ_VID_DIR,
+                     definitions.PROJ_LOG_DIR]:
+        path = dir_func(proj_id)
+        if not os.path.exists(path):
+            os.makedirs(path)
 
 
 class Averager:

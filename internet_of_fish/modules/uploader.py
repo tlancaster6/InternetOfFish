@@ -6,7 +6,7 @@ import os, pathlib, subprocess
 class UploaderWorker(QueueProcWorker):
     MAX_TRIES = definitions.MAX_TRIES
 
-    def main_func(self, target, delete_json=False):
+    def main_func(self, target, end_of_proj=False):
         """
         takes items (file paths) in sequence from the upload_list and either uploads or processes them. If the file has
         a .h264 extension, it is converted to an mp4, and the mp4 added to the end of the upload_list. Otherwise, the
@@ -29,7 +29,7 @@ class UploaderWorker(QueueProcWorker):
                 out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
                 if self.exists_cloud(target):
                     self.logger.debug(f'successfully uploaded {target}')
-                    if not target.endswith('.json') or delete_json:
+                    if (not target.endswith('.json') and not target.endswith('.log')) or end_of_proj:
                         self.logger.debug(f'deleting {target}')
                         os.remove(target)
                     break

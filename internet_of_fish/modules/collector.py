@@ -23,8 +23,7 @@ class CollectorWorker(mptools.TimerProcWorker):
     def startup(self):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.startup")
         self.cam = self.init_camera()
-        self.vid_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Videos')
-        os.makedirs(self.vid_dir, exist_ok=True)
+        self.vid_dir =definitions.PROJ_VID_DIR(self.metadata['proj_id'])
         self.cam.start_recording(self.generate_vid_path())
         self.last_split = time.time()
         self.logger.log(logging.DEBUG, f"Exiting CollectorWorker.startup")

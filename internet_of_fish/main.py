@@ -3,7 +3,7 @@ import sys, argparse
 import time
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-from internet_of_fish.modules import runner, metadata, mptools, utils
+from internet_of_fish.modules import runner, metadata, mptools, utils, notifier
 
 
 def main(args):
@@ -20,9 +20,9 @@ def main(args):
             main_ctx.Proc('RUN', runner.TestingRunnerWorker, main_ctx)
         else:
             main_ctx.Proc('RUN', runner.RunnerWorker, main_ctx)
-        main_ctx.logger.info('Runner process successfully initiated')
         while not main_ctx.shutdown_event.is_set():
             time.sleep(5)
+
 
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ import sys
 import time
 from queue import Empty, Full
 from internet_of_fish.modules import utils
+import re
 
 """adapted from https://github.com/PamelaM/mptools"""
 
@@ -127,6 +128,7 @@ class EventMessage:
         :type msg_type: str
         :param msg: additional information about the message, used mostly for logging
         :type msg: str
+
         """
         self.id = time.time()
         self.msg_src = msg_src
@@ -220,7 +222,6 @@ class ProcWorker:
             self.startup_event.set()
             self.main_loop()
             self.logger.log(logging.INFO, "Normal Shutdown")
-            # self.event_q.safe_put(EventMessage(self.name, "SOFT_SHUTDOWN", "Normal"))
             return 0
         except BaseException as exc:
             # -- Catch ALL exceptions, even Terminate and Keyboard interrupt
@@ -336,17 +337,21 @@ class MainContext:
         self.queues = []
         self.shutdown_event = mp.Event()
         self.event_queue = self.MPQueue()
-        self.logger = self._init_logger()
+        self._init_specials()
+
+    def _init_specials(self):
+        self.notification_q = self.MPQueue()
+        self.logger = utils.make_logger('MAINCONTEXT')
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.logger.debug(f'exiting main context')
+        self.logger.debug(f'exiting context')
         if exc_type:
             self.logger.log(logging.ERROR, f"Exception: {exc_val}", exc_info=(exc_type, exc_val, exc_tb))
-        self._stopped_procs_result = self.stop_procs()
-        self._stopped_queues_result = self.stop_queues()
+        self._stopped_procs_result = self.stop_all_procs()
+        self._stopped_queues_result = self.stop_all_queues()
         self.logger.info('.'*40)
 
         # -- Don't eat exceptions that reach here.
@@ -370,29 +375,29 @@ class MainContext:
         self.queues.append(q)
         return q
 
-    def stop_procs(self):
-        self.logger.debug(f'stopping procs')
-        self.shutdown_event.set()
-        end_time = time.time() + self.STOP_WAIT_SECS
+    def stop_procs(self, procs, stop_wait_secs=None):
+        stop_wait_secs = stop_wait_secs if stop_wait_secs else self.STOP_WAIT_SECS
+        end_time = time.time() + stop_wait_secs
         num_terminated = 0
         num_failed = 0
-
-        # -- Wait up to STOP_WAIT_SECS for all processes to complete
-        for proc in self.procs:
-            join_secs = sleep_secs(self.STOP_WAIT_SECS, end_time)
+        # wait up to STOP_WAIT_SECS for all processes to complete
+        for proc in procs:
+            join_secs = sleep_secs(stop_wait_secs, end_time)
+            self.logger.debug(f'attempting to join {proc.name}. timing out in {join_secs}')
             proc.proc.join(join_secs)
-
-        # -- Clear the procs list and _terminate_ any procs that
-        # have not yet exited
-        still_running = []
-        while self.procs:
-            proc = self.procs.pop()
+        # quickly try to join each proc once more. Useful for long proc lists with high stop_wait_secs, as some procs
+        # may finish after the first join attempt, but before the final join on the final proc times out
+        [proc.proc.join(0.2) for proc in procs]
+        # terminate any procs that failed to join
+        dead_procs = []
+        while procs:
+            proc = procs.pop()
             if proc.proc.is_alive():
                 if proc.terminate():
                     num_terminated += 1
-                else:
-                    still_running.append(proc)
+                    dead_procs.append(proc)
             else:
+                dead_procs.append(proc)
                 exitcode = proc.proc.exitcode
                 if exitcode:
                     self.logger.log(logging.ERROR, f"Process {proc.name} ended with exitcode {exitcode}")
@@ -400,10 +405,42 @@ class MainContext:
                 else:
                     self.logger.log(logging.DEBUG, f"Process {proc.name} stopped successfully")
 
-        self.procs = still_running
+        self.procs = [proc for proc in self.procs if proc not in dead_procs]
         return num_failed, num_terminated
 
-    def stop_queues(self):
+    def stop_procs_by_name(self, name, **kwargs):
+        self.logger.debug('entering context.stop_proc')
+        target_procs = [proc for proc in self.procs if re.fullmatch(name, proc.name)]
+        if not target_procs:
+            self.logger.debug(f'no processes with names matching {name}')
+            return
+        self.logger.debug(f'stopping {" ".join([proc.name for proc in target_procs])}')
+        num_failed, num_terminated = self.stop_procs(target_procs, **kwargs)
+        return num_failed, num_terminated
+
+
+    def stop_all_procs(self, **kwargs):
+        self.logger.debug(f'stopping all procs')
+        self.shutdown_event.set()
+        num_failed, num_terminated = self.stop_procs(self.procs, kwargs)
+        return num_failed, num_terminated
+
+    # def wait_for_join(self, procs, max_wait=3600):
+    #     start = time.time()
+    #     live_procs = []
+    #     while (time.time() - start) < max_wait:
+    #         live_procs = [proc for proc in procs if proc.proc.is_alive()]
+    #         if not live_procs:
+    #             self.logger.info('all processes completed successfully')
+    #             break
+    #         self.logger.info(f'please wait: {len(live_procs)} critical processes still running. '
+    #                          f'automatic timeout in {max_wait - (time.time() - start)} seconds')
+    #         [proc.proc.join(10) for proc in live_procs]
+    #     else:
+    #         self.logger.warning(f'timeout reached with {len(live_procs)} processes still running')
+
+
+    def stop_all_queues(self):
         self.logger.debug(f'stopping queues')
         num_items_left = 0
         self.shutdown_event.set()
@@ -418,8 +455,7 @@ class MainContext:
             q.join_thread()
         return num_items_left
 
-    def _init_logger(self):
-        return utils.make_logger('MAINCONTEXT')
+
 
 
 class SecondaryContext(MainContext):
@@ -432,6 +468,6 @@ class SecondaryContext(MainContext):
         self.event_queue = event_q if event_q else MPQueue()
         self.logger.debug(f'new SecondaryContext initialized as {name}')
 
-    def _init_logger(self):
-        return utils.make_logger(self.name)
+    def _init_specials(self):
+        self.logger = utils.make_logger(self.name)
 

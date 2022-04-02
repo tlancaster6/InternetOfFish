@@ -114,6 +114,9 @@ class MetaDataDict:
             'owner':       MetaValue(key='owner',
                                      prompt='enter your initials (first, middle, and last)',
                                      pattern='[a-z]{3}'),
+            'email':       MetaValue(key='email',
+                                     prompt='enter your email address',
+                                     pattern='.+@.+\.(com|edu)'),
             'tank_id':     MetaValue(key='tank_id',
                                      value=platform.node().split('-')[-1].lower(),
                                      prompt='enter the tank id (e.g., t003, t123, t123sv, t123asdf, etc.',
@@ -180,7 +183,7 @@ class MetaDataDict:
                                                  f'_{created_shortform}',
                                    required=False),
             'json_path': MetaValue(key='json_path',
-                                   value=lambda: os.path.join(data_dir, self['proj_id'], f'{self["proj_id"]}.json'))
+                                   value=lambda: os.path.join(definitions.PROJ_DIR(self['proj_id']), f'{self["proj_id"]}.json'))
         })
 
     def __getitem__(self, key):
@@ -266,6 +269,7 @@ class MetaDataHandler(MetaDataDict):
         self.quick_update(md)
         self.set_kill_condition()
         self.verify()
+        utils.create_project_tree(self['proj_id'])
 
     def decode_metadata(self, json_path):
         """read a metadata json file"""
@@ -281,7 +285,7 @@ class MetaDataHandler(MetaDataDict):
               'this project. At any time, you may type "help" for additional details about a particular parameter\n')
         while True:
             # essential queries
-            for key in ['owner', 'species', 'fish_type']:
+            for key in ['owner', 'email', 'species', 'fish_type']:
                 contents[key].query_user()
 
             # conditional queries
@@ -314,7 +318,7 @@ class MetaDataHandler(MetaDataDict):
             for key, val in self.simplify().items():
                 print(f'{key}: {val}')
             if finput('is the above metadata correct? (type "yes" or "no")', ['yes', 'no']) == 'yes':
-                os.makedirs(os.path.dirname(self['json_path']), exist_ok=True)
+                utils.create_project_tree(self['proj_id'])
                 with open(self['json_path'], 'w') as f:
                     json.dump(self.simplify(), f)
                     self.logger.info('metadata generated and saved to .json file')
@@ -325,7 +329,7 @@ class MetaDataHandler(MetaDataDict):
         self.logger.info('attempting to locate existing metadata file')
         try:
             potential_projects = next(os.walk(definitions.DATA_DIR))[1]
-            potential_jsons = [os.path.join(definitions.DATA_DIR, pp, f'{pp}.json') for pp in potential_projects]
+            potential_jsons = [os.path.join(definitions.PROJ_DIR(pp), f'{pp}.json') for pp in potential_projects]
             if len(potential_jsons) == 0:
                 raise FileNotFoundError
             else:

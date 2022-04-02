@@ -43,8 +43,7 @@ class DetectorWorker(mptools.QueueProcWorker):
     def startup(self):
         self.max_fish = definitions.MAX_FISH if self.metadata['n_fish'] == 'None' else int(self.metadata['max_fish'])
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.startup")
-        self.img_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Images')
-        os.makedirs(self.img_dir, exist_ok=True)
+        self.img_dir = definitions.PROJ_IMG_DIR(self.metadata['proj_id'])
 
         model_path = glob(os.path.join(self.MODELS_DIR, self.metadata['model_id'], '*.tflite'))[0]
         label_path = glob(os.path.join(self.MODELS_DIR, self.metadata['model_id'], '*.txt'))[0]
@@ -107,7 +106,7 @@ class DetectorWorker(mptools.QueueProcWorker):
 
     def jpgs_to_mp4(self, img_paths, delete_jpgs=True):
         """convert a series of jpgs to a single mp4, and (if delete_jpgs) delete the original images"""
-        dest_dir = os.path.join(self.DATA_DIR, self.metadata['proj_id'], 'Videos')
+        dest_dir = definitions.PROJ_VID_DIR(self.metadata['proj_id'])
         vid_path = utils.jpgs_to_mp4(img_paths, dest_dir)
         if delete_jpgs:
             [os.remove(x) for x in img_paths]

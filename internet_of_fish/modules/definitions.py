@@ -3,7 +3,7 @@ import os, logging, posixpath
 # logging and debugging parameters
 LOG_LEVEL = logging.DEBUG
 
-# filetree constants
+# constant paths
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 CODE_DIR = os.path.dirname(MODULE_DIR)
 BASE_DIR = os.path.dirname(CODE_DIR)
@@ -14,6 +14,14 @@ DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
 CLOUD_HOME_DIR = 'cichlidVideo:BioSci-McGrath/Apps'
 CLOUD_DATA_DIR = posixpath.join(CLOUD_HOME_DIR, 'CichlidPiData', '__ProjectData')
 END_FILE = os.path.join(HOME_DIR, 'END')
+
+# variable paths
+PROJ_DIR = lambda proj_id: os.path.join(DATA_DIR, proj_id)
+PROJ_VID_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Videos')
+PROJ_IMG_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Images')
+PROJ_LOG_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Logs')
+
+
 
 # project-specific parameters
 MAX_FISH = 5  # maximum number of fish detections that should be returned
