@@ -36,9 +36,9 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--source', default=None, type=str,
                         help='optional. pass a path to a video file to perform detection on that video, '
                              'rather than the camera stream. If None (default) the camera stream is used.')
-    parser.add_argument('-t', '--testing', action='store_true',
-                        help='setting this flag puts the program into stress testing mode, causing the day-night cycle'
-                             'to occur once every 6 minutes, rather than once every 24 hours')
+    parser.add_argument('-t', '--testing', default=None, type=int,
+                        help='puts the program into stress testing mode, such that it will switch between active and'
+                             'passive mode every t seconds, rather than twice per day. ')
     parser.add_argument('-c', '--cleanup', action='store_true',
                         help='setting this flag will delete any existing logfiles, as well as the video and image'
                              'directories (but not the metadata jason file) of whichever project runs. Useful for'
