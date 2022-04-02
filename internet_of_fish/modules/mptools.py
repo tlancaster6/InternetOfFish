@@ -383,7 +383,7 @@ class MainContext:
         # wait up to STOP_WAIT_SECS for all processes to complete
         for proc in procs:
             join_secs = sleep_secs(stop_wait_secs, end_time)
-            self.logger.debug(f'attempting to join {proc.name}. timing out in {join_secs}')
+            self.logger.debug(f'attempting to join {proc.name}. timing out in {join_secs:.2}')
             proc.proc.join(join_secs)
         # quickly try to join each proc once more. Useful for long proc lists with high stop_wait_secs, as some procs
         # may finish after the first join attempt, but before the final join on the final proc times out
