@@ -5,4 +5,4 @@
 cd ~/InternetOfFish
 git pull
 # copy the special bash alias file into the home directory
-cp ~/InternetOfFish/internet_of_fish/bin/system_files/.bash_aliases ~/.bash_aliases
+cp ~/InternetOfFish/bin/system_files/.bash_aliases ~/.bash_aliases
