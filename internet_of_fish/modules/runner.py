@@ -152,8 +152,11 @@ class RunnerWorker(mptools.ProcWorker):
         proj_vid_dir = definitions.PROJ_VID_DIR(proj_id)
         proj_img_dir = definitions.PROJ_IMG_DIR(proj_id)
 
+        if os.path.exists(proj_log_dir):
+            shutil.rmtree(proj_log_dir)
+        shutil.copytree(definitions.LOG_DIR, proj_log_dir)
+
         upload_list = []
-        shutil.copytree(definitions.LOG_DIR, proj_log_dir, dirs_exist_ok=True)
         upload_list.extend(glob.glob(os.path.join(proj_log_dir, '*.log')))
         upload_list.extend(glob.glob(os.path.join(proj_vid_dir, '*.h264')))
         upload_list.extend(glob.glob(os.path.join(proj_vid_dir, '*.mp4')))

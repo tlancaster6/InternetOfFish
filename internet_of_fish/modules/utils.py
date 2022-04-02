@@ -151,7 +151,8 @@ def remove_empty_dirs(parent_dir, remove_root=False):
             fullpath = os.path.join(parent_dir, child)
             if os.path.isdir(fullpath):
                 remove_empty_dirs(fullpath, remove_root=True)
-    elif remove_root:
+    children = os.listdir(parent_dir)
+    if not children and remove_root:
         os.rmdir(parent_dir)
 
 def create_project_tree(proj_id):
