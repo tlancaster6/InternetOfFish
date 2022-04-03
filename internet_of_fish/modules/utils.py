@@ -54,11 +54,6 @@ def make_logger(name):
     debug_handler.setLevel(logging.DEBUG)
     debug_handler.setFormatter(formatter)
     logger.addHandler(debug_handler)
-    summary_handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'SUMMARY.log'), mode='a')
-    summary_handler.setLevel(logging.INFO)
-    summary_handler.setFormatter(formatter)
-    logger.addHandler(summary_handler)
-    logger.addHandler(debug_handler)
     return logger
 
 
