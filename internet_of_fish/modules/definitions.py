@@ -31,6 +31,7 @@ INTERVAL_SECS = 0.5  # time between image captures in seconds
 IMG_BUFFER = int(10/INTERVAL_SECS)  # number of sequential images that will be sent if a spawning event is detected
 START_HOUR = 8  # hour when data collection starts. e.g., if START_HOUR=8, collection starts at 8:00am
 END_HOUR = 18  # hour when data collection ends. e.g., if END_HOUR=19, collection stops at 7:00pm
+MAX_VIDEO_LEN = 3600 # max length of a video, in seconds. Set to (END_HOUR-START_HOUR)*3600 to record continuously
 
 # hardware parameters
 RESOLUTION = (1296, 972)  # pi camera resolution
@@ -39,5 +40,4 @@ FRAMERATE = 30  # pi camera framerate
 # app parameters. may be internally over-ridden by certain classes/processes
 MAX_UPLOAD_WORKERS = 3
 MAX_TRIES = 3
-MAX_VIDEO_LEN = (END_HOUR - START_HOUR) * 3600
-ANNOTATE_FRAMENUMBER = True
+

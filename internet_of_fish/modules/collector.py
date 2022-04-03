@@ -13,7 +13,6 @@ class CollectorWorker(mptools.TimerProcWorker):
     FRAMERATE = definitions.FRAMERATE  # pi camera framerate
     DATA_DIR = definitions.DATA_DIR
     MAX_VIDEO_LEN = definitions.MAX_VIDEO_LEN
-    ANNOTATE_FRAMENUMBER = definitions.ANNOTATE_FRAMENUMBER
 
     def init_args(self, args):
         self.logger.log(logging.DEBUG, f"Entering CollectorWorker.init_args : {args}")
@@ -55,7 +54,6 @@ class CollectorWorker(mptools.TimerProcWorker):
         cam = picamera.PiCamera()
         cam.resolution = self.RESOLUTION
         cam.framerate = self.FRAMERATE
-        cam.annotate_frame_num = self.ANNOTATE_FRAMENUMBER
         return cam
 
     def generate_vid_path(self):

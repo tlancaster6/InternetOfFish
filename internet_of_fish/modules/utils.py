@@ -58,6 +58,7 @@ def make_logger(name):
     summary_handler.setLevel(logging.INFO)
     summary_handler.setFormatter(formatter)
     logger.addHandler(summary_handler)
+    logger.addHandler(debug_handler)
     return logger
 
 
