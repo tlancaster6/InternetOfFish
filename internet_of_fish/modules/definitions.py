@@ -40,4 +40,8 @@ FRAMERATE = 30  # pi camera framerate
 # app parameters. may be internally over-ridden by certain classes/processes
 MAX_UPLOAD_WORKERS = 3
 MAX_TRIES = 3
-
+DEFAULT_POLLING_TIMEOUT = 0.2
+DEFAULT_MAX_SLEEP_SECS = 0.02
+DEFAULT_INTERVAL_SECS = 10
+DEFAULT_STARTUP_WAIT_SECS = 10
+DEFAULT_SHUTDOWN_WAIT_SECS = 10

@@ -6,3 +6,5 @@ cd ~/InternetOfFish
 git pull
 # copy the special bash alias file into the home directory
 cp ~/InternetOfFish/bin/system_files/.bash_aliases ~/.bash_aliases
+# install any missing requirements
+~/InternetOfFish/bin/configure_worker.sh

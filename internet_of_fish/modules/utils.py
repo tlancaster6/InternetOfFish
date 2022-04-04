@@ -3,6 +3,7 @@ import logging
 import time, datetime
 from internet_of_fish.modules import definitions
 import os, socket, cv2
+from functools import wraps
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
 logging.getLogger('PIL').setLevel(logging.WARNING)
@@ -159,6 +160,35 @@ def create_project_tree(proj_id):
         path = dir_func(proj_id)
         if not os.path.exists(path):
             os.makedirs(path)
+
+# def retry_wrapper():
+#     def wrapper_fn(f):
+#         @wraps(f)
+#         def new_wrapper(*args, **kwargs):
+#             for i in range(definitions.MAX_TRIES):
+#                 try:
+#                     return f(*args, **kwargs)
+#                 except Exception as e:
+#                     error = e
+#             raise error
+#         return new_wrapper
+#     return wrapper_fn
+
+# def strfmt_func_call(fname, *args, **kwargs):
+#     arg_str = ', '.join([str(arg) for arg in args])
+#     kwarg_str = ', '.join([f'{key}={val}' for key, val in kwargs.items()])
+#     return f'{fname}({", ".join([arg_str, kwarg_str])})'
+#
+# def autolog_decorator(logger: logging.Logger):
+#     def decorator(function):
+#         def wrapper(*args, **kwargs):
+#
+#             logger.debug(f'entering {strfmt_func_call(function.__name__, *args, **kwargs)}')
+#             result = function(*args, **kwargs)
+#             logger.debug(f'exiting {function.__name__}')
+#             return result
+#         return wrapper
+#     return decorator
 
 
 class Averager:

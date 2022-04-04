@@ -6,13 +6,13 @@ import signal
 import sys
 import time
 from queue import Empty, Full
-from internet_of_fish.modules import utils
+from internet_of_fish.modules import utils, definitions
 import re
 
 """adapted from https://github.com/PamelaM/mptools"""
 
-DEFAULT_POLLING_TIMEOUT = 0.02
-MAX_SLEEP_SECS = 0.02
+DEFAULT_POLLING_TIMEOUT = definitions.DEFAULT_POLLING_TIMEOUT
+DEFAULT_MAX_SLEEP_SECS = definitions.DEFAULT_MAX_SLEEP_SECS
 
 
 # -- Queue handling support
@@ -145,7 +145,7 @@ class TerminateInterrupt(BaseException):
 
 
 class SignalObject:
-    MAX_TERMINATE_CALLED = 3
+    MAX_TERMINATE_CALLED = definitions.MAX_TRIES
 
     def __init__(self, shutdown_event):
         self.terminate_called = 0
@@ -175,7 +175,7 @@ def init_signals(shutdown_event, int_handler, term_handler):
 # -- Worker Process classes
 
 class ProcWorker:
-    MAX_TERMINATE_CALLED = 3
+    MAX_TERMINATE_CALLED = definitions.MAX_TRIES
     int_handler = staticmethod(default_signal_handler)
     term_handler = staticmethod(default_signal_handler)
 
@@ -227,17 +227,17 @@ class ProcWorker:
             # -- Catch ALL exceptions, even Terminate and Keyboard interrupt
             self.logger.log(logging.ERROR, f"Exception Shutdown: {exc}", exc_info=True)
             self.event_q.safe_put(EventMessage(self.name, "FATAL", f"{exc}"))
-            if type(exc) in (TerminateInterrupt, KeyboardInterrupt):
-                sys.exit(1)
-            else:
-                sys.exit(2)
+            # if type(exc) in (TerminateInterrupt, KeyboardInterrupt):
+            #     sys.exit(1)
+            # else:
+            #     sys.exit(2)
         finally:
             self.shutdown()
 
 
 class TimerProcWorker(ProcWorker):
-    INTERVAL_SECS = 10
-    MAX_SLEEP_SECS = 0.02
+    INTERVAL_SECS = definitions.DEFAULT_INTERVAL_SECS
+    MAX_SLEEP_SECS = definitions.DEFAULT_MAX_SLEEP_SECS
 
     def main_loop(self):
         self.logger.log(logging.DEBUG, "Entering TimerProcWorker.main_loop")
@@ -276,8 +276,8 @@ def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, even
 
 
 class Proc:
-    STARTUP_WAIT_SECS = 10.0
-    SHUTDOWN_WAIT_SECS = 10.0
+    STARTUP_WAIT_SECS = definitions.DEFAULT_STARTUP_WAIT_SECS
+    SHUTDOWN_WAIT_SECS = definitions.DEFAULT_SHUTDOWN_WAIT_SECS
 
     def __init__(self, name, worker_class, shutdown_event, event_q, metadata, *args):
         self.metadata = metadata
@@ -329,7 +329,7 @@ class Proc:
 
 # -- Main Wrappers
 class MainContext:
-    STOP_WAIT_SECS = 10.0
+    STOP_WAIT_SECS = definitions.DEFAULT_SHUTDOWN_WAIT_SECS
 
     def __init__(self, metadata: dict):
         self.metadata = metadata
@@ -418,27 +418,11 @@ class MainContext:
         num_failed, num_terminated = self.stop_procs(target_procs, **kwargs)
         return num_failed, num_terminated
 
-
     def stop_all_procs(self, **kwargs):
         self.logger.debug(f'stopping all procs')
         self.shutdown_event.set()
         num_failed, num_terminated = self.stop_procs(self.procs, kwargs)
         return num_failed, num_terminated
-
-    # def wait_for_join(self, procs, max_wait=3600):
-    #     start = time.time()
-    #     live_procs = []
-    #     while (time.time() - start) < max_wait:
-    #         live_procs = [proc for proc in procs if proc.proc.is_alive()]
-    #         if not live_procs:
-    #             self.logger.info('all processes completed successfully')
-    #             break
-    #         self.logger.info(f'please wait: {len(live_procs)} critical processes still running. '
-    #                          f'automatic timeout in {max_wait - (time.time() - start)} seconds')
-    #         [proc.proc.join(10) for proc in live_procs]
-    #     else:
-    #         self.logger.warning(f'timeout reached with {len(live_procs)} processes still running')
-
 
     def stop_all_queues(self):
         self.logger.debug(f'stopping queues')
@@ -454,8 +438,6 @@ class MainContext:
             q = self.queues.pop(0)
             q.join_thread()
         return num_items_left
-
-
 
 
 class SecondaryContext(MainContext):

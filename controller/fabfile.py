@@ -64,7 +64,11 @@ def start_collection(c):
     c.run('python3 internet_of_fish/main.py')
 
 @task(hosts=MY_HOSTS)
-def config(c):
+def config_all(c):
     print(f'configuring {c.host}')
     try:
         with c.cd("/home/pi"):
+            c.run('git clone https://github.com/tlancaster6/InternetOfFish')
+            c.run('./InternetOfFish/bin/configure_worker.sh')
+    except Exception as e:
+        print(f'config failed: {e}')

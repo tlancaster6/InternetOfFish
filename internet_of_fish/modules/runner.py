@@ -44,28 +44,28 @@ class RunnerWorker(mptools.ProcWorker):
         if not event:
             self.verify_mode()
         elif event.msg_type == 'NOTIFY':
-            self.main_ctx.notification_q.safe_put(notifier.Notification(event.msg_source, *event.msg))
+            self.main_ctx.notification_q.safe_put(notifier.Notification(event.msg_src, *event.msg))
         elif event.msg_type == 'FATAL':
             self.logger.info(f'{event.msg_type.title()} event received. Rebooting machine')
-            note = notifier.Notification(event.msg_source, event.msg_type, 'event.msg',
+            note = notifier.Notification(event.msg_src, event.msg_type, 'event.msg',
                                          os.path.join(definitions.LOG_DIR, 'SUMMARY.log'))
             self.main_ctx.notification_q.safe_put(note)
-            sp.run(['shutdown', '-r', '+5'])
+            sp.run(['sudo', 'shutdown', '-r', '+5'])
             self.hard_shutdown()
         elif event.msg_type in 'HARD_SHUTDOWN':
-            self.logger.info(f'{event.msg_type.title()} event received. Executing hard shutdown')
+            self.logger.info(f'{event.msg_type} event received. Executing hard shutdown')
             self.hard_shutdown()
         elif event.msg_type == 'SOFT_SHUTDOWN':
-            self.logger.info(f'{event.msg_type.title()} event received. Executing soft shutdown')
+            self.logger.info(f'{event.msg_type} event received. Executing soft shutdown')
             self.soft_shutdown()
         elif event.msg_type == 'ENTER_ACTIVE_MODE':
-            self.logger.info(f'{event.msg_type.title()} event received. Switching to active mode')
+            self.logger.info(f'{event.msg_type} event received. Switching to active mode')
             self.active_mode()
         elif event.msg_type == 'ENTER_PASSIVE_MODE':
-            self.logger.info(f'{event.msg_type.title()} event received. Switching to passive mode in 10 seconds')
+            self.logger.info(f'{event.msg_type} event received. Switching to passive mode in 10 seconds')
             self.passive_mode()
         elif event.msg_type == 'ENTER_END_MODE':
-            self.logger.info(f'{event.msg_type.title()} event received. Exiting collection and uploading all remaining data')
+            self.logger.info(f'{event.msg_type} event received. Exiting collection and uploading all remaining data')
             self.end_mode()
         else:
             self.logger.error(f"Unknown Event: {event}")
@@ -78,11 +78,13 @@ class RunnerWorker(mptools.ProcWorker):
         if self.curr_mode == 'active':
             if self.expected_mode() == 'passive':
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'mode switch'))
+                self.curr_mode = 'passive'
             else:
                 time.sleep(0.1)
         elif self.curr_mode == 'passive':
             if self.expected_mode() == 'active':
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_ACTIVE_MODE', 'mode switch'))
+                self.curr_mode = 'active'
             else:
                 sleep_time = self.sleep_until_morning()
                 self.logger.debug(f'no change in mode. going back to sleep for {sleep_time} seconds')
@@ -99,10 +101,18 @@ class RunnerWorker(mptools.ProcWorker):
         else:
             return 'passive'
 
-    def active_mode(self):
+    def switch_mode(self, target_mode):
+        self.logger.debug(f'preparing to switch from {self.curr_mode} to {target_mode}')
+        self.clean_event_queue()
         self.soft_shutdown()
-        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q, 'ACTIVECONTEXT')
-        self.curr_mode = 'active'
+        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q,
+                                                      f'{target_mode.upper()}CONTEXT')
+        self.curr_mode = target_mode
+        self.logger.debug('mode switched successfully')
+
+
+    def active_mode(self):
+        self.switch_mode('active')
         self.img_q = self.secondary_ctx.MPQueue()
         if self.metadata['source'] != 'None':
             self.collect_proc = self.secondary_ctx.Proc(
@@ -114,9 +124,7 @@ class RunnerWorker(mptools.ProcWorker):
             'DETECT', detector.DetectorWorker, self.img_q)
 
     def passive_mode(self):
-        self.soft_shutdown()
-        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q, 'PASSIVECONTEXT')
-        self.curr_mode = 'passive'
+        self.switch_mode('passive')
         time.sleep(10)
         self.upload_q = self.secondary_ctx.MPQueue()
         n_workers = self.queue_uploads()
@@ -133,11 +141,29 @@ class RunnerWorker(mptools.ProcWorker):
 
     def soft_shutdown(self):
         self.logger.debug(f'entering soft_shutdown')
+        tries_left = definitions.MAX_TRIES
         if not self.secondary_ctx:
             self.logger.debug('secondary context has already been shut down')
             return
-        self.secondary_ctx.stop_all_procs()
-        self.secondary_ctx.stop_all_queues()
+        while tries_left:
+            tries_left -= 1
+            if self.secondary_ctx.procs or self.secondary_ctx.queues:
+                try:
+                    self.secondary_ctx.stop_all_procs()
+                    self.secondary_ctx.stop_all_queues()
+                except Exception as e:
+                    self.logger.warning(f'soft shutdown failed with error {e}. Trying {tries_left} more times before '
+                                        f'executing a hard shutdown')
+            else:
+                break
+        else:
+            self.logger.warning('soft shutdown of secondary context failed the maximum number of times. To prevent'
+                                'zombie processes, the application will now exit, reboot this machine, and attempt'
+                                'to resume.')
+            self.event_q.safe_put(mptools.EventMessage(self.name, 'FATAL', 'soft shutdown failed'))
+            return
+
+        self.logger.debug('secondary context successfully shut down')
         self.secondary_ctx = None
         self.event_q.drain()
         self.logger.debug('exiting soft_shutdown.')
@@ -146,6 +172,7 @@ class RunnerWorker(mptools.ProcWorker):
         return utils.sleep_until_morning()
 
     def queue_uploads(self, proj_id=None, queue_end_signals=True):
+        self.logger.debug('entering queue_uploads')
         proj_id = proj_id if proj_id else self.metadata['proj_id']
         proj_dir = definitions.PROJ_DIR(proj_id)
         proj_log_dir = definitions.PROJ_LOG_DIR(proj_id)
@@ -174,9 +201,7 @@ class RunnerWorker(mptools.ProcWorker):
             self.logger.info('allowing current upload to finish')
             self.secondary_ctx.stop_procs(stop_wait_secs=600)
 
-        self.soft_shutdown()
-        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q, 'ENDCONTEXT')
-        self.curr_mode = 'end'
+        self.switch_mode('end')
         self.upload_q = self.secondary_ctx.MPQueue()
         proj_ids = os.listdir(definitions.DATA_DIR)
         if not proj_ids:
@@ -195,6 +220,25 @@ class RunnerWorker(mptools.ProcWorker):
         os.remove(definitions.END_FILE)
         sp.run(['echo', 'upload', 'complete.', 'exiting'])
         self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'project ending'))
+
+    def clean_event_queue(self):
+        kept_events = []
+        tossed_events = []
+        while True:
+            event = self.event_q.safe_get()
+            if not event:
+                break
+            elif event.msg_type in ['NOTIFY']:
+                kept_events.append(event)
+            else:
+                tossed_events.append(event)
+        if tossed_events:
+            tossed_events_str ="\n\t".join(tossed_events)
+            self.logger.debug(f'Tossing the following events without acting on them:\n {tossed_events_str}')
+        if kept_events:
+            kept_events_str = "\n\t".join(kept_events)
+            self.logger.debug(f'Returning the following events to the event queue:\n {kept_events_str}')
+            [self.event_q.safe_put(event) for event in kept_events]
 
 
 class TestingRunnerWorker(RunnerWorker):
