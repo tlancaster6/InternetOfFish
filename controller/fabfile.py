@@ -5,9 +5,10 @@ import subprocess
 import os
 
 CODE_DIR = os.path.dirname(os.path.abspath(__file__))
-RESOURCES_DIR = os.path.join(CODE_DIR, 'resources')
-HOST_FILE = os.path.join(RESOURCES_DIR, 'hosts.secret')
-CREDENTIAL_FILE = os.path.join(RESOURCES_DIR, 'credentials.secret')
+ROOT_DIR = os.path.dirname(CODE_DIR)
+CREDENTIALS_DIR = os.path.join(CODE_DIR, 'credentials')
+HOST_FILE = os.path.join(CREDENTIALS_DIR, 'hosts.secret')
+CREDENTIAL_FILE = os.path.join(CREDENTIALS_DIR, 'pi_password.secret')
 
 HOME_DIR = os.path.expanduser('~')
 PI_USER = 'pi'

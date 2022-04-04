@@ -10,6 +10,7 @@ from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
 from internet_of_fish.modules import definitions, mptools, utils
+from internet_of_fish.modules.notifier import Notification
 
 BufferEntry = namedtuple('BufferEntry', ['cap_time', 'img', 'dets'])
 
@@ -69,7 +70,8 @@ class DetectorWorker(mptools.QueueProcWorker):
             self.logger.log(logging.INFO, f"Hit threshold of {self.HIT_THRESH} exceeded, possible spawning event")
             img_paths = [self.overlay_boxes(be) for be in self.buffer]
             vid_path = self.jpgs_to_mp4(img_paths)
-            self.notify('possible spawning event', vid_path)
+            msg = f'possible spawning event in {self.metadata["tank_id"]} at {utils.current_time_iso()}'
+            self.event_q.safe_put(('SPAWNING_EVENT', msg, vid_path))
             self.hit_counter.reset()
             self.buffer = []
         if len(self.buffer) > self.IMG_BUFFER:
@@ -139,12 +141,6 @@ class DetectorWorker(mptools.QueueProcWorker):
         pipe_det = [d for d in dets if d.id == self.ids['pipe']][:1]
         self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.filter_dets")
         return fish_dets, pipe_det
-
-    def notify(self, message, attachment):
-        self.logger.log(logging.DEBUG, f"Entering DetectorWorker.notify")
-        # TODO: write notification function
-        pass
-        self.logger.log(logging.DEBUG, f"Exiting DetectorWorker.notify")
 
     def shutdown(self):
         self.logger.log(logging.DEBUG, f"Entering DetectorWorker.shutdown")

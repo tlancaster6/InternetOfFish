@@ -263,6 +263,11 @@ class TestingRunnerWorker(RunnerWorker):
     def sleep_until_morning(self):
         return self.mode_switch_interval/10
 
+    def shutdown(self):
+         n = notifier.Notification('TESTING', 'TEST_NOTIFICATION', 'testing', os.path.join(definitions.LOG_DIR, 'RUN.log'))
+        self.main_ctx.notification_q.safe_put()
+        self.hard_shutdown()
+
 
 
 
