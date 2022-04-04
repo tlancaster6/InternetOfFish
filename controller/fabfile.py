@@ -70,17 +70,7 @@ def config(c):
         with c.cd('/home/pi/'):
             if c.run('test -d {}'.format('InternetOfFish'), warn=True).failed:
                 c.run('git clone https://github.com/tlancaster6/InternetOfFish')
-
-        with c.cd('/home/pi/InternetOfFish'):
-            print('updating local repo')
-            c.run('git pull')
-            print('configuring cronjob')
-            c.run('(crontab - l ; echo "@reboot ~/InternetOfFish/bin/unit_scripts/auto_start.sh") '
-                '| sort - | uniq - | crontab -')
-            print('setting up bash aliases')
-            c.run('cp ~/InternetOfFish/bin/system_files/.bash_aliases ~/.bash_aliases')
-            # c.run('installing/updating dependencies')
-            # c.run('~/InternetOfFish/bin/install_requirements_worker.sh')
+            c.run('InternetOfFis/bin/configure_worker.sh')
 
     except Exception as e:
         print(f'config failed with error: {e}')
