@@ -31,7 +31,7 @@ with open(HOST_FILE) as f:
 
 
 @task
-def list_hosts(c):
+def listhosts(c):
     print(MY_HOSTS)
 
 
@@ -59,17 +59,26 @@ def pull(c):
         print(f'pull failed: {e}')
 
 @task(hosts=MY_HOSTS)
-def start_collection(c):
+def start(c):
     c.cd("/home/pi/InternetOfFish")
     c.run('python3 internet_of_fish/main.py')
 
 @task(hosts=MY_HOSTS)
-def config_all(c):
+def config(c):
     print(f'configuring {c.host}')
     try:
-        with c.cd("/home/pi"):
+        with c.cd('/home/pi/'):
             if c.run('test -d {}'.format('InternetOfFish'), warn=True).failed:
                 c.run('git clone https://github.com/tlancaster6/InternetOfFish')
-            c.run('./InternetOfFish/bin/configure_worker.sh')
+
+        with c.cd('/home/pi/InternetOfFish'):
+            c.run('git pull')
+            c.run('(crontab - l ; echo "@reboot ~/InternetOfFish/bin/unit_scripts/auto_start.sh") '
+                '| sort - | uniq - | crontab -')
+            c.run('cp ~/InternetOfFish/bin/system_files/.bash_aliases ~/.bash_aliases')
+            c.run('~/InternetOfFish/bin/install_requirements_worker.sh')
+
     except Exception as e:
-        print(f'config failed: {e}')
+        print(f'config failed with error: {e}')
+
+
