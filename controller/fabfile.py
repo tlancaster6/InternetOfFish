@@ -68,7 +68,8 @@ def config_all(c):
     print(f'configuring {c.host}')
     try:
         with c.cd("/home/pi"):
-            c.run('git clone https://github.com/tlancaster6/InternetOfFish')
+            if c.run('test -d {}'.format('InternetOfFish'), warn=True).failed:
+                c.run('git clone https://github.com/tlancaster6/InternetOfFish')
             c.run('./InternetOfFish/bin/configure_worker.sh')
     except Exception as e:
         print(f'config failed: {e}')
