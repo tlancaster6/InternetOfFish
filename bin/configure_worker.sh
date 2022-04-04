@@ -11,4 +11,5 @@ echo 'setting up bash aliases'
 cp ~/InternetOfFish/bin/system_files/.bash_aliases ~/.bash_aliases
 # install any missing requirements
 echo 'installing missing requirements/dependencies'
+chmod u+x ~/InternetOfFish/bin/install_requirements_worker.sh
 ~/InternetOfFish/bin/install_requirements_worker.sh
