@@ -72,6 +72,7 @@ def config(c):
                 print('cloning repo')
                 c.run('git clone https://github.com/tlancaster6/InternetOfFish')
             print('running configure_worker.sh')
+            c.run('chmod u+x InternetOfFish/bin/configure_worker.sh')
             c.run('InternetOfFish/bin/configure_worker.sh')
 
     except Exception as e:
