@@ -69,8 +69,10 @@ def config(c):
     try:
         with c.cd('/home/pi/'):
             if c.run('test -d {}'.format('InternetOfFish'), warn=True).failed:
+                print('cloning repo')
                 c.run('git clone https://github.com/tlancaster6/InternetOfFish')
-            c.run('InternetOfFis/bin/configure_worker.sh')
+            print('running configure_worker.sh')
+            c.run('InternetOfFish/bin/configure_worker.sh')
 
     except Exception as e:
         print(f'config failed with error: {e}')
