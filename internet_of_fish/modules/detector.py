@@ -10,7 +10,6 @@ from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
 from internet_of_fish.modules import definitions, mptools, utils
-from internet_of_fish.modules.notifier import Notification
 
 BufferEntry = namedtuple('BufferEntry', ['cap_time', 'img', 'dets'])
 
@@ -30,7 +29,7 @@ class HitCounter:
         self.hits = 0
 
 
-class DetectorWorker(mptools.QueueProcWorker):
+class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
     MODELS_DIR = definitions.MODELS_DIR
     DATA_DIR = definitions.DATA_DIR
     HIT_THRESH = definitions.HIT_THRESH

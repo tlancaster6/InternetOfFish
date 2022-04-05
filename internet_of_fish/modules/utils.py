@@ -7,7 +7,7 @@ from functools import wraps
 from types import FunctionType
 import sys
 
-LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
+LOG_DIR = definitions.LOG_DIR
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
 
@@ -50,19 +50,21 @@ def make_logger(name):
     if not os.path.exists(definitions.LOG_DIR):
         os.makedirs(LOG_DIR, exist_ok=True)
 
-    debug_handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
-    debug_handler.setLevel(logging.DEBUG)
-    debug_handler.setFormatter(formatter)
+    fh = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
 
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setLevel(logging.INFO)
-    stream_handler.setFormatter(formatter)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(formatter)
 
     logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
     if logger.hasHandlers():
         logger.handlers.clear()
-    logger.addHandler(debug_handler)
-    logger.addHandler(stream_handler)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    logger.debug(f'logger created for {name}')
 
     return logger
 

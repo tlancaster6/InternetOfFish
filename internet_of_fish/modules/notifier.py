@@ -7,7 +7,7 @@ from sendgrid.helpers.mail import (
     Mail, Attachment, FileContent, FileName,
     FileType, Disposition)
 
-class Notification(metaclass=utils.AutologMetaclass):
+class Notification:
     def __init__(self, msg_src, msg_type, msg, attachment_path):
         self.msg_src, self.msg_type, self.msg, self.attachment_path = msg_src, msg_type, msg, attachment_path
         self.id = utils.current_time_iso()
@@ -23,7 +23,7 @@ class Notification(metaclass=utils.AutologMetaclass):
         return dt.fromisoformat(self.id).timestamp()
 
 
-class NotifierWorker(mptools.QueueProcWorker):
+class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
     MIN_NOTIFICATION_INTERVAL = definitions.MIN_NOTIFICATION_INTERVAL
 
     def startup(self):

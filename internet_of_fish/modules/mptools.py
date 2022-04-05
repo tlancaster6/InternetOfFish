@@ -422,7 +422,7 @@ class MainContext(metaclass=utils.AutologMetaclass):
         return num_items_left
 
 
-class SecondaryContext(MainContext):
+class SecondaryContext(MainContext, metaclass=utils.AutologMetaclass):
 
     def __init__(self, metadata, event_q=None, name='SECONDARYCONTEXT'):
         self.name = name.upper()

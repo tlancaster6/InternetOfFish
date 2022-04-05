@@ -7,7 +7,7 @@ import picamera
 import cv2
 
 
-class CollectorWorker(mptools.TimerProcWorker):
+class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass):
     INTERVAL_SECS = definitions.INTERVAL_SECS
     RESOLUTION = definitions.RESOLUTION  # pi camera resolution
     FRAMERATE = definitions.FRAMERATE  # pi camera framerate
