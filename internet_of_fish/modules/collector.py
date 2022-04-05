@@ -57,7 +57,6 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
 
 
 class VideoCollectorWorker(CollectorWorker):
-    VIRTUAL_INTERVAL_SECS = definitions.INTERVAL_SECS
     INTERVAL_SECS = 0.02
     """functions like a CollectorWorker, but gathers images from an existing file rather than a camera"""
 
@@ -68,7 +67,7 @@ class VideoCollectorWorker(CollectorWorker):
         if not os.path.exists(self.video_file):
             self.locate_video()
         self.cam = cv2.VideoCapture(self.video_file)
-        self.cap_rate = max(1, int(self.cam.get(cv2.CAP_PROP_FPS) * self.VIRTUAL_INTERVAL_SECS))
+        self.cap_rate = 1
         self.logger.log(logging.INFO, f"Collector will add an image to the queue every {self.cap_rate} frame(s)")
         self.frame_count = 0
         self.active = True
@@ -96,9 +95,11 @@ class VideoCollectorWorker(CollectorWorker):
                          'Videos']
         for i in range(len(path_elements)):
             potential_path = os.path.join(*path_elements[:i], self.video_file)
+            self.logger.debug(f'checking for video in {potential_path}')
             if os.path.exists(potential_path):
                 self.video_file = potential_path
                 break
+            self.logger.debug('no video found')
         if not os.path.exists(self.video_file):
             self.logger.log(logging.ERROR, f'failed to locate video file {self.video_file}. '
                                            f'Try placing it in {definitions.HOME_DIR}')
