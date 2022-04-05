@@ -142,7 +142,6 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             vid_path = self.jpgs_to_mp4(img_paths)
             msg = f'video from {self.metadata["tank_id"]}'
             self.event_q.safe_put(mptools.EventMessage(self.name, 'NOTIFY', ['TESTING', msg, vid_path]))
-            self.event_q.safe_put(('SPAWNING_EVENT', msg, vid_path))
         self.work_q.close()
         self.event_q.close()
 
