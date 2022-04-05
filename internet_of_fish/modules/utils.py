@@ -47,7 +47,7 @@ def make_logger(name):
     datefmt = '%Y-%m-%d %H:%M:%S'
     formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
     if not os.path.exists(definitions.LOG_DIR):
-        os.makedirs(definitions.LOG_DIR, exist_ok=True)
+        os.makedirs(LOG_DIR, exist_ok=True)
     logging.basicConfig(format=fmt, level=LOG_LEVEL, datefmt=datefmt)
     logger = logging.getLogger(name)
     if logger.hasHandlers():

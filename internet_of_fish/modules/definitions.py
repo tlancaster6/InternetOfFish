@@ -1,7 +1,7 @@
 import os, logging, posixpath
 
 # logging and debugging parameters
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 
 # constant paths
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
