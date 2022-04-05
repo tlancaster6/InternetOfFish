@@ -20,8 +20,6 @@ PROJ_VID_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Videos')
 PROJ_IMG_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Images')
 PROJ_LOG_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Logs')
 
-
-
 # project-specific parameters
 MAX_FISH = 5  # maximum number of fish detections that should be returned
 CONF_THRESH = 0.4  # classifier score threshold
