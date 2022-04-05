@@ -29,7 +29,7 @@ class UploaderWorker(QueueProcWorker):
                 out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
                 if self.exists_cloud(target):
                     self.logger.debug(f'successfully uploaded {target}')
-                    if (not target.endswith('.json') and not target.endswith('.log')) or end_of_proj:
+                    if (not target.endswith('.json') and not target.endswith('.log') and self.metadata['source'] == 'None') or end_of_proj:
                         self.logger.debug(f'deleting {target}')
                         os.remove(target)
                     break
