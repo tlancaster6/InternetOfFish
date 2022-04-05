@@ -30,5 +30,42 @@ command can also be run any time the main repository is updated to update all pi
 
         fab pull
 
-### Starting data collection for the first time
+### Built-in Aliases
+To make some of the more common tasks easier to execute, this package ships with a custom .bash_aliases file with the
+following aliases predefined. These can be run from anywhere on the pi -- no need to move into a particular directory.  
+
+        alias iof-update='cd ~/InternetOfFish && git pull' 
+        alias iof-new="python3 ~/InternetOfFish/internet_of_fish/main.py -n"
+        alias iof-resume="python3 ~/InternetOfFish/internet_of_fish/main.py"
+        alias iof-test="python3 ~/InternetOfFish/internet_of_fish/main.py -t 60"
+        alias iof-end="touch ~/END"
+These aliased commands will have the following effects:  
+* iof-update: updates to the latest version of the InternetOfFish repo  
+* iof-new: set up a new project interactively and start data collection  
+* iof-resume: resume the most recently running project. Only works if the project is already configured (using iof-new)
+and has not been cleared from the pi (as happens after an iof-end call)  
+* iof-test: puts the pi into stress testing mode, causing it to cycle between the passive and active modes once every 
+two minutes, instead of once every 24 hours. This mode is not meant for normal data collection, and requires an existing
+metadata to funciton properly.
+* iof-end: stop data collection, upload everything, and delete the project from this pi. This command is the best way to
+to terminate a project that is running in the background, as occurs when the auto_start.sh script runs. All local data
+from the project will be deleted after it successfully uploads, so only run this command if you are ready to end the
+project, as you will no longer be able to resume it the iof-resume command.
+
+To test if these aliases are working, try running the following command:  
+
+        iof-update
+You should see some output print indicating either that the repository has been updated, or that it was already up to
+date. If, instead, you get a "command not found" error, double check that the file ~/.bash_aliases matches the lines
+given above. If it does, try restarting your terminal so that they take effect.
+
+### Starting a new project
+Begin by either ssh'ing into your pi remotely, or connecting a keyboard and monitor to interface with it directly. Make
+sure that the repo is up to date using the command:
+        
+        iof-update
+Now run the following command to enter the interactive setup process:
+
+        iof-new
+Answer the questions as they appear on the screen to generate the project metadata, as shown in the image below
 
