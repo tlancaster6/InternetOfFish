@@ -185,6 +185,8 @@ def strfmt_func_call(fname, *args, **kwargs):
 def autolog(method):
     @wraps(method)
     def wrapper(self, *method_args, **method_kwargs):
+        print(method_args)
+        print(method_kwargs)
         logger = method_args[0].logger
         logger.debug(f'entering {strfmt_func_call(method.__name__, *method_args, **method_kwargs)}')
         result = method(self, *method_args, **method_kwargs)
