@@ -83,7 +83,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
                 self.curr_mode = 'active'
             else:
                 sleep_time = self.sleep_until_morning()
-                self.logger.debug(f'no change in mode. going back to sleep for {sleep_time} seconds')
+                self.logger.info(f'no change in mode. going back to sleep for {sleep_time} seconds')
                 time.sleep(sleep_time)
 
     def expected_mode(self):
@@ -98,7 +98,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             return 'passive'
 
     def switch_mode(self, target_mode):
-        self.logger.debug(f'preparing to switch from {self.curr_mode} to {target_mode}')
+        self.logger.info(f'preparing to switch from {self.curr_mode} to {target_mode}')
         self.clean_event_queue()
         self.soft_shutdown()
         self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q,

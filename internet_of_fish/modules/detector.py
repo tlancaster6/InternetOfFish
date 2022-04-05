@@ -54,6 +54,7 @@ class DetectorWorker(mptools.QueueProcWorker):
         self.hit_counter = HitCounter()
         self.avg_timer = utils.Averager()
         self.buffer = []
+        self.loop_counter = 1
 
     def main_func(self, q_item):
         cap_time, img = q_item
@@ -71,6 +72,12 @@ class DetectorWorker(mptools.QueueProcWorker):
             self.buffer = []
         if len(self.buffer) > self.IMG_BUFFER:
             self.buffer.pop(0)
+        self.print_info()
+
+    def print_info(self):
+        if not self.loop_counter % 100:
+            self.logger.info(f'{self.loop_counter} detection loops completed. current average detection time is '
+                             f'{self.avg_timer.avg * 1000}ms')
 
     def detect(self, img):
         """run detection on a single image"""
