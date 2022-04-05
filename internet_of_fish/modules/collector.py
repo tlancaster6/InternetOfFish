@@ -106,6 +106,5 @@ class VideoCollectorWorker(CollectorWorker):
 
 
     def shutdown(self):
-        self.cam.release()
         self.img_q.close()
         self.event_q.close()

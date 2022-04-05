@@ -64,8 +64,42 @@ Begin by either ssh'ing into your pi remotely, or connecting a keyboard and moni
 sure that the repo is up to date using the command:
         
         iof-update
+Start a screen session with the command  
+
+       screen
 Now run the following command to enter the interactive setup process:
 
         iof-new
 Answer the questions as they appear on the screen to generate the project metadata, as shown in the image below
+![alt text](https://github.com/tlancaster6/InternetOfFish/blob/tucker_dev/resources/metadata_input_example.png?raw=true)
+Once you answer "yes" to the final question, data collection will start immediately (or in the morning, if outside of
+the daylight hours defined in definitions.py). Detach the screen session by pressing ctrl+a then ctrl+d. 
 
+### Checking in on a project that is running
+If you recently started a project, you should be able to check in on it by running
+
+      screen -r
+This will re-attach the screen you used when you first created the project, where you should see informational messages
+occasionally printing to the terminal.  
+
+If running screen -r fails to find a detached screen, that does not necessarily mean that the project has halted.
+Wherever possible, this application errs on the side of keeping itself running. As part of that, during the intial
+configuration, it adds a cronjob to the system's crontab that essentially call iof-resume every time the pi starts up. 
+If the application encounters a fatal error, it will force the pi to reboot, and when the pi boots up it will attempt
+to pick up data collection where it left off. This is intended to automate the all-to-common scenario where some 
+intermittent issue can be solved just be rebooting the pi. A side effect of this behavior, however, is that the
+application will resume in the background, where you can no longer peek in on it using screen -r. For now, the easiest
+way to confirm that such a project is still running is to open one of the debugging logs 
+(located in InternetOfFish/logs) and confirm that the timestamp on the most recent logging message is no more than a few
+seconds old (HINT: to skip to the end of the logfile, open it with nano and press ctrl+w then ctrl+v).
+
+### Ending a project
+When you are ready to end a project (for example, to start a new one), run the following command in the terminal from
+any location.
+
+      iof-end
+
+This creates an empty file called ~/END. Every few seconds, the application checks if this file exists. If it does, it 
+switches to end-mode. In this mode, it will upload any data present in the ~/CichlidPiData folder and then delete
+the local copy. It is very important to run this command before starting a new project, as it is the best way to 
+shut down any sneaky background instance of the application that started automatically when the pi booted up.
