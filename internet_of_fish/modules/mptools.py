@@ -8,6 +8,7 @@ import time
 from queue import Empty, Full
 from internet_of_fish.modules import utils, definitions
 import re
+from typing import Union
 
 """adapted from https://github.com/PamelaM/mptools"""
 
@@ -116,7 +117,7 @@ def sleep_secs(max_sleep, end_time=999999999999999.9):
     return max(0.0, min(end_time - time.time(), max_sleep))
 
 
-# -- Standard Event Queue manager
+# -- Evemt queue message template
 class EventMessage:
     def __init__(self, msg_src, msg_type, msg):
         """
@@ -127,7 +128,7 @@ class EventMessage:
                         'FATAL'.
         :type msg_type: str
         :param msg: additional information about the message, used mostly for logging
-        :type msg: str
+        :type msg: Union[str, List(str)]
 
         """
         self.id = time.time()

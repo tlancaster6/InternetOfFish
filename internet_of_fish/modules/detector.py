@@ -66,7 +66,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             img_paths = [self.overlay_boxes(be) for be in self.buffer]
             vid_path = self.jpgs_to_mp4(img_paths)
             msg = f'possible spawning event in {self.metadata["tank_id"]} at {utils.current_time_iso()}'
-            self.event_q.safe_put(('SPAWNING_EVENT', msg, vid_path))
+            self.event_q.safe_put(mptools.EventMessage(self.name, 'NOTIFY', ['SPAWNING_EVENT', msg, vid_path]))
             self.hit_counter.reset()
             self.buffer = []
         if len(self.buffer) > self.IMG_BUFFER:
@@ -136,6 +136,13 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
     def shutdown(self):
         if self.avg_timer.avg:
             self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
+        # if in testing mode, trigger a notification each time the detector exits
+        if self.metadata['testing'] == 'True':
+            img_paths = [self.overlay_boxes(be) for be in self.buffer]
+            vid_path = self.jpgs_to_mp4(img_paths)
+            msg = f'video from {self.metadata["tank_id"]}'
+            self.event_q.safe_put(mptools.EventMessage(self.name, 'NOTIFY', ['TESTING', msg, vid_path]))
+            self.event_q.safe_put(('SPAWNING_EVENT', msg, vid_path))
         self.work_q.close()
         self.event_q.close()
 
