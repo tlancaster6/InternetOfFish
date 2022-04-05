@@ -60,7 +60,8 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         dets = self.detect(img)
         fish_dets, pipe_det = self.filter_dets(dets)
         self.buffer.append(BufferEntry(cap_time, img, fish_dets + pipe_det))
-        self.check_for_hit(fish_dets, pipe_det)
+        hit_flag = self.check_for_hit(fish_dets, pipe_det)
+        self.hit_counter.increment() if hit_flag else self.hit_counter.decrement()
         if self.hit_counter.hits >= self.HIT_THRESH:
             self.logger.info(f"Hit threshold of {self.HIT_THRESH} exceeded, possible spawning event")
             img_paths = [self.overlay_boxes(be) for be in self.buffer]
@@ -90,15 +91,28 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         return dets
 
     def overlay_boxes(self, buffer_entry: BufferEntry):
-        """open an image, draw detection boxes, and replace the original image"""
+        """open an image, draw detection boxes, and replace the original image"""     
         draw = ImageDraw.Draw(buffer_entry.img)
-        for det in buffer_entry.dets:
-            bbox = det.bbox
+        
+        def overlay_box(det_, color_):
+            bbox = det_.bbox
             draw.rectangle([(bbox.xmin, bbox.ymin), (bbox.xmax, bbox.ymax)],
-                           outline='red')
+                           outline=color_)
             draw.text((bbox.xmin + 10, bbox.ymin + 10),
-                      '%s\n%.2f' % (self.labels.get(det.id, det.id), det.score),
-                      fill='red')
+                      '%s\n%.2f' % (self.labels.get(det_.id, det_.id), det_.score),
+                      fill=color_)
+            
+        fish_dets, pipe_det = self.filter_dets(buffer_entry.dets)
+        intersect_count = 0
+        for det in fish_dets:
+            intersect = detect.BBox.intersect(det.bbox, pipe_det[0].bbox)
+            intersect_count += intersect.valid
+            color = 'green' if intersect.valid else 'red'
+            overlay_box(det, color)
+            
+        color = 'red' if not intersect_count else 'yellow' if intersect_count == 1 else 'green'
+        overlay_box(pipe_det[0], color)
+        
         img_path = os.path.join(self.img_dir, f'{buffer_entry.cap_time}.jpg')
         buffer_entry.img.save(img_path)
         return img_path
@@ -114,7 +128,6 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
     def check_for_hit(self, fish_dets, pipe_det):
         """check for multiple fish intersecting with the pipe and adjust hit counter accordingly"""
         if (len(fish_dets) < 2) or (len(pipe_det) != 1):
-            self.hit_counter.decrement()
             return False
         intersect_count = 0
         pipe_det = pipe_det[0]
@@ -122,10 +135,8 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             intersect = detect.BBox.intersect(det.bbox, pipe_det.bbox)
             intersect_count += intersect.valid
         if intersect_count < 2:
-            self.hit_counter.decrement()
             return False
         else:
-            self.hit_counter.increment()
             return True
 
     def filter_dets(self, dets):
