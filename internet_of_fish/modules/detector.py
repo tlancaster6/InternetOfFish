@@ -39,7 +39,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         self.work_q, = args
 
     def startup(self):
-        self.max_fish = definitions.MAX_FISH if self.metadata['n_fish'] == 'None' else int(self.metadata['max_fish'])
+        self.max_fish = definitions.MAX_FISH if self.metadata['n_fish'] == 'None' else int(self.metadata['n_fish'])
         self.img_dir = definitions.PROJ_IMG_DIR(self.metadata['proj_id'])
 
         model_path = glob(os.path.join(self.MODELS_DIR, self.metadata['model_id'], '*.tflite'))[0]
