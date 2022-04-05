@@ -62,7 +62,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         self.buffer.append(BufferEntry(cap_time, img, fish_dets + pipe_det))
         self.check_for_hit(fish_dets, pipe_det)
         if self.hit_counter.hits >= self.HIT_THRESH:
-            self.logger.log(logging.INFO, f"Hit threshold of {self.HIT_THRESH} exceeded, possible spawning event")
+            self.logger.info(f"Hit threshold of {self.HIT_THRESH} exceeded, possible spawning event")
             img_paths = [self.overlay_boxes(be) for be in self.buffer]
             vid_path = self.jpgs_to_mp4(img_paths)
             msg = f'possible spawning event in {self.metadata["tank_id"]} at {utils.current_time_iso()}'

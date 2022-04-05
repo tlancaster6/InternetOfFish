@@ -98,7 +98,6 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             return 'passive'
 
     def switch_mode(self, target_mode):
-        self.logger.info(f'preparing to switch from {self.curr_mode} to {target_mode}')
         self.clean_event_queue()
         self.soft_shutdown()
         self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q,
@@ -260,7 +259,6 @@ class TestingRunnerWorker(RunnerWorker, metaclass=utils.AutologMetaclass):
         n = notifier.Notification('TESTING', 'TEST_NOTIFICATION', 'testing',
                                   os.path.join(definitions.LOG_DIR, 'RUN.log'))
         self.main_ctx.notification_q.safe_put(n)
-        time.sleep(10)
         self.hard_shutdown()
 
 
