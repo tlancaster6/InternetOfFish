@@ -53,7 +53,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         self.hit_counter = HitCounter()
         self.avg_timer = utils.Averager()
         self.buffer = []
-        self.loop_counter = 1
+        self.loop_counter = 0
 
     def main_func(self, q_item):
         cap_time, img = q_item
@@ -71,6 +71,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             self.buffer = []
         if len(self.buffer) > self.IMG_BUFFER:
             self.buffer.pop(0)
+        self.loop_counter += 1
         self.print_info()
 
     def print_info(self):
