@@ -2,6 +2,7 @@
 # update the repository
 echo 'updating repository'
 cd ~/InternetOfFish
+git reset --hard HEAD
 git pull
 # generate a crontab entry to restart data collection every time the pi reboots
 echo 'setting up cron job'

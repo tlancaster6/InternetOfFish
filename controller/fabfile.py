@@ -55,6 +55,7 @@ def pull(c):
     print(f'Pulling to {c.host}')
     try:
         with c.cd('/home/pi/InternetOfFish'):
+            c.run('git reset --hard HEAD')
             c.run('git pull')
     except Exception as e:
         print(f'pull failed: {e}')
