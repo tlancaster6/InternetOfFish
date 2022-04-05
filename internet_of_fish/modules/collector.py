@@ -62,6 +62,7 @@ class VideoCollectorWorker(CollectorWorker):
 
     def init_args(self, args):
         self.img_q, self.video_file = args
+        self.video_file.replace(':', '\:')
 
     def startup(self):
         if not os.path.exists(self.video_file):
