@@ -241,7 +241,7 @@ class RunnerWorker(mptools.ProcWorker):
             [self.event_q.safe_put(event) for event in kept_events]
 
 
-class TestingRunnerWorker(RunnerWorker):
+class TestingRunnerWorker(RunnerWorker, metaclass=utils.AutologMetaclass):
 
     def init_args(self, args: Tuple[mptools.MainContext, int]):
         self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
@@ -264,7 +264,10 @@ class TestingRunnerWorker(RunnerWorker):
         return self.mode_switch_interval/10
 
     def shutdown(self):
-        n = notifier.Notification('TESTING', 'TEST_NOTIFICATION', 'testing', os.path.join(definitions.LOG_DIR, 'RUN.log'))
+        """to test the notification capabilities, the testing version of the runner worker sends a notification
+        during shutdown"""
+        n = notifier.Notification('TESTING', 'TEST_NOTIFICATION', 'testing',
+                                  os.path.join(definitions.LOG_DIR, 'RUN.log'))
         self.main_ctx.notification_q.safe_put(n)
         self.hard_shutdown()
 

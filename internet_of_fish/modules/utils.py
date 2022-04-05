@@ -4,6 +4,7 @@ import time, datetime
 from internet_of_fish.modules import definitions
 import os, socket, cv2
 from functools import wraps
+from types import FunctionType
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
 logging.getLogger('PIL').setLevel(logging.WARNING)
@@ -174,21 +175,32 @@ def create_project_tree(proj_id):
 #         return new_wrapper
 #     return wrapper_fn
 
-# def strfmt_func_call(fname, *args, **kwargs):
-#     arg_str = ', '.join([str(arg) for arg in args])
-#     kwarg_str = ', '.join([f'{key}={val}' for key, val in kwargs.items()])
-#     return f'{fname}({", ".join([arg_str, kwarg_str])})'
-#
-# def autolog_decorator(logger: logging.Logger):
-#     def decorator(function):
-#         def wrapper(*args, **kwargs):
-#
-#             logger.debug(f'entering {strfmt_func_call(function.__name__, *args, **kwargs)}')
-#             result = function(*args, **kwargs)
-#             logger.debug(f'exiting {function.__name__}')
-#             return result
-#         return wrapper
-#     return decorator
+
+def strfmt_func_call(fname, *args, **kwargs):
+    arg_str = ', '.join([str(arg) for arg in args])
+    kwarg_str = ', '.join([f'{key}={val}' for key, val in kwargs.items()])
+    return f'{fname}({", ".join([arg_str, kwarg_str])})'
+
+
+def autolog(method):
+    @wraps(method)
+    def wrapper(self, *method_args, **method_kwargs):
+        logger = method_args[0].logger
+        logger.debug(f'entering {strfmt_func_call(method.__name__, *method_args, **method_kwargs)}')
+        result = method(self, *method_args, **method_kwargs)
+        logger.debug(f'exiting {method.__name__}')
+        return result
+    return wrapper
+
+
+class AutologMetaclass(type):
+        def __new__(mcs, classname, bases, classDict):
+            newClassDict = {}
+            for attributeName, attribute in classDict.items():
+                if isinstance(attribute, FunctionType):
+                    attribute = autolog(attribute)
+                newClassDict[attributeName] = attribute
+            return type.__new__(mcs, classname, bases, newClassDict)
 
 
 class Averager:
