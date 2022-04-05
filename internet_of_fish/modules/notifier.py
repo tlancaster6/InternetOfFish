@@ -45,15 +45,15 @@ class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             try:
                 message = self.notification_to_sendgrid_message(notification)
                 response = self.api_client.send(message)
-                self.logger.debug(response.status_code)
-                self.logger.debug(response.body)
-                self.logger.debug(response.headers)
+
             except Exception as e:
                 self.logger.debug(f'failed to send message. {tries_left} tries remaining')
                 print(e)
         else:
-            self.logger.warning(f'failed to send message {definitions.MAX_TRIES} times. See NOTIFY.log for more '
-                                f'information')
+            self.logger.warning(f'failed to send message {definitions.MAX_TRIES} times')
+            self.logger.debug(f'response status code: {response.status_code}')
+            self.logger.debug(f'response body: {response.body}')
+            self.logger.debug(f'response headers: {response.headers}')
 
     def check_notification_conditions(self, notification: Notification):
         if not self.last_notification:
