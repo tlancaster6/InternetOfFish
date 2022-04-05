@@ -6,7 +6,7 @@ import os
 
 CODE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(CODE_DIR)
-CREDENTIALS_DIR = os.path.join(CODE_DIR, 'credentials')
+CREDENTIALS_DIR = os.path.join(ROOT_DIR, 'credentials')
 HOST_FILE = os.path.join(CREDENTIALS_DIR, 'hosts.secret')
 CREDENTIAL_FILE = os.path.join(CREDENTIALS_DIR, 'pi_password.secret')
 
@@ -20,7 +20,7 @@ if os.path.exists(CREDENTIAL_FILE):
 else:
     PI_PASSWORD = input('enter pi password')
     if input('save password? (y/n)') == 'y':
-        with open(CREDENTIAL_FILE, 'w') as f:
+        with open(CREDENTIAL_FILE, 'w+') as f:
             f.write(PI_PASSWORD)
 
 with open(HOST_FILE) as f:
