@@ -94,7 +94,7 @@ class VideoCollectorWorker(CollectorWorker):
                          self.metadata['proj_id'],
                          'Videos']
         for i in range(len(path_elements)):
-            potential_path = os.path.join(*path_elements[:i], self.video_file)
+            potential_path = os.path.join(*path_elements[:i+1], self.video_file)
             self.logger.debug(f'checking for video in {potential_path}')
             if os.path.exists(potential_path):
                 self.video_file = potential_path
