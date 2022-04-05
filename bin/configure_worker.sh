@@ -14,3 +14,5 @@ cp ~/InternetOfFish/bin/system_files/.bash_aliases ~/.bash_aliases
 echo 'installing missing requirements/dependencies'
 chmod u+x ~/InternetOfFish/bin/install_requirements_worker.sh
 ~/InternetOfFish/bin/install_requirements_worker.sh
+# download credential files
+rclone copy cichlidVideo:/BioSci-McGrath/Apps/__CredentialFiles/iof_credentials ~/InternetOfFish/credentials
