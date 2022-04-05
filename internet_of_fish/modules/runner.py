@@ -260,6 +260,7 @@ class TestingRunnerWorker(RunnerWorker, metaclass=utils.AutologMetaclass):
         n = notifier.Notification('TESTING', 'TEST_NOTIFICATION', 'testing',
                                   os.path.join(definitions.LOG_DIR, 'RUN.log'))
         self.main_ctx.notification_q.safe_put(n)
+        time.sleep(10)
         self.hard_shutdown()
 
 
