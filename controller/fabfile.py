@@ -102,4 +102,13 @@ def config(c):
     except Exception as e:
         print(f'config failed with error: {e}')
 
+@task(hosts=MY_HOSTS)
+def end(c):
+    print(f'ending projects and uploading from {c.host}')
+    try:
+        with c.cd('/home/pi'):
+            c.run('touch END')
+    except Exception as e:
+        print(f'Error: {e}')
+
 
