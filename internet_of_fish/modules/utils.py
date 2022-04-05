@@ -5,6 +5,7 @@ from internet_of_fish.modules import definitions
 import os, socket, cv2
 from functools import wraps
 from types import FunctionType
+import sys
 
 LOG_DIR, LOG_LEVEL = definitions.LOG_DIR, definitions.LOG_LEVEL
 logging.getLogger('PIL').setLevel(logging.WARNING)
@@ -48,14 +49,21 @@ def make_logger(name):
     formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
     if not os.path.exists(definitions.LOG_DIR):
         os.makedirs(LOG_DIR, exist_ok=True)
-    logging.basicConfig(format=fmt, level=LOG_LEVEL, datefmt=datefmt)
-    logger = logging.getLogger(name)
-    if logger.hasHandlers():
-        logger.handlers.clear()
+
     debug_handler = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
     debug_handler.setLevel(logging.DEBUG)
     debug_handler.setFormatter(formatter)
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    if logger.hasHandlers():
+        logger.handlers.clear()
     logger.addHandler(debug_handler)
+    logger.addHandler(stream_handler)
+
     return logger
 
 
