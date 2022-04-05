@@ -7,7 +7,7 @@ from sendgrid.helpers.mail import (
     Mail, Attachment, FileContent, FileName,
     FileType, Disposition)
 
-class Notification:
+class Notification(metaclass=utils.AutologMetaclass):
     def __init__(self, msg_src, msg_type, msg, attachment_path):
         self.msg_src, self.msg_type, self.msg, self.attachment_path = msg_src, msg_type, msg, attachment_path
         self.id = utils.current_time_iso()

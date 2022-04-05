@@ -8,25 +8,21 @@ import subprocess as sp
 import shutil
 
 
-class RunnerWorker(mptools.ProcWorker):
+class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
     MAX_UPLOAD_WORKERS = definitions.MAX_UPLOAD_WORKERS
 
     def init_args(self, args: Tuple[mptools.MainContext,]):
-        self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
         self.main_ctx, = args
         self.curr_mode = self.expected_mode()
         self.logger.debug(f'RunnerWorker.curr_mode initialized as {self.curr_mode}')
-        self.logger.debug(f"Exiting RunnerWorker.init_args")
 
     def startup(self):
-        self.logger.debug(f"Entering RunnerWorker.startup")
         self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.main_ctx.notification_q)
         self.secondary_ctx = None
         self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
         self.logger.debug(f"RunnerWorker.die_time set to {self.die_time}")
         self.event_q.safe_put(mptools.EventMessage(self.name, f'ENTER_{self.curr_mode.upper()}_MODE', 'kickstart'))
         self.logger.debug(f'kickstarting RunnerWorker with ENTER_{self.curr_mode.upper()}_MODE')
-        self.logger.debug(f"Exiting RunnerWorker.startup")
 
 
     def main_func(self):
@@ -133,14 +129,11 @@ class RunnerWorker(mptools.ProcWorker):
 
     def hard_shutdown(self):
         self.soft_shutdown()
-        self.logger.debug(f'entering hard_shutdown.')
         self.main_ctx.stop_all_procs()
         self.main_ctx.stop_all_queues()
-        self.logger.debug(f'exiting hard shutdown.')
         self.logger.info(f'Program exiting')
 
     def soft_shutdown(self):
-        self.logger.debug(f'entering soft_shutdown')
         tries_left = definitions.MAX_TRIES
         if not self.secondary_ctx:
             self.logger.debug('secondary context has already been shut down')
@@ -166,13 +159,11 @@ class RunnerWorker(mptools.ProcWorker):
         self.logger.debug('secondary context successfully shut down')
         self.secondary_ctx = None
         self.event_q.drain()
-        self.logger.debug('exiting soft_shutdown.')
 
     def sleep_until_morning(self):
         return utils.sleep_until_morning()
 
     def queue_uploads(self, proj_id=None, queue_end_signals=True):
-        self.logger.debug('entering queue_uploads')
         proj_id = proj_id if proj_id else self.metadata['proj_id']
         proj_dir = definitions.PROJ_DIR(proj_id)
         proj_log_dir = definitions.PROJ_LOG_DIR(proj_id)

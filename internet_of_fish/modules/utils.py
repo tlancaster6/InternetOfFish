@@ -179,15 +179,18 @@ def create_project_tree(proj_id):
 def strfmt_func_call(fname, *args, **kwargs):
     arg_str = ', '.join([str(arg) for arg in args])
     kwarg_str = ', '.join([f'{key}={val}' for key, val in kwargs.items()])
-    return f'{fname}({", ".join([arg_str, kwarg_str])})'
+    all_args_str = ", ".join([arg_str, kwarg_str])
+    all_args_str = all_args_str if all_args_str.strip() != ',' else ''
+    return f'{fname}({all_args_str})'
 
 
 def autolog(method):
     @wraps(method)
     def wrapper(self, *method_args, **method_kwargs):
-        print(method_args)
-        print(method_kwargs)
-        logger = self.logger
+        try:
+            logger = self.logger
+        except AttributeError:
+            return method(self, *method_args, **method_kwargs)
         logger.debug(f'entering {strfmt_func_call(method.__name__, *method_args, **method_kwargs)}')
         result = method(self, *method_args, **method_kwargs)
         logger.debug(f'exiting {method.__name__}')

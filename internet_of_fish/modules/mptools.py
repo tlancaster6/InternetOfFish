@@ -174,7 +174,7 @@ def init_signals(shutdown_event, int_handler, term_handler):
 
 # -- Worker Process classes
 
-class ProcWorker:
+class ProcWorker(metaclass=utils.AutologMetaclass):
     MAX_TERMINATE_CALLED = definitions.MAX_TRIES
     int_handler = staticmethod(default_signal_handler)
     term_handler = staticmethod(default_signal_handler)
@@ -194,25 +194,20 @@ class ProcWorker:
             raise ValueError(f"Unexpected arguments to ProcWorker.init_args: {args}")
 
     def init_signals(self):
-        self.logger.log(logging.DEBUG, "Entering init_signals")
         signal_object = init_signals(self.shutdown_event, self.int_handler, self.term_handler)
         return signal_object
 
     def main_loop(self):
-        self.logger.log(logging.DEBUG, "Entering main_loop")
         while not self.shutdown_event.is_set():
             self.main_func()
 
     def startup(self):
-        self.logger.log(logging.DEBUG, "Entering startup")
         pass
 
     def shutdown(self):
-        self.logger.log(logging.DEBUG, "Entering shutdown")
         pass
 
     def main_func(self, *args):
-        self.logger.log(logging.DEBUG, "Entering main_func")
         raise NotImplementedError(f"{self.__class__.__name__}.main_func is not implemented")
 
     def run(self):
@@ -227,41 +222,33 @@ class ProcWorker:
             # -- Catch ALL exceptions, even Terminate and Keyboard interrupt
             self.logger.log(logging.ERROR, f"Exception Shutdown: {exc}", exc_info=True)
             self.event_q.safe_put(EventMessage(self.name, "FATAL", f"{exc}"))
-            # if type(exc) in (TerminateInterrupt, KeyboardInterrupt):
-            #     sys.exit(1)
-            # else:
-            #     sys.exit(2)
         finally:
             self.shutdown()
 
 
-class TimerProcWorker(ProcWorker):
+class TimerProcWorker(ProcWorker, metaclass=utils.AutologMetaclass):
     INTERVAL_SECS = definitions.DEFAULT_INTERVAL_SECS
     MAX_SLEEP_SECS = definitions.DEFAULT_MAX_SLEEP_SECS
 
     def main_loop(self):
-        self.logger.log(logging.DEBUG, "Entering TimerProcWorker.main_loop")
         next_time = time.time() + self.INTERVAL_SECS
         while not self.shutdown_event.is_set():
             time.sleep(sleep_secs(self.MAX_SLEEP_SECS, next_time))
             if time.time() > next_time:
-                self.logger.log(logging.DEBUG, f"TimerProcWorker.main_loop : calling main_func")
                 self.main_func()
                 next_time = time.time() + self.INTERVAL_SECS
 
 
-class QueueProcWorker(ProcWorker):
+class QueueProcWorker(ProcWorker, metaclass=utils.AutologMetaclass):
     def init_args(self, args):
-        self.logger.log(logging.DEBUG, f"Entering QueueProcWorker.init_args : {args}")
         self.work_q, = args
 
     def main_loop(self):
-        self.logger.log(logging.DEBUG, "Entering QueueProcWorker.main_loop")
         while not self.shutdown_event.is_set():
             item = self.work_q.safe_get()
             if not item:
                 continue
-            self.logger.log(logging.DEBUG, f"QueueProcWorker.main_loop received '{item}' message")
+            self.logger.debug(f"QueueProcWorker.main_loop received '{item}' message")
             if item == "END":
                 break
             else:
@@ -275,7 +262,7 @@ def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, even
     return proc_worker.run()
 
 
-class Proc:
+class Proc(metaclass=utils.AutologMetaclass):
     STARTUP_WAIT_SECS = definitions.DEFAULT_STARTUP_WAIT_SECS
     SHUTDOWN_WAIT_SECS = definitions.DEFAULT_SHUTDOWN_WAIT_SECS
 
@@ -287,23 +274,21 @@ class Proc:
         self.startup_event = mp.Event()
         self.proc = mp.Process(target=proc_worker_wrapper,
                                args=(worker_class, name, self.startup_event, shutdown_event, event_q, metadata, *args))
-        self.logger.log(logging.DEBUG, f"Proc.__init__ starting : {name}")
+        self.logger.debug(f"Proc.__init__ starting : {name}")
         self.proc.start()
         started = self.startup_event.wait(timeout=Proc.STARTUP_WAIT_SECS)
-        self.logger.log(logging.DEBUG, f"Proc.__init__ starting : {name} got {started}")
+        self.logger.debug(f"Proc.__init__ starting : {name} got {started}")
         if not started:
             self.terminate()
             raise RuntimeError(f"Process {name} failed to startup after {Proc.STARTUP_WAIT_SECS} seconds")
 
     def full_stop(self, wait_time=SHUTDOWN_WAIT_SECS):
-        self.logger.log(logging.DEBUG, f"Proc.full_stop stopping : {self.name}")
         self.shutdown_event.set()
         self.proc.join(wait_time)
         if self.proc.is_alive():
             self.terminate()
 
     def terminate(self):
-        self.logger.log(logging.DEBUG, f"Proc.terminate terminating : {self.name}")
         NUM_TRIES = 3
         tries = NUM_TRIES
         while tries and self.proc.is_alive():
@@ -328,7 +313,7 @@ class Proc:
 
 
 # -- Main Wrappers
-class MainContext:
+class MainContext(metaclass=utils.AutologMetaclass):
     STOP_WAIT_SECS = definitions.DEFAULT_SHUTDOWN_WAIT_SECS
 
     def __init__(self, metadata: dict):
@@ -400,16 +385,15 @@ class MainContext:
                 dead_procs.append(proc)
                 exitcode = proc.proc.exitcode
                 if exitcode:
-                    self.logger.log(logging.ERROR, f"Process {proc.name} ended with exitcode {exitcode}")
+                    self.logger.error(f"Process {proc.name} ended with exitcode {exitcode}")
                     num_failed += 1
                 else:
-                    self.logger.log(logging.DEBUG, f"Process {proc.name} stopped successfully")
+                    self.logger.debug(f"Process {proc.name} stopped successfully")
 
         self.procs = [proc for proc in self.procs if proc not in dead_procs]
         return num_failed, num_terminated
 
     def stop_procs_by_name(self, name, **kwargs):
-        self.logger.debug('entering context.stop_proc')
         target_procs = [proc for proc in self.procs if re.fullmatch(name, proc.name)]
         if not target_procs:
             self.logger.debug(f'no processes with names matching {name}')
@@ -419,13 +403,11 @@ class MainContext:
         return num_failed, num_terminated
 
     def stop_all_procs(self, **kwargs):
-        self.logger.debug(f'stopping all procs')
         self.shutdown_event.set()
         num_failed, num_terminated = self.stop_procs(self.procs, kwargs)
         return num_failed, num_terminated
 
     def stop_all_queues(self):
-        self.logger.debug(f'stopping queues')
         num_items_left = 0
         self.shutdown_event.set()
         # -- Clear the queues list and close all associated queues

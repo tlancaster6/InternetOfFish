@@ -89,7 +89,6 @@ class UploaderWorker(QueueProcWorker):
         :return: path to newly-created mp4 file, or None if the conversion failed
         :rtype: str
         """
-        self.logger.debug('entering UploaderWorker.h264_to_mp4')
         mp4_path = h264_path.replace('.h264', '.mp4')
         command = ['ffmpeg', '-r', str(definitions.FRAMERATE), '-i', h264_path, '-threads', '1', '-c:v', 'copy', '-r',
                    str(definitions.FRAMERATE), mp4_path]
@@ -112,10 +111,8 @@ class UploaderWorker(QueueProcWorker):
         prints some debugging information to the log before the process shuts down, especially if there are unprocessed
         items in the upload_list.
         """
-        self.logger.debug('entering UploaderWorker.shutdown')
         self.event_q.close()
         self.work_q.close()
-        self.logger.debug('exiting UploaderWorker.shutdown')
 
 
 class EndUploaderWorker(UploaderWorker):
