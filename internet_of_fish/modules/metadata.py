@@ -10,7 +10,7 @@ my_regexes.any_float = r'[0-9]*\.?[0-9]+'
 my_regexes.any_float_less_than_1 = r'0*?\.[0-9]+'
 my_regexes.any_int_less_than_24 = r'([01]?[0-9]|2[0-3])'
 my_regexes.any_iso_date = r'\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])'
-my_regexes.any_iso_time = r'([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0:9]'
+my_regexes.any_iso_time = r'([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]'
 my_regexes.any_iso_datetime = r'{}T{}'.format(my_regexes.any_iso_date, my_regexes.any_iso_time)
 my_regexes.any_email = r'.+@.+\.(com|edu|org)'
 my_regexes.any_tank_id = r't\d{3}[a-zA-Z]*'
@@ -156,7 +156,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
     def simplify(self):
         """return a simple dict composed of {MetaValue.key: MetaValue.value} for each MetaValue in self.contents
         if MetaValue.Value is itself derived from the MetaDataDictBase class, the __getitem__ behavior will cause
-        this method to be called recursively until the return value is a nested dict of strings"""
+        this method to be called recursively until the return value is a nested dict of simple objects"""
         return {key: self[key] for key in self.contents.keys()}
 
     def keys(self):
@@ -215,7 +215,7 @@ class MetaValue:
 
 class AdvancedConfigDict(MetaDataDictBase):
 
-    def __init(self):
+    def __init__(self):
         super().__init__('METADATA')
         self.contents = {
             'MAX_DETS':
@@ -227,7 +227,7 @@ class AdvancedConfigDict(MetaDataDictBase):
             'CONF_THRESH':
                 MetaValue(key='CONF_THRESH',
                           value='0.4',
-                          pattern=my_regexes.any_float_less_than_one,
+                          pattern=my_regexes.any_float_less_than_1,
                           help_str='detector score threshold'),
             'INTERVAL_SECS':
                 MetaValue(key='INTERVAL_SECS',
@@ -377,7 +377,7 @@ class MetaDataDict(MetaDataDictBase):
                                      value='False',
                                      required=False),
             'advanced_config': MetaValue(key='advanced_config',
-                                         value=AdvancedConfigDict('METADATA'))
+                                         value=AdvancedConfigDict())
         }
 
         # add a few special MetaValue objects that generate their values dynamically
