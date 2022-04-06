@@ -27,6 +27,8 @@ class MPQueue(mpq.Queue):
         :param kwargs: keyword args passed to the parent class __init__
         """
         ctx = mp.get_context()
+        if 'maxsize' not in kwargs:
+            kwargs.update({'maxsize': 100})
         super().__init__(*args, **kwargs, ctx=ctx)
 
     def safe_get(self, timeout=DEFAULT_POLLING_TIMEOUT):
