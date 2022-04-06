@@ -223,10 +223,10 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             else:
                 tossed_events.append(event)
         if tossed_events:
-            tossed_events_str ="\n\t".join(tossed_events)
+            tossed_events_str = "\n\t".join([event.msg for event in tossed_events])
             self.logger.debug(f'Tossing the following events without acting on them:\n {tossed_events_str}')
         if kept_events:
-            kept_events_str = "\n\t".join(kept_events)
+            kept_events_str = "\n\t".join([event.msg for event in kept_events])
             self.logger.debug(f'Returning the following events to the event queue:\n {kept_events_str}')
             [self.event_q.safe_put(event) for event in kept_events]
 
