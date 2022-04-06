@@ -23,8 +23,8 @@ PROJ_LOG_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Logs')
 # project-specific parameters
 MAX_FISH = 5  # maximum number of fish detections that should be returned
 CONF_THRESH = 0.4  # classifier score threshold
-HIT_THRESH = 10  # hit counter threshold
 INTERVAL_SECS = 1.0  # time between image captures in seconds
+HIT_THRESH = int(5/INTERVAL_SECS)  # hit counter threshold
 IMG_BUFFER = int(30/INTERVAL_SECS)  # number of sequential images that will be sent if a spawning event is detected
 START_HOUR = 8  # hour when data collection starts. e.g., if START_HOUR=8, collection starts at 8:00am
 END_HOUR = 18  # hour when data collection ends. e.g., if END_HOUR=19, collection stops at 7:00pm
