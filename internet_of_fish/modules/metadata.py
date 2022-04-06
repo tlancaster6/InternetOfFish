@@ -97,6 +97,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         recognizes when the value can be converted to a float, int, bool, datetime.date, datetime.time,
         datetime.datetime, or NoneType object and returns it as such"""
         retval = self.contents[key].value
+        print(type(retval))
         if isinstance(retval, dict):
             return retval
         if isinstance(retval, self.__class__):
@@ -123,8 +124,8 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         value = str(value)
         if key not in self.contents.keys():
             self.logger.warning(f'attempted to set non-existant key {key} in MetaDataDict')
-        elif value == 'None':
-            self.contents[key].value = value
+        elif re.fullmatch(my_regexes.any_null, value):
+            self.contents[key].value = 'None'
         elif self.contents[key].pattern and not re.match(self.contents[key].pattern, value):
             self.logger.warning(f'attempted to set {key} to {value}, but value did not match {self.contents[key].pattern}')
         elif self.contents[key].options and value not in self.contents[key].options:
