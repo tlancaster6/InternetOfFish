@@ -97,9 +97,9 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         recognizes when the value can be converted to a float, int, bool, datetime.date, datetime.time,
         datetime.datetime, or NoneType object and returns it as such"""
         retval = self.contents[key].value
-        if isinstance(retval, MetaDataDictBase):
+        if isinstance(retval, dict):
             return retval
-        if isinstance(retval, type(self)):
+        if isinstance(retval, MetaDataDictBase):
             return retval.simplify()
         if callable(retval):
             return str(retval())
@@ -170,7 +170,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
 
 class MetaValue:
 
-    def __init__(self, key, value: Union[str, Callable[[], str], dict, Type[MetaDataDictBase]] = 'None', prompt=None,
+    def __init__(self, key, value: Union[str, Callable[[], str], dict, MetaDataDictBase] = 'None', prompt=None,
                  options=None, required=True, simplify=True, pattern='.*', mapping=None, help_str=None):
         """data container for MetaDataDict entries that includes information required query the user about the value
         and enforce various conditions on the value
