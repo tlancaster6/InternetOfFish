@@ -11,11 +11,14 @@ LOG_DIR = definitions.LOG_DIR
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
 
-def freeze_definitions(additional_definitions=None):
-    defs = {}
+def freeze_definitions(proj_id, additional_definitions=None):
+    defs = {'PROJ_ID': proj_id}
     for setting in dir(definitions):
         if setting.isupper() and not setting.startswith('_'):
-            defs.update({setting: getattr(definitions, setting)})
+            if callable(getattr(definitions, setting)):
+                defs.update({setting: getattr(definitions, setting)(proj_id)})
+            else:
+                defs.update({setting: getattr(definitions, setting)})
     if additional_definitions:
         defs.update(additional_definitions)
     return SimpleNamespace(**defs)

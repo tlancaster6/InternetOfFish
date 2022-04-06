@@ -1,4 +1,4 @@
-from internet_of_fish.modules import mptools, utils, definitions
+from internet_of_fish.modules import mptools, utils
 import base64
 import os
 from datetime import datetime as dt
@@ -24,11 +24,11 @@ class Notification:
 
 
 class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
-    MIN_NOTIFICATION_INTERVAL = definitions.MIN_NOTIFICATION_INTERVAL
 
     def startup(self):
+        self.MIN_NOTIFICATION_INTERVAL = self.defs.MIN_NOTIFICATION_INTERVAL
         self.user_email = self.metadata['email']
-        with open(definitions.SENDGRID_KEY_FILE, 'r') as f:
+        with open(self.defs.SENDGRID_KEY_FILE, 'r') as f:
             api_key = f.read().strip()
         self.api_client = SendGridAPIClient(api_key)
         self.last_notification = None
@@ -39,7 +39,7 @@ class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             return
 
         self.logger.info(f'sending notification to user:\n{notification}')
-        tries_left = definitions.MAX_TRIES
+        tries_left = self.defs.MAX_TRIES
         while tries_left:
             tries_left -= 1
             try:
@@ -50,7 +50,7 @@ class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
                 self.logger.debug(f'failed to send message. {tries_left} tries remaining')
                 print(e)
         else:
-            self.logger.warning(f'failed to send message {definitions.MAX_TRIES} times')
+            self.logger.warning(f'failed to send message {self.defs.MAX_TRIES} times')
             self.logger.debug(f'response status code: {response.status_code}')
             self.logger.debug(f'response body: {response.body}')
             self.logger.debug(f'response headers: {response.headers}')

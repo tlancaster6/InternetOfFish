@@ -6,14 +6,11 @@ import signal
 import sys
 import time
 from queue import Empty, Full
-from internet_of_fish.modules import utils, definitions
+from internet_of_fish.modules import utils
 import re
 from typing import Union
 
 """adapted from https://github.com/PamelaM/mptools"""
-
-DEFAULT_POLLING_TIMEOUT = definitions.DEFAULT_POLLING_TIMEOUT
-DEFAULT_MAX_SLEEP_SECS = definitions.DEFAULT_MAX_SLEEP_SECS
 
 
 # -- Queue handling support
@@ -31,7 +28,7 @@ class MPQueue(mpq.Queue):
             kwargs.update({'maxsize': 100})
         super().__init__(*args, **kwargs, ctx=ctx)
 
-    def safe_get(self, timeout=DEFAULT_POLLING_TIMEOUT):
+    def safe_get(self, timeout=0.02):
         """
         similar to the base .get() method, but more robust. In situations where .get() would raise an Empty
         exception, this method catches the exception and returns None. This method also obscures the .get() block
@@ -56,7 +53,7 @@ class MPQueue(mpq.Queue):
             # catch the Empty exception that might be raised by either of the above self.get calls, and return None
             return None
 
-    def safe_put(self, item, timeout=DEFAULT_POLLING_TIMEOUT):
+    def safe_put(self, item, timeout=0.02):
         """
         similar to the .put() base class, but more robust. In situations where .put() would raise the Full exception,
         this method catches the exception and instead returns False. Also obscures the .put() block keyword argument
@@ -148,7 +145,7 @@ class TerminateInterrupt(BaseException):
 
 
 class SignalObject:
-    MAX_TERMINATE_CALLED = definitions.MAX_TRIES
+    MAX_TERMINATE_CALLED = 3
 
     def __init__(self, shutdown_event):
         self.terminate_called = 0
@@ -178,13 +175,14 @@ def init_signals(shutdown_event, int_handler, term_handler):
 # -- Worker Process classes
 
 class ProcWorker(metaclass=utils.AutologMetaclass):
-    MAX_TERMINATE_CALLED = definitions.MAX_TRIES
     int_handler = staticmethod(default_signal_handler)
     term_handler = staticmethod(default_signal_handler)
 
     def __init__(self, name, startup_event, shutdown_event, event_q, metadata, *args):
         self.name = name
         self.metadata = metadata
+        self.defs = utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
+        self.MAX_TERMINATE_CALLED = self.defs.MAX_TRIES
         self.logger = utils.make_logger(name)
         self.startup_event = startup_event
         self.shutdown_event = shutdown_event
@@ -230,8 +228,8 @@ class ProcWorker(metaclass=utils.AutologMetaclass):
 
 
 class TimerProcWorker(ProcWorker, metaclass=utils.AutologMetaclass):
-    INTERVAL_SECS = definitions.DEFAULT_INTERVAL_SECS
-    MAX_SLEEP_SECS = definitions.DEFAULT_MAX_SLEEP_SECS
+    INTERVAL_SECS = 10
+    MAX_SLEEP_SECS = 0.02
 
     def main_loop(self):
         next_time = time.time() + self.INTERVAL_SECS
@@ -266,11 +264,12 @@ def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, even
 
 
 class Proc(metaclass=utils.AutologMetaclass):
-    STARTUP_WAIT_SECS = definitions.DEFAULT_STARTUP_WAIT_SECS
-    SHUTDOWN_WAIT_SECS = definitions.DEFAULT_SHUTDOWN_WAIT_SECS
 
     def __init__(self, name, worker_class, shutdown_event, event_q, metadata, *args):
         self.metadata = metadata
+        self.defs = utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
+        self.STARTUP_WAIT_SECS = self.defs.DEFAULT_STARTUP_WAIT_SECS
+        self.SHUTDOWN_WAIT_SECS = self.defs.DEFAULT_SHUTDOWN_WAIT_SECS
         self.logger = utils.make_logger(name)
         self.name = name
         self.shutdown_event = shutdown_event
@@ -279,30 +278,33 @@ class Proc(metaclass=utils.AutologMetaclass):
                                args=(worker_class, name, self.startup_event, shutdown_event, event_q, metadata, *args))
         self.logger.debug(f"Proc.__init__ starting : {name}")
         self.proc.start()
-        started = self.startup_event.wait(timeout=Proc.STARTUP_WAIT_SECS)
+        started = self.startup_event.wait(timeout=self.STARTUP_WAIT_SECS)
         self.logger.debug(f"Proc.__init__ starting : {name} got {started}")
         if not started:
             self.terminate()
-            raise RuntimeError(f"Process {name} failed to startup after {Proc.STARTUP_WAIT_SECS} seconds")
+            raise RuntimeError(f"Process {name} failed to startup after {self.STARTUP_WAIT_SECS} seconds")
 
-    def full_stop(self, wait_time=SHUTDOWN_WAIT_SECS):
+    def full_stop(self, wait_time=None):
+        wait_time = wait_time if wait_time else self.STARTUP_WAIT_SECS
         self.shutdown_event.set()
         self.proc.join(wait_time)
         if self.proc.is_alive():
             self.terminate()
 
     def terminate(self):
-        tries = definitions.MAX_TRIES
+        tries = self.defs.MAX_TRIES
         while tries and self.proc.is_alive():
             self.proc.terminate()
             time.sleep(0.1)
             tries -= 1
 
         if self.proc.is_alive():
-            self.logger.log(logging.ERROR, f"Proc.terminate failed to terminate {self.name} after {NUM_TRIES} attempts")
+            self.logger.log(logging.ERROR, f"Proc.terminate failed to terminate {self.name} after "
+                                           f"{self.defs.MAX_PAGE} attempts")
             return False
         else:
-            self.logger.log(logging.INFO, f"Proc.terminate terminated {self.name} after {NUM_TRIES - tries} attempt(s)")
+            self.logger.log(logging.INFO, f"Proc.terminate terminated {self.name} after "
+                                          f"{self.defs.MAX_TRIES - tries} attempt(s)")
             return True
 
     def __enter__(self):
@@ -316,10 +318,12 @@ class Proc(metaclass=utils.AutologMetaclass):
 
 # -- Main Wrappers
 class MainContext(metaclass=utils.AutologMetaclass):
-    STOP_WAIT_SECS = definitions.DEFAULT_SHUTDOWN_WAIT_SECS
+
 
     def __init__(self, metadata: dict):
         self.metadata = metadata
+        self.defs = utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
+        self.STOP_WAIT_SECS = self.defs.DEFAULT_SHUTDOWN_WAIT_SECS
         self.procs = []
         self.queues = []
         self.shutdown_event = mp.Event()
@@ -345,14 +349,6 @@ class MainContext(metaclass=utils.AutologMetaclass):
         return not exc_type
 
     def Proc(self, name, worker_class, *args, **kwargs):
-        """
-
-        :param name:
-        :param worker_class:
-        :param args:
-        :param kwargs:
-        :return:
-        """
         proc = Proc(name, worker_class, self.shutdown_event, self.event_queue, self.metadata, *args)
         self.procs.append(proc)
         return proc

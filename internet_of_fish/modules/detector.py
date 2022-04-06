@@ -10,7 +10,7 @@ from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
 import internet_of_fish.modules.advanced_utils
-from internet_of_fish.modules import definitions, mptools, utils
+from internet_of_fish.modules import mptools, utils
 
 BufferEntry = namedtuple('BufferEntry', ['cap_time', 'img', 'dets'])
 
@@ -31,17 +31,18 @@ class HitCounter:
 
 
 class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
-    MODELS_DIR = definitions.MODELS_DIR
-    DATA_DIR = definitions.DATA_DIR
-    HIT_THRESH = definitions.HIT_THRESH
-    IMG_BUFFER = definitions.IMG_BUFFER
+
 
     def init_args(self, args):
         self.work_q, = args
+        self.MODELS_DIR = self.defs.MODELS_DIR
+        self.DATA_DIR = self.defs.DATA_DIR
+        self.HIT_THRESH = self.defs.HIT_THRESH
+        self.IMG_BUFFER = self.defs.IMG_BUFFER
 
     def startup(self):
-        self.max_fish = definitions.MAX_FISH if self.metadata['n_fish'] == 'None' else int(self.metadata['n_fish'])
-        self.img_dir = definitions.PROJ_IMG_DIR(self.metadata['proj_id'])
+        self.max_fish = self.metadata['n_fish'] if self.metadata['n_fish'] else self.defs.MAX_DETS
+        self.img_dir = self.defs.PROJ_IMG_DIR
 
         model_path = glob(os.path.join(self.MODELS_DIR, self.metadata['model_id'], '*.tflite'))[0]
         label_path = glob(os.path.join(self.MODELS_DIR, self.metadata['model_id'], '*.txt'))[0]
@@ -87,7 +88,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         _, scale = common.set_resized_input(
             self.interpreter, img.size, lambda size: img.resize(size, Image.ANTIALIAS))
         self.interpreter.invoke()
-        dets = detect.get_objects(self.interpreter, definitions.CONF_THRESH, scale)
+        dets = detect.get_objects(self.interpreter, self.defs.CONF_THRESH, scale)
         self.avg_timer.update(time.time() - start)
         return dets
 
@@ -120,8 +121,8 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
 
     def jpgs_to_mp4(self, img_paths, delete_jpgs=True):
         """convert a series of jpgs to a single mp4, and (if delete_jpgs) delete the original images"""
-        dest_dir = definitions.PROJ_VID_DIR(self.metadata['proj_id'])
-        vid_path = internet_of_fish.modules.advanced_utils.jpgs_to_mp4(img_paths, dest_dir)
+        dest_dir = self.defs.PROJ_VID_DIR
+        vid_path = internet_of_fish.modules.advanced_utils.jpgs_to_mp4(img_paths, dest_dir, 1//self.defs.INTERVAL_SECS)
         if delete_jpgs:
             [os.remove(x) for x in img_paths]
         return vid_path

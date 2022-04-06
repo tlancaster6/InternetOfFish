@@ -218,11 +218,12 @@ class AdvancedConfigDict(MetaDataDictBase):
     def __init(self):
         super().__init__('METADATA')
         self.contents = {
-            'MAX_FISH':
-                MetaValue(key='MAX_FISH',
+            'MAX_DETS':
+                MetaValue(key='MAX_DETS',
                           value='5',
                           pattern=my_regexes.any_int,
-                          help_str='maximum number of fish detections that should be returned'),
+                          help_str='maximum number of fish detections that should be returned. Ignored if n_fish is'
+                                   'specified during metadata creation'),
             'CONF_THRESH':
                 MetaValue(key='CONF_THRESH',
                           value='0.4',
@@ -294,21 +295,6 @@ class AdvancedConfigDict(MetaDataDictBase):
                           value='3',
                           pattern=my_regexes.any_int,
                           help_str='max number of times to retry various failure-prone operations'),
-            'DEFAULT_POLLING_TIMEOUT':
-                MetaValue(key='DEFAULT_POLLING_TIMEOUT',
-                          value='0.02',
-                          pattern=my_regexes.any_float,
-                          help_str='max number of seconds to wait for a new queue item to appear'),
-            'DEFAULT_MAX_SLEEP_SECS':
-                MetaValue(key='DEFAULT_MAX_SLEEP_SECS',
-                          value='0.02',
-                          pattern=my_regexes.any_float,
-                          help_str='max number of seconds to wait for various rapidly-occurring actions'),
-            'DEFAULT_INTERVAL_SECS':
-                MetaValue(key='DEFAULT_INTERVAL_SECS',
-                          value='10',
-                          pattern=my_regexes.any_float,
-                          help_str='default loop interval for unmodified TimerProcWorker processes'),
             'DEFAULT_STARTUP_WAIT_SECS':
                 MetaValue(key='DEFAULT_STARTUP_WAIT_SECS',
                           value='10',

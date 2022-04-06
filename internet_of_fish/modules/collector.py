@@ -2,24 +2,24 @@ import logging, os, io, time
 from PIL import Image
 from internet_of_fish.modules import mptools
 from internet_of_fish.modules import utils
-from internet_of_fish.modules import definitions
 import picamera
 import cv2
 
 
 class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass):
-    INTERVAL_SECS = definitions.INTERVAL_SECS
-    RESOLUTION = definitions.RESOLUTION  # pi camera resolution
-    FRAMERATE = definitions.FRAMERATE  # pi camera framerate
-    DATA_DIR = definitions.DATA_DIR
-    MAX_VIDEO_LEN = definitions.MAX_VIDEO_LEN
+
 
     def init_args(self, args):
         self.img_q, = args
+        self.INTERVAL_SECS = self.defs.INTERVAL_SECS
+        self.RESOLUTION = (self.defs.H_RESOLUTION, self.defs.V_RESOLUTION)  # pi camera resolution
+        self.FRAMERATE = self.defs.FRAMERATE  # pi camera framerate
+        self.DATA_DIR = self.defs.DATA_DIR
+        self.MAX_VIDEO_LEN = self.defs.MAX_VIDEO_LEN
 
     def startup(self):
         self.cam = self.init_camera()
-        self.vid_dir =definitions.PROJ_VID_DIR(self.metadata['proj_id'])
+        self.vid_dir = self.defs.PROJ_VID_DIR
         self.cam.start_recording(self.generate_vid_path())
         self.last_split = time.time()
 
@@ -60,13 +60,13 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
 
 
 class VideoCollectorWorker(CollectorWorker):
-    VIRTUAL_INTERVAL_SECS = definitions.INTERVAL_SECS
-    INTERVAL_SECS = 0.1
+
     """functions like a CollectorWorker, but gathers images from an existing file rather than a camera"""
 
     def init_args(self, args):
         self.img_q, self.video_file = args
-        self.video_file.replace(':', '\:')
+        self.VIRTUAL_INTERVAL_SECS = self.defs.INTERVAL_SECS
+        self.INTERVAL_SECS = 0.1
 
     def startup(self):
         if not os.path.exists(self.video_file):
@@ -99,8 +99,8 @@ class VideoCollectorWorker(CollectorWorker):
             self.img_q.safe_put('END')
 
     def locate_video(self):
-        path_elements = [definitions.HOME_DIR,
-                         * os.path.relpath(self.DATA_DIR, definitions.HOME_DIR).split(os.sep),
+        path_elements = [self.defs.HOME_DIR,
+                         * os.path.relpath(self.DATA_DIR, self.defs.HOME_DIR).split(os.sep),
                          self.metadata['proj_id'],
                          'Videos']
         for i in range(len(path_elements)):
@@ -112,7 +112,7 @@ class VideoCollectorWorker(CollectorWorker):
             self.logger.debug('no video found')
         if not os.path.exists(self.video_file):
             self.logger.log(logging.ERROR, f'failed to locate video file {self.video_file}. '
-                                           f'Try placing it in {definitions.HOME_DIR}')
+                                           f'Try placing it in {self.defs.HOME_DIR}')
             raise FileNotFoundError
 
 

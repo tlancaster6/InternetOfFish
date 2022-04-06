@@ -1,9 +1,9 @@
 import os
-
+import cv2
 from internet_of_fish.modules import definitions
 
 
-def jpgs_to_mp4(img_paths, dest_dir, fps=1//definitions.INTERVAL_SECS):
+def jpgs_to_mp4(img_paths, dest_dir, fps):
     """create a video from a directory of images
 
     :param img_paths: list of paths to images that will be combined into an mp4
