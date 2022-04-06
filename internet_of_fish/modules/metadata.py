@@ -100,7 +100,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         print(type(retval))
         if isinstance(retval, dict):
             return retval
-        if isinstance(retval, Type[self.__class__]):
+        if isinstance(retval, type(self)):
             return retval.simplify()
         if callable(retval):
             return str(retval())
