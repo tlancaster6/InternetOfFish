@@ -5,18 +5,18 @@ from typing import Union, Callable, Type
 from types import SimpleNamespace
 
 my_regexes = SimpleNamespace()
-my_regexes.any_int = '\d+'
-my_regexes.any_float = '[0-9]*\.?[0-9]+'
-my_regexes.any_float_less_than_1 = '0*?\.[0-9]+'
-my_regexes.any_int_less_than_24 = '([01]?[0-9]|2[0-3])'
-my_regexes.any_iso_date = '\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])'
-my_regexes.any_iso_time = '([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0:9]'
-my_regexes.any_iso_datetime = my_regexes.any_iso_date + 'T' + my_regexes.any_iso_time
-my_regexes.any_email = '.+@.+\.(com|edu|org)'
-my_regexes.any_tank_id = 't\d{3}[a-zA-Z]*'
-my_regexes.any_movie = '.+\.(mp4|h264)'
-my_regexes.any_bool = '[tT]rue|[fF]alse'
-my_regexes.any_null = '[Nn][Oo][Nn][Ee]|[Nn][Uu][Ll][Ll]|'
+my_regexes.any_int = r'\d+'
+my_regexes.any_float = r'[0-9]*\.?[0-9]+'
+my_regexes.any_float_less_than_1 = r'0*?\.[0-9]+'
+my_regexes.any_int_less_than_24 = r'([01]?[0-9]|2[0-3])'
+my_regexes.any_iso_date = r'\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])'
+my_regexes.any_iso_time = r'([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0:9]'
+my_regexes.any_iso_datetime = r'{}T{}'.format(my_regexes.any_iso_date, my_regexes.any_iso_time)
+my_regexes.any_email = r'.+@.+\.(com|edu|org)'
+my_regexes.any_tank_id = r't\d{3}[a-zA-Z]*'
+my_regexes.any_movie = r'.+\.(mp4|h264)'
+my_regexes.any_bool = r'[tT]rue|[fF]alse'
+my_regexes.any_null = r'[Nn][Oo][Nn][Ee]|[Nn][Uu][Ll][Ll]|'
  
 
 def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False):
@@ -360,7 +360,7 @@ class MetaDataDict(MetaDataDictBase):
                                      required=False),
             'created':     MetaValue(key='created',
                                      value=utils.current_time_iso(),
-                                     pattern=''),
+                                     pattern=my_regexes.any_iso_datetime),
             'ip_address':  MetaValue(key='ip_address',
                                      value=utils.get_ip()),
             'kill_after':  MetaValue(key='kill_after',
