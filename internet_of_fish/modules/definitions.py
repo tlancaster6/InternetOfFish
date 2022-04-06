@@ -25,7 +25,7 @@ MAX_FISH = 5  # maximum number of fish detections that should be returned
 CONF_THRESH = 0.4  # classifier score threshold
 HIT_THRESH = 10  # hit counter threshold
 INTERVAL_SECS = 0.5  # time between image captures in seconds
-IMG_BUFFER = int(100/INTERVAL_SECS)  # number of sequential images that will be sent if a spawning event is detected
+IMG_BUFFER = int(30/INTERVAL_SECS)  # number of sequential images that will be sent if a spawning event is detected
 START_HOUR = 8  # hour when data collection starts. e.g., if START_HOUR=8, collection starts at 8:00am
 END_HOUR = 18  # hour when data collection ends. e.g., if END_HOUR=19, collection stops at 7:00pm
 MAX_VIDEO_LEN = 3600 # max length of a video, in seconds. Set to (END_HOUR-START_HOUR)*3600 to record continuously
