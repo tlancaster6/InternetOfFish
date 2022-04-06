@@ -1,10 +1,8 @@
 from internet_of_fish.modules.mptools import QueueProcWorker
-from internet_of_fish.modules import definitions
 import os, pathlib, subprocess
 
 
 class UploaderWorker(QueueProcWorker):
-    MAX_TRIES = definitions.MAX_TRIES
 
     def main_func(self, target, end_of_proj=False):
         """
@@ -15,7 +13,7 @@ class UploaderWorker(QueueProcWorker):
         :param item: path to file to process/upload. Ideally a full path
         :type target: str
         """
-        tries_left = self.MAX_TRIES
+        tries_left = self.defs.MAX_TRIES
         while not self.shutdown_event.is_set() and tries_left:
             if target.endswith('.h264'):
                 mp4_path = self.h264_to_mp4(target)
@@ -78,8 +76,8 @@ class UploaderWorker(QueueProcWorker):
         :return: path to corresponding file or directory on Dropbox
         :rtype: str
         """
-        rel = os.path.relpath(local_path, definitions.HOME_DIR)
-        cloud_path = pathlib.PurePosixPath(definitions.CLOUD_HOME_DIR) / pathlib.PurePath(rel)
+        rel = os.path.relpath(local_path, self.defs.HOME_DIR)
+        cloud_path = pathlib.PurePosixPath(self.defs.CLOUD_HOME_DIR) / pathlib.PurePath(rel)
         return str(cloud_path)
 
     def h264_to_mp4(self, h264_path):
@@ -90,8 +88,8 @@ class UploaderWorker(QueueProcWorker):
         :rtype: str
         """
         mp4_path = h264_path.replace('.h264', '.mp4')
-        command = ['ffmpeg', '-r', str(definitions.FRAMERATE), '-i', h264_path, '-threads', '1', '-c:v', 'copy', '-r',
-                   str(definitions.FRAMERATE), mp4_path]
+        command = ['ffmpeg', '-r', str(self.defs.FRAMERATE), '-i', h264_path, '-threads', '1', '-c:v', 'copy', '-r',
+                   str(self.defs.FRAMERATE), mp4_path]
         try:
             out = subprocess.run(command, capture_output=True, encoding='utf-8')
             if os.path.exists(mp4_path):
