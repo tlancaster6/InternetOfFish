@@ -132,7 +132,7 @@ def jpgs_to_mp4(img_paths, dest_dir, fps=1//definitions.INTERVAL_SECS):
     img_paths = sorted(img_paths)
     frame = cv2.imread(img_paths[0])
     height, width, layers = frame.shape
-    vid_path = os.path.join(dest_dir, f'{os.path.splitext(img_paths[0])[0]}_event.mp4')
+    vid_path = os.path.join(dest_dir, f'{os.path.splitext(os.path.basename(img_paths[0]))[0]}_event.mp4')
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     video = cv2.VideoWriter(vid_path, fourcc, fps, (width, height))
     for img_path in img_paths:
