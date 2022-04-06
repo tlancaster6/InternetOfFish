@@ -493,7 +493,7 @@ class MetaDataHandler(MetaDataDict):
         print('current settings:')
         for key, val in self['advanced_config'].items():
             print(f'{key}: {val}')
-        self.modify_by_key(self.contents['advanced_config'])
+        self.modify_by_key(self.contents['advanced_config'].value)
         print('\nadvanced config is now:')
         for key, val in self['advanced_config'].items():
             print(f'{key}: {val}')
