@@ -30,8 +30,11 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         stream.seek(0)
         img = Image.open(stream)
         img.load()
-        self.img_q.safe_put((cap_time, img))
+        put_result = self.img_q.safe_put((cap_time, img))
         stream.close()
+        if not put_result:
+            self.INTERVAL_SECS += 0.1
+            self.logger.info(f'img_q full, slowing collection interval to {self.INTERVAL_SECS}')
         if (time.time() - self.last_split) > self.MAX_VIDEO_LEN:
             self.split_recording()
 
@@ -58,7 +61,7 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
 
 class VideoCollectorWorker(CollectorWorker):
     VIRTUAL_INTERVAL_SECS = definitions.INTERVAL_SECS
-    INTERVAL_SECS = 0.02
+    INTERVAL_SECS = 0.1
     """functions like a CollectorWorker, but gathers images from an existing file rather than a camera"""
 
     def init_args(self, args):
@@ -82,13 +85,18 @@ class VideoCollectorWorker(CollectorWorker):
         ret, frame = self.cam.read()
         if ret:
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            self.img_q.safe_put((cap_time, img))
+            put_result = self.img_q.safe_put((cap_time, img))
+            while not put_result:
+                self.INTERVAL_SECS += 0.1
+                self.logger.debug(f'img_q full, increasing loop interval to {self.INTERVAL_SECS}')
+                time.sleep(self.INTERVAL_SECS)
+                put_result = self.img_q.safe_put((cap_time, img))
             self.frame_count += self.cap_rate
             self.cam.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
         else:
             self.active = False
             self.logger.log(logging.INFO, "VideoCollector entering sleep mode (no more frames to process)")
-            self.img_q.safe_put('SOFT_SHUTDOWN')
+            self.img_q.safe_put('END')
 
     def locate_video(self):
         path_elements = [definitions.HOME_DIR,

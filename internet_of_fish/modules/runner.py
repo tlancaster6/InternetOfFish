@@ -108,7 +108,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
 
     def active_mode(self):
         self.switch_mode('active')
-        self.img_q = self.secondary_ctx.MPQueue()
+        self.img_q = self.secondary_ctx.MPQueue(maxsize=10)
         if self.metadata['source'] != 'None':
             self.collect_proc = self.secondary_ctx.Proc(
                 'COLLECT', collector.VideoCollectorWorker, self.img_q, self.metadata['source'])
