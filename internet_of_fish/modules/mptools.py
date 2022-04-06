@@ -292,8 +292,7 @@ class Proc(metaclass=utils.AutologMetaclass):
             self.terminate()
 
     def terminate(self):
-        NUM_TRIES = definitions.MAX_TRIES
-        tries = NUM_TRIES
+        tries = definitions.MAX_TRIES
         while tries and self.proc.is_alive():
             self.proc.terminate()
             time.sleep(0.1)
