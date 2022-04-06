@@ -159,8 +159,15 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         this method to be called recursively until the return value is a nested dict of simple objects"""
         if infer_types:
             return {key: self[key] for key in self.contents.keys()}
-        else:
-            return {key: self.contents[key].value for key in self.contents.keys()}
+        retval = {}
+        for key in self.contents.keys():
+            val = self.contents[key].value
+            if isinstance(val, MetaDataDictBase):
+                val = val.simplify(infer_types=False)
+            elif callable(val):
+                val = val()
+            retval.update({key: val})
+        return retval
 
 
     def keys(self):
