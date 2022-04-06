@@ -153,11 +153,15 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         for key, value in simple_metadata_dict.items():
             self[key] = str(value)
 
-    def simplify(self):
+    def simplify(self, infer_types=True):
         """return a simple dict composed of {MetaValue.key: MetaValue.value} for each MetaValue in self.contents
         if MetaValue.Value is itself derived from the MetaDataDictBase class, the __getitem__ behavior will cause
         this method to be called recursively until the return value is a nested dict of simple objects"""
-        return {key: self[key] for key in self.contents.keys()}
+        if infer_types:
+            return {key: self[key] for key in self.contents.keys()}
+        else:
+            return {key: self.contents[key].value for key in self.contents.keys()}
+
 
     def keys(self):
         return list(self.contents.keys())
@@ -477,15 +481,19 @@ class MetaDataHandler(MetaDataDict):
                 print('exiting advanced configuration')
 
             # print out the complete metadata for a final confirmation
+            print('\n')
             for key, val in self.simplify().items():
                 if key != 'advanced_config':
                     print(f'{key}: {val}')
             while finput('is the above metadata correct? (type "yes" or "no")', ['yes', 'no']) == 'no':
                 self.modify_by_key(self)
+                for key, val in self.simplify().items():
+                    if key != 'advanced_config':
+                        print(f'{key}: {val}')
 
             utils.create_project_tree(self['proj_id'])
             with open(self['json_path'], 'w') as f:
-                json.dump(self.simplify(), f)
+                json.dump(self.simplify(infer_types=False), f)
                 self.logger.info('metadata generated and saved to .json file')
             return self['json_path']
             
@@ -497,7 +505,7 @@ class MetaDataHandler(MetaDataDict):
         print('\nadvanced config is now:')
         for key, val in self['advanced_config'].items():
             print(f'{key}: {val}')
-        while finput('is the above metadata correct? (type "yes" or "no")', ['yes', 'no']) == 'no':
+        while finput('is the above configuration correct? (type "yes" or "no")', ['yes', 'no']) == 'no':
             print('re-entering advanced config')
             self.edit_advanced_config()
 
@@ -532,7 +540,7 @@ class MetaDataHandler(MetaDataDict):
 
     def overwrite_json(self):
         with open(self['json_path'], 'w') as f:
-            json.dump(self.simplify(), f)
+            json.dump(self.simplify(infer_types=False), f)
             self.logger.info('json file overwritten with new metadata')
 
     def set_kill_condition(self):
