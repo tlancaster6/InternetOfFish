@@ -98,6 +98,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         datetime.datetime, or NoneType object and returns it as such"""
         retval = self.contents[key].value
         print(type(retval))
+        print(type(self))
         if isinstance(retval, dict):
             return retval
         if isinstance(retval, type(self)):
