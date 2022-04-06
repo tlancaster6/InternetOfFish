@@ -1,7 +1,22 @@
 import os, json, sys, re, platform, time
 from internet_of_fish.modules import definitions, utils
 import datetime as dt
-from typing import Union, Callable
+from typing import Union, Callable, Type
+from types import SimpleNamespace
+
+my_regexes = SimpleNamespace()
+my_regexes.any_int = '\d+'
+my_regexes.any_float = '[0-9]*\.?[0-9]+'
+my_regexes.any_float_less_than_1 = '0*?\.[0-9]+'
+my_regexes.any_int_less_than_24 = '([01]?[0-9]|2[0-3])'
+my_regexes.any_iso_date = '\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])'
+my_regexes.any_iso_time = '[([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0:9]'
+my_regexes.any_iso_datetime = my_regexes.any_iso_date + 'T' + my_regexes.any_iso_time
+my_regexes.any_email = '.+@.+\.(com|edu|org)'
+my_regexes.any_tank_id = 't\d{3}[a-zA-Z]*'
+my_regexes.any_movie = '.+\.(mp4|h264)'
+my_regexes.any_bool = '[tT]rue|[fF]alse'
+my_regexes.any_null = '[Nn][Oo][Nn][Ee]|[Nn][Uu][Ll][Ll]|'
  
 
 def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False):
@@ -53,54 +68,9 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
         return user_input
 
 
-class MetaValue:
+class MetaDataDictBase(metaclass=utils.AutologMetaclass):
 
-    def __init__(self, key, value: Union[str, Callable[[], str]] = 'None', prompt=None, options=None, required=True,
-                 simplify=True, pattern='.*', mapping=None, help_str=None):
-        """data container for MetaDataDict entries that includes information required query the user about the value
-        and enforce various conditions on the value
-
-        :param key: short descriptor, used as a dict key when constructing a dictionary of MetaValue objects. Required
-        :type key: str
-        :param value: core piece of data being stored, or a Callable that returns a piece of core data. Default "None"
-        :type value: Union[str, Callable[[], str]
-        :param prompt: custom prompt for querying the user. Defaults to f'enter a value for {key}'. see flinput
-        :type prompt: str
-        :param options: list of allowed user inputs. see flinput
-        :type options: list[str]
-        :param required: if True (default) this MetaValue is required for any functional usage of the class instance
-        :type required: bool
-        :param simplify: if True (default) format user input (see flinput for details)
-        :type simplify: bool
-        :param pattern: see flinput. Defaults to '.*', i.e., pretty much anything
-        :type pattern: str
-        :param mapping: see flinput. Defaults to None
-        :type mapping: dict
-        :param help_str: any additional case-specific usage details go here
-        :type help_str: str
-        """
-        self.key, self.value, self.options, self.required = key, value, options, required
-        self.simplify, self.pattern, self.mapping = simplify, pattern, mapping
-        self.prompt = prompt if prompt else f'enter a value for {key}'
-        self.help_string = '\n'.join([f'{key}: {val}' for key, val in self.__dict__.items()] + [str(help_str)])
-
-    def confirm_with_user(self):
-        """show the user the current self.value, ask if they want to change it, and call query_user if so"""
-        val = self.value() if callable(self.value) else self.value
-        if finput(f'value of {self.key} set automatically to {val}. is this correct? (y, n)', ['y', 'n']) == 'n':
-            self.query_user()
-
-    def query_user(self):
-        """set self.value based on user input by calling flinput with current the promp, options, simplify, and pattern
-        attributes of MetaValue"""
-        self.value = finput(self.prompt, self.options, self.simplify, self.pattern, self.mapping, self.help_string)
-        if self.value == '':
-            self.value = 'None'
-
-
-class MetaDataDict:
-
-    def __init__(self):
+    def __init__(self, name: str):
         """dict-like class that holds a collection of MetaValue objects with various preset attributes, as well as
         a few useful utility functions.
 
@@ -109,94 +79,43 @@ class MetaDataDict:
         In practice, this class can be used much like a traditional dictionary by using square-bracket notation,
         as MetaDataDict()[key] will return MetaDataDict().contents[key].value, and MetaDataDict()[key]=val will set
         MetaDataDict().contents[key].value to val (with some caveats -- see __setitem__ and __getitem__ methods).
-        """
-        self.logger = utils.make_logger('METADATA')
-        self.contents = {
-            'owner':       MetaValue(key='owner',
-                                     prompt='enter your initials (first, middle, and last)',
-                                     pattern='[a-z]{3}'),
-            'email':       MetaValue(key='email',
-                                     prompt='enter your email address',
-                                     pattern='.+@.+\.(com|edu)'),
-            'tank_id':     MetaValue(key='tank_id',
-                                     value=platform.node().split('-')[-1].lower(),
-                                     prompt='enter the tank id (e.g., t003, t123, t123sv, t123asdf, etc.',
-                                     pattern='^t\d{3}[a-zA-Z]*'),
-            'species':     MetaValue(key='species',
-                                     prompt='enter the species name or abbreviation thereof'),
-            'fish_type':   MetaValue(key='fish_type',
-                                     prompt='is the a rock, sand, or hybrid tank?',
-                                     options=['rock', 'sand', 'rocksand', 'other']),
-            'n_fish':      MetaValue(key='n_fish',
-                                     prompt='how many fish are in this tank total? (press enter to leave blank)',
-                                     required=False,
-                                     simplify=False),
-            'model_id':    MetaValue(key='model_id',
-                                     prompt='enter the name of the model you want to use (press enter to leave blank)',
-                                     options=os.listdir(definitions.MODELS_DIR) + [''],
-                                     simplify=False,
-                                     required=False),
-            'coral_color': MetaValue(key='coral_color',
-                                     prompt='what color is the coral in this tank?',
-                                     options=['black', 'white', 'other'],
-                                     required=False),
-            'bower_type':  MetaValue(key='bower_type',
-                                     prompt='is this a castle or pit species?',
-                                     options=['castle', 'pit'],
-                                     required=False),
-            'end_date':    MetaValue(key='end_date',
-                                     value=dt.date.isoformat(dt.date.max),
-                                     prompt='enter a date ("yyyy-mm-dd" format) when this project will auto-terminate',
-                                     pattern='^\d\d\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])'),
-            'end_time':     MetaValue(key='end_time',
-                                      value=dt.time.isoformat(dt.time.max, 'seconds'),
-                                      pattern='\d\d:\d\d:\d\d'),
-            'notes':       MetaValue(key='notes',
-                                     prompt='enter any additional notes you want to make on this trial, '
-                                            'or press enter to leave blank',
-                                     simplify=False,
-                                     required=False),
-            'created':     MetaValue(key='created',
-                                     value=dt.datetime.isoformat(dt.datetime.now())),
-            'ip_address':  MetaValue(key='ip_address',
-                                     value=utils.get_ip()),
-            'kill_after':  MetaValue(key='kill_after',
-                                     pattern='\d+',
-                                     required=False,
-                                     help_str='if set, the project will attempt to terminate after the given number of '
-                                              'seconds. Used mostly for testing'),
-            'source':      MetaValue(key='source',
-                                     pattern='.+\.mp4',
-                                     required=False,
-                                     help_str='path to source video, for analyzing an '
-                                              'existing video instead of the camera input'),
-            'testing':     MetaValue(key='testing',
-                                     value='False',
-                                     required=False)
-        }
 
-        # add a few special MetaValue objects that generate their values dynamically
-        created_shortform = dt.datetime.fromisoformat(self["created"]).strftime("%m%d%y")
-        data_dir = definitions.DATA_DIR
-        self.contents.update({
-            'proj_id':   MetaValue(key='proj_id',
-                                   value=lambda: f'{self["owner"]}_{self["tank_id"]}_{self["species"]}'
-                                                 f'_{created_shortform}',
-                                   required=False),
-            'json_path': MetaValue(key='json_path',
-                                   value=lambda: os.path.join(definitions.PROJ_DIR(self['proj_id']), f'{self["proj_id"]}.json'))
-        })
+        :param name: identifier used to set the name of the log file
+        :type name: str
+        """
+        self.name = name
+        self.logger = utils.make_logger(name)
+        self.contents = {}
 
     def __getitem__(self, key):
         """once the MetaDataDict object is created, this function allows for it to be used like a traditional dict,
         such that MetaDataDict()['key'] is equivalent to MetaDataDict().contents['key'].value. Also makes it such
         that, when MetaValue.value is a callable function, MetaDataDict[key] returns the evaluation result
         of the callable instead. This ensures, for example, that the value of self['proj_id'] will always reflect
-        modifications to self['owner'] and self['tank_id']"""
-        if callable(self.contents[key].value):
-            return str(self.contents[key].value())
-        else:
-            return str(self.contents[key].value)
+        modifications to self['owner'] and self['tank_id']. While, internally, each MetaValue.value is stored
+        as a string, callable that returns a string, or (possibly nested) dict-like collection of strings, this method
+        recognizes when the value can be converted to a float, int, bool, datetime.date, datetime.time,
+        datetime.datetime, or NoneType object and returns it as such"""
+        retval = self.contents[key].value
+        if isinstance(retval, dict):
+            return retval
+        if isinstance(retval, self.__class__):
+            return retval.simplify()
+        if callable(retval):
+            return str(retval())
+        if re.fullmatch(my_regexes.any_bool, retval):
+            return eval(retval.title())
+        if re.fullmatch(my_regexes.any_float, retval):
+            return eval(retval)
+        if re.fullmatch(my_regexes.any_null, retval):
+            return None
+        if re.fullmatch(my_regexes.any_iso_date, retval):
+            return dt.date.fromisoformat(retval)
+        if re.fullmatch(my_regexes.any_iso_time, retval):
+            return dt.time.fromisoformat(retval)
+        if re.fullmatch(my_regexes.any_iso_datetime, retval):
+            return dt.datetime.fromisoformat(retval)
+        return str(retval)
 
     def __setitem__(self, key, value):
         """if we have a __getitems__, might as well have a __setitems__. slightly stricter than the base dict
@@ -235,8 +154,257 @@ class MetaDataDict:
             self[key] = str(value)
 
     def simplify(self):
-        """return a simple dict composed of {MetaValue.key: MetaValue.value} for each MetaValue in self.contents"""
+        """return a simple dict composed of {MetaValue.key: MetaValue.value} for each MetaValue in self.contents
+        if MetaValue.Value is itself derived from the MetaDataDictBase class, the __getitem__ behavior will cause
+        this method to be called recursively until the return value is a nested dict of strings"""
         return {key: self[key] for key in self.contents.keys()}
+
+    def keys(self):
+        return list(self.contents.keys())
+
+    def items(self):
+        return list(self.simplify().items())
+
+    def values(self):
+        return list(self.simplify().values())
+
+class MetaValue:
+
+    def __init__(self, key, value: Union[str, Callable[[], str], dict, Type[MetaDataDictBase]] = 'None', prompt=None,
+                 options=None, required=True, simplify=True, pattern='.*', mapping=None, help_str=None):
+        """data container for MetaDataDict entries that includes information required query the user about the value
+        and enforce various conditions on the value
+
+        :param key: short descriptor, used as a dict key when constructing a dictionary of MetaValue objects. Required
+        :type key: str
+        :param value: core piece of data being stored, or a Callable that returns a piece of core data. Default "None"
+        :type value: Union[str, dict, Callable[[], str]]
+        :param prompt: custom prompt for querying the user. Defaults to f'enter a value for {key}'. see flinput
+        :type prompt: str
+        :param options: list of allowed user inputs. see flinput
+        :type options: list[str]
+        :param required: if True (default) this MetaValue is required for any functional usage of the class instance
+        :type required: bool
+        :param simplify: if True (default) format user input (see flinput for details)
+        :type simplify: bool
+        :param pattern: see flinput. Defaults to '.*', i.e., pretty much anything
+        :type pattern: str
+        :param mapping: see flinput. Defaults to None
+        :type mapping: dict
+        :param help_str: any additional case-specific usage details go here
+        :type help_str: str
+        """
+        self.key, self.value, self.options, self.required = key, value, options, required
+        self.simplify, self.pattern, self.mapping = simplify, pattern, mapping
+        self.prompt = prompt if prompt else f'enter a value for {key}'
+        self.help_string = '\n'.join([f'{key}: {val}' for key, val in self.__dict__.items()] + [str(help_str)])
+
+    def confirm_with_user(self):
+        """show the user the current self.value, ask if they want to change it, and call query_user if so"""
+        val = self.value() if callable(self.value) else self.value
+        if finput(f'value of {self.key} set automatically to {val}. is this correct? (y, n)', ['y', 'n']) == 'n':
+            self.query_user()
+
+    def query_user(self):
+        """set self.value based on user input by calling flinput with current the promp, options, simplify, and pattern
+        attributes of MetaValue"""
+        self.value = finput(self.prompt, self.options, self.simplify, self.pattern, self.mapping, self.help_string)
+        if self.value == '':
+            self.value = 'None'
+
+
+class AdvancedConfigDict(MetaDataDictBase):
+
+    def __init(self):
+        super().__init__('METADATA')
+        self.contents = {
+            'MAX_FISH':
+                MetaValue(key='MAX_FISH',
+                          value='5',
+                          pattern=my_regexes.any_int,
+                          help_str='maximum number of fish detections that should be returned'),
+            'CONF_THRESH':
+                MetaValue(key='CONF_THRESH',
+                          value='0.4',
+                          pattern=my_regexes.any_float_less_than_one,
+                          help_str='detector score threshold'),
+            'INTERVAL_SECS':
+                MetaValue(key='INTERVAL_SECS',
+                          value='0.5',
+                          pattern=my_regexes.any_float,
+                          help_str='time between image captures in seconds'),
+            'HIT_THRESH_SECS':
+                MetaValue(key='HIT_THRESH_SECS',
+                          value='5',
+                          pattern=my_regexes.any_int,
+                          help_str='approximate number of seconds of activity before an event should be registered'),
+            'IMG_BUFFER_SECS':
+                MetaValue(key='IMG_BUFFER_SECS',
+                          value='30',
+                          pattern=my_regexes.any_int,
+                          help_str='length of video, in seconds, that will be saved when a hit occurs'),
+            'START_HOUR':
+                MetaValue(key='START_HOUR',
+                          value='8',
+                          pattern=my_regexes.any_int_less_than_24,
+                          help_str='daily collection start time. e.g., set to 8 to start at 8am'),
+            'END_HOUR':
+                MetaValue(key='END_HOUR',
+                          value='18',
+                          pattern=my_regexes.any_int_less_than_24,
+                          help_str='daily collection end time. e.g., set to 19 to end at 7pm'),
+            'MAX_VIDEO_LEN_SECS':
+                MetaValue(key='MAX_VIDEO_LEN_SECS',
+                          value='3600',
+                          pattern=my_regexes.any_int,
+                          help_str='max length, in seconds, of individual videos. '
+                                   'Set to 100000 to disable video splitting'),
+            'MIN_NOTIFICATION_INTERVAL':
+                MetaValue(key='MIN_NOTIFICATION_INTERVAL',
+                          value='600',
+                          pattern=my_regexes.any_int,
+                          help_str='cooldown time, in seconds, between notifications'),
+            'H_RESOLUTION':
+                MetaValue(key='H_RESOLUTION',
+                          value='1296',
+                          pattern=my_regexes.any_int,
+                          help_str='picamera horizontal resolution'),
+            'V_RESOLUTION':
+                MetaValue(key='V_RESOLUTION',
+                          value='972',
+                          pattern=my_regexes.any_int,
+                          help_str='picamera vertical resolution'),
+            'FRAMERATE':
+                MetaValue(key='FRAMERATE',
+                          value='30',
+                          pattern=my_regexes.any_int,
+                          help_str='picamera framerate'),
+            'BOT_EMAIL':
+                MetaValue(key='BOT_EMAIL',
+                          value='themcgrathlab@gmail.com',
+                          pattern=my_regexes.any_email,
+                          help_str='email address that has been configured with sendgrid to serve notifications'),
+            'MAX_UPLOAD_WORKERS':
+                MetaValue(key='MAX_UPLOAD_WORKERS',
+                          value='3',
+                          pattern=my_regexes.any_int,
+                          help_str='max number of simultaneous upload processes to spawn'),
+            'MAX_TIRES':
+                MetaValue(key='MAX_TIRES',
+                          value='3',
+                          pattern=my_regexes.any_int,
+                          help_str='max number of times to retry various failure-prone operations'),
+            'DEFAULT_POLLING_TIMEOUT':
+                MetaValue(key='DEFAULT_POLLING_TIMEOUT',
+                          value='0.02',
+                          pattern=my_regexes.any_float,
+                          help_str='max number of seconds to wait for a new queue item to appear'),
+            'DEFAULT_MAX_SLEEP_SECS':
+                MetaValue(key='DEFAULT_MAX_SLEEP_SECS',
+                          value='0.02',
+                          pattern=my_regexes.any_float,
+                          help_str='max number of seconds to wait for various rapidly-occurring actions'),
+            'DEFAULT_INTERVAL_SECS':
+                MetaValue(key='DEFAULT_INTERVAL_SECS',
+                          value='10',
+                          pattern=my_regexes.any_float,
+                          help_str='default loop interval for unmodified TimerProcWorker processes'),
+            'DEFAULT_STARTUP_WAIT_SECS':
+                MetaValue(key='DEFAULT_STARTUP_WAIT_SECS',
+                          value='10',
+                          pattern=my_regexes.any_float,
+                          help_str='default time to wait for a process to start before raising an error'),
+            'DEFAULT_SHUTDOWN_WAIT_SECS':
+                MetaValue(key='DEFAULT_SHUTDOWN_WAIT_SECS',
+                          value='10',
+                          pattern=my_regexes.any_float,
+                          help_str='default time to wait for a process to shut down normally before '
+                                   'force-terminating it'),
+        }
+
+
+class MetaDataDict(MetaDataDictBase):
+
+    def __init__(self):
+        super().__init__('METADATA')
+        self.contents = {
+            'owner':       MetaValue(key='owner',
+                                     prompt='enter your initials (first, middle, and last)',
+                                     pattern='[a-z]{3}'),
+            'email':       MetaValue(key='email',
+                                     prompt='enter your email address',
+                                     pattern=my_regexes.any_email),
+            'tank_id':     MetaValue(key='tank_id',
+                                     value=platform.node().split('-')[-1].lower(),
+                                     prompt='enter the tank id (e.g., t003, t123, t123sv, t123asdf, etc.',
+                                     pattern=my_regexes.any_tank_id),
+            'species':     MetaValue(key='species',
+                                     prompt='enter the species name or abbreviation thereof'),
+            'fish_type':   MetaValue(key='fish_type',
+                                     prompt='is the a rock, sand, or hybrid tank?',
+                                     options=['rock', 'sand', 'rocksand', 'other']),
+            'n_fish':      MetaValue(key='n_fish',
+                                     prompt='how many fish are in this tank total? (press enter to leave blank)',
+                                     required=False,
+                                     simplify=False),
+            'model_id':    MetaValue(key='model_id',
+                                     prompt='enter the name of the model you want to use (press enter to leave blank)',
+                                     options=os.listdir(definitions.MODELS_DIR) + [''],
+                                     simplify=False,
+                                     required=False),
+            'coral_color': MetaValue(key='coral_color',
+                                     prompt='what color is the coral in this tank?',
+                                     options=['black', 'white', 'other'],
+                                     required=False),
+            'bower_type':  MetaValue(key='bower_type',
+                                     prompt='is this a castle or pit species?',
+                                     options=['castle', 'pit'],
+                                     required=False),
+            'end_date':    MetaValue(key='end_date',
+                                     value=dt.date.isoformat(dt.date.max),
+                                     prompt='enter a date ("yyyy-mm-dd" format) when this project will auto-terminate',
+                                     pattern=my_regexes.any_iso_date),
+            'end_time':     MetaValue(key='end_time',
+                                      value=dt.time.isoformat(dt.time.max, 'seconds'),
+                                      pattern=my_regexes.any_iso_time),
+            'notes':       MetaValue(key='notes',
+                                     prompt='enter any additional notes you want to make on this trial, '
+                                            'or press enter to leave blank',
+                                     simplify=False,
+                                     required=False),
+            'created':     MetaValue(key='created',
+                                     value=utils.current_time_iso(),
+                                     pattern=''),
+            'ip_address':  MetaValue(key='ip_address',
+                                     value=utils.get_ip()),
+            'kill_after':  MetaValue(key='kill_after',
+                                     pattern=my_regexes.any_int,
+                                     required=False,
+                                     help_str='if set, the project will attempt to terminate after the given number of '
+                                              'seconds. Used mostly for testing'),
+            'source':      MetaValue(key='source',
+                                     pattern=my_regexes.any_movie,
+                                     required=False,
+                                     help_str='path to source video, for analyzing an '
+                                              'existing video instead of the camera input'),
+            'testing':     MetaValue(key='testing',
+                                     value='False',
+                                     required=False),
+            'advanced_config': MetaValue(key='advanced_config',
+                                         value=AdvancedConfigDict('METADATA'))
+        }
+
+        # add a few special MetaValue objects that generate their values dynamically
+        created_shortform = dt.datetime.fromisoformat(self["created"]).strftime("%m%d%y")
+        self.contents.update({
+            'proj_id':   MetaValue(key='proj_id',
+                                   value=lambda: f'{self["owner"]}_{self["tank_id"]}_{self["species"]}'
+                                                 f'_{created_shortform}'),
+            'json_path': MetaValue(key='json_path',
+                                   value=lambda: os.path.join(definitions.PROJ_DIR(self['proj_id']),
+                                                              f'{self["proj_id"]}.json'))
+        })
+
 
 
 class MetaDataHandler(MetaDataDict):
@@ -269,8 +437,9 @@ class MetaDataHandler(MetaDataDict):
         md.update(kwargs)
         self.quick_update(md)
         self.set_kill_condition()
-        self.verify()
         utils.create_project_tree(self['proj_id'])
+        self.definitions = utils.freeze_definitions(self['advanced_config'])
+        self.verify()
 
     def decode_metadata(self, json_path):
         """read a metadata json file"""
@@ -313,18 +482,48 @@ class MetaDataHandler(MetaDataDict):
             # confirm some of the autogenerated values with the user
             print("\nyou will now be asked to confirm a few parameters that were generated automatically. "
                   "Note that modifying these values may cause unexpected behavior\n")
-            for key in ['tank_id', 'proj_id', 'created', 'ip_address', 'json_path']:
+            for key in ['tank_id', 'proj_id', 'ip_address']:
                 contents[key].confirm_with_user()
 
-            for key, val in self.simplify().items():
-                print(f'{key}: {val}')
-            if finput('is the above metadata correct? (type "yes" or "no")', ['yes', 'no']) == 'yes':
-                utils.create_project_tree(self['proj_id'])
-                with open(self['json_path'], 'w') as f:
-                    json.dump(self.simplify(), f)
-                    self.logger.info('metadata generated and saved to .json file')
-                return self['json_path']
+            # edit the advanced config if desired
+            if finput('edit advanced config? (y, n)', options=['y', 'n']) == 'y':
+                self.edit_advanced_config()
+                print('exiting advanced configuration')
 
+            # print out the complete metadata for a final confirmation
+            for key, val in self.simplify().items():
+                if key != 'advanced_config':
+                    print(f'{key}: {val}')
+            while finput('is the above metadata correct? (type "yes" or "no")', ['yes', 'no']) == 'no':
+                self.modify_by_key(self)
+
+            utils.create_project_tree(self['proj_id'])
+            with open(self['json_path'], 'w') as f:
+                json.dump(self.simplify(), f)
+                self.logger.info('metadata generated and saved to .json file')
+            return self['json_path']
+            
+    def edit_advanced_config(self):
+        print('current settings:')
+        for key, val in self['advanced_config'].items():
+            print(f'{key}: {val}')
+        self.modify_by_key(self.contents['advanced_config'])
+        print('\nadvanced config is now:')
+        for key, val in self['advanced_config'].items():
+            print(f'{key}: {val}')
+        while finput('is the above metadata correct? (type "yes" or "no")', ['yes', 'no']) == 'no':
+            print('re-entering advanced config')
+            self.edit_advanced_config()
+
+    def modify_by_key(self, mdd: MetaDataDictBase):
+        prompt = '\ntype the name of the value you want to modify, or type q to finish'
+        options = mdd.keys() + ['q']
+        while True:
+            user_input = finput(prompt=prompt, options=options, simplify=False)
+            if user_input == 'q':
+                break
+            mdd.contents[user_input].query_user()
+        
     def locate_newest_json(self):
         """locate the most recently created json file in the data dir (see definitions.py for data dir location)"""
         self.logger.info('attempting to locate existing metadata file')
@@ -351,16 +550,18 @@ class MetaDataHandler(MetaDataDict):
             self.logger.info('json file overwritten with new metadata')
 
     def set_kill_condition(self):
-        if self['kill_after'] != 'None':
+        if not self['kill_after']:
             start = dt.datetime.fromisoformat(self['created']).timestamp()
             end = start + float(self['kill_after'])
             self['end_date'], self['end_time'] = dt.datetime.isoformat(
                 dt.datetime.fromtimestamp(end), timespec='seconds').split('T')
-        elif self['end_date'] == 'None':
+        elif not self['end_date']:
             self['end_date'], self['end_time'] = dt.datetime.isoformat(
                 dt.datetime.max, timespec='seconds').split('T')
-        elif self['end_time'] == 'None':
+        elif not self['end_time']:
             self['end_time'] = dt.time.isoformat(dt.time.max, 'seconds')
+
+
 
 
 

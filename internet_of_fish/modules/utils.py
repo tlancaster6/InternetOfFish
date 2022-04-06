@@ -2,14 +2,23 @@ import glob
 import logging
 import time, datetime
 from internet_of_fish.modules import definitions
-import os, socket, cv2
+import os, socket
 from functools import wraps
-from types import FunctionType
+from types import FunctionType, SimpleNamespace
 import sys
 
 LOG_DIR = definitions.LOG_DIR
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
+
+def freeze_definitions(additional_definitions=None):
+    defs = {}
+    for setting in dir(definitions):
+        if setting.isupper() and not setting.startswith('_'):
+            defs.update({setting: getattr(definitions, setting)})
+    if additional_definitions:
+        defs.update(additional_definitions)
+    return SimpleNamespace(**defs)
 
 def sleep_secs(max_sleep, end_time=999999999999999.9):
     """see mptools.sleep_secs()"""
@@ -69,36 +78,6 @@ def make_logger(name):
     return logger
 
 
-def lights_on(t=None):
-    """
-    checks if the current time fall within the valid recording timeframe, as specified by definitions.START_HOUR and
-    definitions.END_HOUR.
-    :param t: time to check. If None (default) the current time returned by datetime.datetime.now() is used
-    :type t: datetime.datetime
-    :return: True if t is within the valid recording timeframe, False otherwise
-    :rtype: bool
-    """
-    if t is None:
-        t = datetime.datetime.now()
-    return definitions.START_HOUR <= t.hour < definitions.END_HOUR
-
-
-def sleep_until_morning():
-    """returns a positive sleep time, not exceeding the time until lights on (as specified by definitions.START_HOUR),
-    but also no longer than 600 seconds. This function can be used to sleep a process for ten minute intervals until
-    morning, with a relatively small margin of error.
-    :return: time (in seconds) to sleep. Always less than 600 (10 minutes) and less than the time until START_HOUR
-    :rtype: float
-    """
-    if lights_on():
-        return 0
-    curr_time = datetime.datetime.now()
-    if curr_time.hour >= definitions.END_HOUR:
-        curr_time = (curr_time + datetime.timedelta(days=1))
-    next_start = curr_time.replace(hour=definitions.START_HOUR, minute=0, second=0, microsecond=0)
-    return sleep_secs(60, next_start.timestamp())
-
-
 def get_ip():
     """
     get the IP address of the current device.
@@ -115,30 +94,6 @@ def get_ip():
     finally:
         s.close()
     return IP
-
-
-def jpgs_to_mp4(img_paths, dest_dir, fps=1//definitions.INTERVAL_SECS):
-    """create a video from a directory of images
-
-    :param img_paths: list of paths to images that will be combined into an mp4
-    :type img_paths: list[str]
-    :param dest_dir: folder where the video will go
-    :type dest_dir: str
-    :param fps: framerate (frames per second) for the new video. Default 10
-    :type fps: int
-    :return vid_path: path to newly created video
-    :rtype: str
-    """
-    img_paths = sorted(img_paths)
-    frame = cv2.imread(img_paths[0])
-    height, width, layers = frame.shape
-    vid_path = os.path.join(dest_dir, f'{os.path.splitext(os.path.basename(img_paths[0]))[0]}_event.mp4')
-    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-    video = cv2.VideoWriter(vid_path, fourcc, fps, (width, height))
-    for img_path in img_paths:
-        video.write(cv2.imread(img_path))
-    video.release()
-    return vid_path
 
 
 def cleanup(proj_id):

@@ -31,8 +31,13 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             self.logger.debug(f"RunnerWorker injected a HARD_SHUTDOWN into the event queue")
             self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'die_time exceeded'))
         if os.path.exists(definitions.END_FILE):
+            os.remove(definitions.END_FILE)
             self.logger.debug(f"RunnerWorker injected an ENTER_END_MODE message into the event queue")
             self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_END_MODE', 'END_FILE detected'))
+        if os.path.exists(definitions.PAUSE_FILE):
+            os.remove(definitions.PAUSE_FILE)
+            self.logger.debug(f"RunnerWorker injected an HARD_SHUTDOWN message into the event queue")
+            self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'PAUSE_FILE detected'))
 
         event = self.event_q.safe_get()
         if event:
@@ -92,7 +97,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
                 return self.curr_mode
             except AttributeError:
                 return 'active'
-        elif utils.lights_on():
+        elif definitions.START_HOUR <= dt.datetime.now().hour < definitions.END_HOUR:
             return 'active'
         else:
             return 'passive'
@@ -160,7 +165,19 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         self.event_q.drain()
 
     def sleep_until_morning(self):
-        return utils.sleep_until_morning()
+        """returns a positive sleep time, not exceeding the time until lights on (as specified by definitions.START_HOUR),
+        but also no longer than 600 seconds. This function can be used to sleep a process for ten minute intervals until
+        morning, with a relatively small margin of error.
+        :return: time (in seconds) to sleep. Always less than 600 (10 minutes) and less than the time until START_HOUR
+        :rtype: float
+        """
+        curr_time = dt.datetime.now()
+        if definitions.START_HOUR <= curr_time.hour < definitions.END_HOUR:
+            return 0
+        if curr_time.hour >= definitions.END_HOUR:
+            curr_time = (curr_time + dt.timedelta(days=1))
+        next_start = curr_time.replace(hour=definitions.START_HOUR, minute=0, second=0, microsecond=0)
+        return utils.sleep_secs(600, next_start.timestamp())
 
     def queue_uploads(self, proj_id=None, queue_end_signals=True):
         proj_id = proj_id if proj_id else self.metadata['proj_id']
@@ -208,7 +225,6 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         self.secondary_ctx.stop_procs(upload_procs, stop_wait_secs=3600)
         self.secondary_ctx.stop_all_procs()
         utils.remove_empty_dirs(definitions.DATA_DIR)
-        os.remove(definitions.END_FILE)
         sp.run(['echo', 'upload', 'complete.', 'exiting'])
         self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'project ending'))
 

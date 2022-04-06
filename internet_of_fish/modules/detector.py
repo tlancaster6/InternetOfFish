@@ -9,6 +9,7 @@ from pycoral.adapters import detect
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
+import internet_of_fish.modules.advanced_utils
 from internet_of_fish.modules import definitions, mptools, utils
 
 BufferEntry = namedtuple('BufferEntry', ['cap_time', 'img', 'dets'])
@@ -120,7 +121,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
     def jpgs_to_mp4(self, img_paths, delete_jpgs=True):
         """convert a series of jpgs to a single mp4, and (if delete_jpgs) delete the original images"""
         dest_dir = definitions.PROJ_VID_DIR(self.metadata['proj_id'])
-        vid_path = utils.jpgs_to_mp4(img_paths, dest_dir)
+        vid_path = internet_of_fish.modules.advanced_utils.jpgs_to_mp4(img_paths, dest_dir)
         if delete_jpgs:
             [os.remove(x) for x in img_paths]
         return vid_path

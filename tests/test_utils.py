@@ -4,6 +4,8 @@ import datetime
 import logging
 import shutil
 from numpy.random import rand
+
+import internet_of_fish.modules.advanced_utils
 from context import utils, definitions
 from PIL import Image
 
@@ -77,7 +79,7 @@ def test_sleep_until_morning(mocker, curr_time, expected_time):
 
 
 def test_jpgs_to_mp4(tmp_img_dir):
-    vid_dir = utils.jpgs_to_mp4(tmp_img_dir, tmp_img_dir)
+    vid_dir = internet_of_fish.modules.advanced_utils.jpgs_to_mp4(tmp_img_dir, tmp_img_dir)
     assert os.path.exists(vid_dir)
 
 

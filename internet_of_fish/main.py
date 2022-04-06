@@ -3,7 +3,7 @@ import sys, argparse
 import time
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-from internet_of_fish.modules import runner, metadata, mptools, utils, notifier
+from internet_of_fish.modules import runner, metadata, mptools, utils
 
 
 def main(args):
@@ -43,5 +43,8 @@ if __name__ == '__main__':
                         help='setting this flag will delete any existing logfiles, as well as the video and image'
                              'directories (but not the metadata jason file) of whichever project runs. Useful for'
                              'quickly resetting the environment between testing runs')
+    parser.add_argument('-p', '--proj_id', default=None, type=str,
+                        help='use this option to manually specify an existing projectID that you want to resume. This'
+                             'can be a project already ')
     args_ = parser.parse_args()
     main(args_)
