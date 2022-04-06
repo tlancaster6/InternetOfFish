@@ -97,9 +97,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         recognizes when the value can be converted to a float, int, bool, datetime.date, datetime.time,
         datetime.datetime, or NoneType object and returns it as such"""
         retval = self.contents[key].value
-        print(type(retval))
-        print(type(self))
-        if isinstance(retval, dict):
+        if isinstance(retval, MetaDataDictBase):
             return retval
         if isinstance(retval, type(self)):
             return retval.simplify()
