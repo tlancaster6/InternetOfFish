@@ -381,7 +381,7 @@ class MetaDataDict(MetaDataDictBase):
         }
 
         # add a few special MetaValue objects that generate their values dynamically
-        created_shortform = dt.datetime.fromisoformat(self["created"]).strftime("%m%d%y")
+        created_shortform = self["created"].strftime("%m%d%y")
         self.contents.update({
             'proj_id':   MetaValue(key='proj_id',
                                    value=lambda: f'{self["owner"]}_{self["tank_id"]}_{self["species"]}'
@@ -459,7 +459,7 @@ class MetaDataHandler(MetaDataDict):
                 if finput('do you want to set an automated end date for this project? (y, n)', ['y', 'n']) == 'y':
                     while True:
                         contents['end_date'].query_user()
-                        if not dt.date.fromisoformat(self['end_date']) > dt.date.today():
+                        if not self['end_date'] > dt.date.today():
                             print('the date you entered appears to be in the past. please try again')
                         else:
                             break
@@ -537,7 +537,7 @@ class MetaDataHandler(MetaDataDict):
 
     def set_kill_condition(self):
         if not self['kill_after']:
-            start = dt.datetime.fromisoformat(self['created']).timestamp()
+            start = self['created'].timestamp()
             end = start + float(self['kill_after'])
             self['end_date'], self['end_time'] = dt.datetime.isoformat(
                 dt.datetime.fromtimestamp(end), timespec='seconds').split('T')
