@@ -7,6 +7,7 @@ BASE_DIR = os.path.dirname(CODE_DIR)
 MODELS_DIR = os.path.join(BASE_DIR, 'models')
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 CREDENTIALS_DIR = os.path.join(BASE_DIR, 'credentials')
+RESOURCES_DIR = os.path.join(BASE_DIR, 'resources')
 HOME_DIR = os.path.expanduser('~')
 DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
 CLOUD_HOME_DIR = 'cichlidVideo:BioSci-McGrath/Apps'

@@ -46,7 +46,7 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
     :rtype: str
     """
     while True:
-        prompt = prompt.strip(': ') + ':  '
+        prompt = prompt.strip(': ') + ':  ' if prompt else prompt
         user_input = str(input(prompt))
         if user_input == 'help':
             print(help_str)

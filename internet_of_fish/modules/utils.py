@@ -11,6 +11,12 @@ LOG_DIR = definitions.LOG_DIR
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
 
+def import_ascii_art():
+    with open(os.path.join(definitions.RESOURCES_DIR, 'ascii_art.txt'), 'r') as f:
+        ret = f.read().split('\n\n')
+        return dict(zip(ret[::2], ret[1::2]))
+
+
 def freeze_definitions(proj_id, additional_definitions=None):
     defs = {'PROJ_ID': proj_id}
     for setting in dir(definitions):
