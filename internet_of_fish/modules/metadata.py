@@ -309,8 +309,8 @@ class AdvancedConfigDict(MetaDataDictBase):
                           value='3',
                           pattern=my_regexes.any_int,
                           help_str='max number of simultaneous upload processes to spawn'),
-            'MAX_TIRES':
-                MetaValue(key='MAX_TIRES',
+            'MAX_TRIES':
+                MetaValue(key='MAX_TRIES',
                           value='3',
                           pattern=my_regexes.any_int,
                           help_str='max number of times to retry various failure-prone operations'),
