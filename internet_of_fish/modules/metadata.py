@@ -17,6 +17,7 @@ my_regexes.any_tank_id = r't\d{3}[a-zA-Z]*'
 my_regexes.any_movie = r'.+\.(mp4|h264)'
 my_regexes.any_bool = r'[tT]rue|[fF]alse'
 my_regexes.any_null = r'[Nn][Oo][Nn][Ee]|[Nn][Uu][Ll][Ll]|'
+my_regexes.any_dict = r'{(.+: .+)*}'
  
 
 def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False):
@@ -64,7 +65,8 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
             if finput(f'your input will be recorded as {user_input}. press "y" to accept, "n" to reenter',
                       ['y', 'n'], confirm=False) == 'y':
                 return user_input
-            else: continue
+            else:
+                continue
         return user_input
 
 
@@ -96,26 +98,32 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         as a string, callable that returns a string, or (possibly nested) dict-like collection of strings, this method
         recognizes when the value can be converted to a float, int, bool, datetime.date, datetime.time,
         datetime.datetime, or NoneType object and returns it as such"""
-        retval = self.contents[key].value
-        if isinstance(retval, dict):
-            return retval
-        if isinstance(retval, MetaDataDictBase):
-            return retval.simplify()
-        if callable(retval):
-            return str(retval())
-        if re.fullmatch(my_regexes.any_bool, retval):
-            return eval(retval.title())
-        if re.fullmatch(my_regexes.any_float, retval):
-            return eval(retval)
-        if re.fullmatch(my_regexes.any_null, retval):
+        return self.decode(self.contents[key].value)
+
+
+    def decode(self, val):
+        if isinstance(val, dict):
+            return {k: self.decode(v) for k, v in val.items()}
+        if isinstance(val, MetaDataDictBase):
+            return val.simplify()
+        if callable(val):
+            return str(val())
+        if re.fullmatch(my_regexes.any_dict, val):
+            return self.decode(eval(val))
+        if re.fullmatch(my_regexes.any_bool, val):
+            return eval(val.title())
+        if re.fullmatch(my_regexes.any_float, val):
+            return eval(val)
+        if re.fullmatch(my_regexes.any_null, val):
             return None
-        if re.fullmatch(my_regexes.any_iso_date, retval):
-            return dt.date.fromisoformat(retval)
-        if re.fullmatch(my_regexes.any_iso_time, retval):
-            return dt.time.fromisoformat(retval)
-        if re.fullmatch(my_regexes.any_iso_datetime, retval):
-            return dt.datetime.fromisoformat(retval)
-        return str(retval)
+        if re.fullmatch(my_regexes.any_iso_date, val):
+            return dt.date.fromisoformat(val)
+        if re.fullmatch(my_regexes.any_iso_time, val):
+            return dt.time.fromisoformat(val)
+        if re.fullmatch(my_regexes.any_iso_datetime, val):
+            return dt.datetime.fromisoformat(val)
+        return str(val)
+
 
     def __setitem__(self, key, value):
         """if we have a __getitems__, might as well have a __setitems__. slightly stricter than the base dict
@@ -151,7 +159,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         update the 'value' attribute of the associated Item object. Note that the values in simple_metadata_dict
         must have the __str__ magic method defined"""
         for key, value in simple_metadata_dict.items():
-            self[key] = str(value)
+            self[key] = value
 
     def simplify(self, infer_types=True):
         """return a simple dict composed of {MetaValue.key: MetaValue.value} for each MetaValue in self.contents
@@ -433,9 +441,8 @@ class MetaDataHandler(MetaDataDict):
         md = self.decode_metadata(self.json_path)
         md.update(kwargs)
         self.quick_update(md)
-        self.set_kill_condition()
         utils.create_project_tree(self['proj_id'])
-        self.definitions = utils.freeze_definitions(self['advanced_config'])
+        # self.definitions = utils.freeze_definitions(self['proj_id'], self['advanced_config'])
         self.verify()
 
     def decode_metadata(self, json_path):
