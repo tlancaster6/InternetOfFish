@@ -92,7 +92,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
                 time.sleep(sleep_time)
 
     def expected_mode(self):
-        if not self.metadata['source']:
+        if self.metadata['source']:
             try:
                 return self.curr_mode
             except AttributeError:
