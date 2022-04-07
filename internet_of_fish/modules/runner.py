@@ -19,7 +19,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
     def startup(self):
         self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.main_ctx.notification_q)
         self.secondary_ctx = None
-        self.die_time = dt.datetime.fromisoformat('T'.join([self.metadata['end_date'], self.metadata['end_time']]))
+        self.die_time = dt.datetime.combine(self.metadata['end_date'], self.metadata['end_time'])
         self.logger.debug(f"RunnerWorker.die_time set to {self.die_time}")
         self.event_q.safe_put(mptools.EventMessage(self.name, f'ENTER_{self.curr_mode.upper()}_MODE', 'kickstart'))
         self.logger.debug(f'kickstarting RunnerWorker with ENTER_{self.curr_mode.upper()}_MODE')
