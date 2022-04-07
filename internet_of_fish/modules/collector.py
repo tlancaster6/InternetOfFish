@@ -15,7 +15,7 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         self.RESOLUTION = (self.defs.H_RESOLUTION, self.defs.V_RESOLUTION)  # pi camera resolution
         self.FRAMERATE = self.defs.FRAMERATE  # pi camera framerate
         self.DATA_DIR = self.defs.DATA_DIR
-        self.MAX_VIDEO_LEN = self.defs.MAX_VIDEO_LEN
+        self.MAX_VIDEO_LEN = self.defs.MAX_VIDEO_LEN_SECONDS
 
     def startup(self):
         self.cam = self.init_camera()
