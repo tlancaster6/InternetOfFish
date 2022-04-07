@@ -300,7 +300,7 @@ class Proc(metaclass=utils.AutologMetaclass):
 
         if self.proc.is_alive():
             self.logger.log(logging.ERROR, f"Proc.terminate failed to terminate {self.name} after "
-                                           f"{self.defs.MAX_PAGE} attempts")
+                                           f"{self.defs.MAX_TRIES} attempts")
             return False
         else:
             self.logger.log(logging.INFO, f"Proc.terminate terminated {self.name} after "
