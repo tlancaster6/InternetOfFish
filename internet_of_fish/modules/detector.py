@@ -38,7 +38,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         self.MODELS_DIR = self.defs.MODELS_DIR
         self.DATA_DIR = self.defs.DATA_DIR
         self.HIT_THRESH = self.defs.HIT_THRESH_SECS
-        self.IMG_BUFFER = self.defs.IMG_BUFFER
+        self.IMG_BUFFER = self.defs.IMG_BUFFER_SECS
 
     def startup(self):
         self.max_fish = self.metadata['n_fish'] if self.metadata['n_fish'] else self.defs.MAX_DETS
