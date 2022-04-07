@@ -92,7 +92,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
                 time.sleep(sleep_time)
 
     def expected_mode(self):
-        if self.metadata['source'] != 'None':
+        if not self.metadata['source']:
             try:
                 return self.curr_mode
             except AttributeError:
@@ -105,7 +105,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
     def switch_mode(self, target_mode):
         self.clean_event_queue()
         self.soft_shutdown()
-        self.secondary_ctx = mptools.SecondaryContext(self.main_ctx.metadata, self.event_q,
+        self.secondary_ctx = mptools.SecondaryContext(self.metadata, self.event_q,
                                                       f'{target_mode.upper()}CONTEXT')
         self.curr_mode = target_mode
         self.logger.debug('mode switched successfully')
@@ -114,7 +114,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
     def active_mode(self):
         self.switch_mode('active')
         self.img_q = self.secondary_ctx.MPQueue(maxsize=10)
-        if self.metadata['source'] != 'None':
+        if self.metadata['source']:
             self.collect_proc = self.secondary_ctx.Proc(
                 'COLLECT', collector.VideoCollectorWorker, self.img_q, self.metadata['source'])
         else:

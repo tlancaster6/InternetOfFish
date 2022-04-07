@@ -151,7 +151,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         if self.avg_timer.avg:
             self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
         # if in testing mode, trigger a notification each time the detector exits
-        if self.metadata['testing'] == 'True':
+        if self.metadata['testing']:
             img_paths = [self.overlay_boxes(be) for be in self.buffer]
             vid_path = self.jpgs_to_mp4(img_paths)
             msg = f'video from {self.metadata["tank_id"]}'
