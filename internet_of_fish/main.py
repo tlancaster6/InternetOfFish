@@ -1,14 +1,18 @@
 import os.path
 import sys, argparse
 import time
+from types import SimpleNamespace
 
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+if os.path.abspath(os.path.dirname(os.path.dirname(__file__))) not in sys.path:
+    sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from internet_of_fish.modules import runner, metadata, mptools, utils
 
 
-def main(args):
-    metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after, source=args.source,
-                                                testing=bool(args.testing))
+def main(args=None):
+    if not args:
+        args = make_parser().parse_args([])
+    metadata_handler = metadata.MetaDataHandler(new_proj=args.new_proj, kill_after=args.kill_after,
+                                                source=args.source, testing=bool(args.testing))
     metadata_simple = metadata_handler.simplify()
     with mptools.MainContext(metadata_simple) as main_ctx:
         if args.cleanup:
@@ -24,8 +28,7 @@ def main(args):
             time.sleep(5)
 
 
-
-if __name__ == '__main__':
+def make_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--new_proj', action='store_true',
                         help='indicates that a new project should be created. If this flag is omitted, the most'
@@ -46,5 +49,9 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--proj_id', default=None, type=str,
                         help='use this option to manually specify an existing projectID that you want to resume. This'
                              'can be a project already ')
+    return parser
+
+if __name__ == '__main__':
+    parser = make_parser()
     args_ = parser.parse_args()
     main(args_)

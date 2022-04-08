@@ -1,8 +1,9 @@
 import os, json, sys, re, platform, time
 from internet_of_fish.modules import definitions, utils
 import datetime as dt
-from typing import Union, Callable, Type
+from typing import Union, Callable
 from types import SimpleNamespace
+from internet_of_fish.modules.utils import finput
 
 my_regexes = SimpleNamespace()
 my_regexes.any_int = r'\d+'
@@ -18,56 +19,6 @@ my_regexes.any_movie = r'.+\.(mp4|h264)'
 my_regexes.any_bool = r'[tT]rue|[fF]alse'
 my_regexes.any_null = r'[Nn][Oo][Nn][Ee]|[Nn][Uu][Ll][Ll]|'
 my_regexes.any_dict = r'{(.+: .+)*}'
- 
-
-def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False):
-    """customized user input function. short for "formatted input", but really I just like that it's a pun on "fin"
-
-    :param prompt: prompt to give the user, identical usage to the builtin input function. Required.
-    :type prompt: str
-    :param options: list of allowed user inputs. If simplify is true, ensure these are lowercase and without whitespace.
-                    If None (default) do not enforce an option set. To allow users to leave the query blank, include
-                    an empty string in this list.
-    :type options: list[str]
-    :param simplify: if True, convert user input to lowercase and remove any whitespaces
-    :type simplify: bool
-    :param pattern: enforce that the user input matches the given regular expression pattern using re.fullmatch. If None
-                    (default) re matching is skipped
-    :type pattern: str
-    :param mapping: dictionary mapping user inputs to the actual values the function returns. If None (default) user
-                    input is returned directly. input loop will repeat until the user enters a value matching a key
-                    in the mapping dictionary.
-    :type mapping: dict
-    :param help_str: if user types "help", this string will be displayed and then the user will be queried again
-    :type help_str: str
-    :param confirm: if True (default), flinput will loop until the user accepts the formatted version of their input
-    :rtype confirm: bool
-    :return: formatted and verified user input
-    :rtype: str
-    """
-    while True:
-        prompt = prompt.strip(': ') + ':  ' if prompt else prompt
-        user_input = str(input(prompt))
-        if user_input == 'help':
-            print(help_str)
-            continue
-        if simplify:
-            user_input = user_input.lower().strip().replace(' ', '')
-        if (options and user_input not in options) or (mapping and user_input not in mapping.keys()):
-            print(f'invalid input. valid options are {" ".join(options)}')
-            continue
-        if pattern and not re.fullmatch(pattern, user_input):
-            print(f'pattern mistmatch. please provide an input formatted as {pattern}')
-            continue
-        if mapping:
-            user_input = mapping[user_input]
-        if confirm:
-            if finput(f'your input will be recorded as {user_input}. press "y" to accept, "n" to reenter',
-                      ['y', 'n'], confirm=False) == 'y':
-                return user_input
-            else:
-                continue
-        return user_input
 
 
 class MetaDataDictBase(metaclass=utils.AutologMetaclass):
@@ -535,15 +486,8 @@ class MetaDataHandler(MetaDataDict):
         """locate the most recently created json file in the data dir (see definitions.py for data dir location)"""
         self.logger.info('attempting to locate existing metadata file')
         try:
-            potential_projects = next(os.walk(definitions.DATA_DIR))[1]
-            potential_jsons = [os.path.join(definitions.PROJ_DIR(pp), f'{pp}.json') for pp in potential_projects]
-            if len(potential_jsons) == 0:
-                raise FileNotFoundError
-            else:
-                json_path = sorted([pj for pj in potential_jsons if os.path.exists(pj)], key=os.path.getctime)[-1]
-                ctime = dt.datetime.fromtimestamp(os.path.getctime(json_path)).isoformat()
-                self.logger.info(f'found {os.path.basename(json_path)}, created {ctime}')
-                return json_path
+            json_path, ctime = utils.locate_newest_json()
+            self.logger.info(f'found {os.path.basename(json_path)}, created {ctime}')
 
         except Exception as e:
             self.logger.debug(e)
@@ -567,6 +511,8 @@ class MetaDataHandler(MetaDataDict):
                 dt.datetime.max, timespec='seconds').split('T')
         if not self['end_time']:
             self['end_time'] = dt.time.isoformat(dt.time.max, 'seconds')
+
+
 
 
 
