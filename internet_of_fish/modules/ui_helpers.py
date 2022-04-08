@@ -65,7 +65,7 @@ def change_active_proj(proj_id):
 def start_project(proj_id=None):
     if active_processes():
         pause_project()
-    if not proj_id or proj_id != active_project():
+    if not proj_id or proj_id != active_project()[0]:
         change_active_proj(proj_id)
     kwargs = {'stdin': sp.PIPE, 'stdout': sp.PIPE, 'stderr': sp.PIPE, 'start_new_session': True}
     return sp.Popen(['python3', 'internet_of_fish/main.py'], **kwargs)

@@ -101,7 +101,7 @@ class UI:
         if selection == 'list existing projects on this device':
             [print(p) for p in ui_helpers.existing_projects()]
         elif selection == 'view information about the currently active project':
-            ui_helpers.print_project_info(ui_helpers.active_project())
+            ui_helpers.print_project_info(ui_helpers.active_project()[0])
         elif selection == 'view information about a different project':
             proj_id = finput('enter project id', options=ui_helpers.existing_projects(), simplify=False)
             ui_helpers.print_project_info(proj_id)
