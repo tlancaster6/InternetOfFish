@@ -66,7 +66,7 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
 
 
 def bprint(print_str):
-    print(colorama.Fore.BLUE, print_str)
+    print(colorama.Fore.BLUE + print_str)
 
 
 def numerical_choice(opt_dict, prompt=None, stepout_option=True, color='BLUE'):
