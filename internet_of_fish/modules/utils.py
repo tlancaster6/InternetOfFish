@@ -122,9 +122,9 @@ def locate_newest_json():
 
 def recursive_mtime(path):
     if os.path.isfile(path):
-        datetime.datetime.fromtimestamp(os.path.getmtime(path))
+        return datetime.datetime.fromtimestamp(os.path.getmtime(path))
     else:
-        files = glob.glob(os.path.join(path, '**', '*', '*.*'))
+        files = glob.glob(os.path.join(path, '**', '*.*'))
         mtimes = [os.path.getmtime(f) for f in files]
         return datetime.datetime.fromtimestamp(max(mtimes))
 
