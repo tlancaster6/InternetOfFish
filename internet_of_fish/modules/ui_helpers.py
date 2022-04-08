@@ -78,7 +78,7 @@ def analyze_for_spawning(vid_path):
 
 def get_project_metadata(proj_id):
     json_path = os.path.join(definitions.PROJ_DIR(proj_id), f'{proj_id}.json')
-    metadata_simple = metadata.MetaDataHandler(json_path=json_path).simplify(infer_types=False)
+    metadata_simple = metadata.MetaDataHandler(new_proj=False, json_path=json_path).simplify(infer_types=False)
     return metadata_simple
 
 
