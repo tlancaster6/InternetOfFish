@@ -65,7 +65,7 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
 def numerical_choice(opt_dict, prompt=None, stepout_option=True):
     if stepout_option:
         opt_dict = opt_dict.copy()
-        opt_dict.update({len(opt_dict), 'return to the previous menu'})
+        opt_dict.update({len(opt_dict): 'return to the previous menu'})
     if prompt:
         print(prompt)
     for key, val in opt_dict.items():
