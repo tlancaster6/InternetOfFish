@@ -4,7 +4,9 @@ import subprocess as sp
 if os.path.abspath(os.path.join(os.path.dirname(__file__), 'internet_of_fish')) not in sys.path:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'internet_of_fish'))
 from internet_of_fish.modules import utils, ui_helpers, definitions, metadata
-from internet_of_fish.modules.utils import finput
+from internet_of_fish.modules.utils import finput, bprint
+import colorama
+
 
 opt_dict_1 = {
     1: 'get more information about a project or this device',
@@ -53,17 +55,19 @@ opt_dict_1_6 = {
     3: 'rerun auto-configuration script'
 }
 
+blue = colorama.Fore.BLUE
+
 class UI:
 
     def __init__(self):
-        # colorama.init(autoreset=True)
+        colorama.init(autoreset=True)
         art = utils.import_ascii_art()
-        print(colorama.Fore.BLUE + art['IOF'])
-        print(colorama.Fore.BLUE + art['FISH_SEP'])
+        bprint(art['IOF'])
+        bprint(art['FISH_SEP'])
         self.welcome()
 
     def welcome(self):
-        print('Welcome to the InternetOfFish user interface. To get started, select one of the following options:')
+        bprint('Welcome to the InternetOfFish user interface. To get started, select one of the following options:')
         selection = utils.numerical_choice(opt_dict_1, stepout_option=False)
         if selection == 'get more information about a project or this device':
             self.get_more_info()
@@ -82,15 +86,15 @@ class UI:
         elif selection == 'start the tutorial':
             self.tutorial()
         elif selection == 'exit user interface':
-            print('goodbye')
+            bprint('goodbye')
             return
-        print('returning to main menu')
+        bprint('returning to main menu')
         self.welcome()
 
     def start_new_project(self):
         metadata.MetaDataHandler()
         ui_helpers.start_project()
-        print('project started, returning to the main menu')
+        bprint('project started, returning to the main menu')
 
     def get_more_info(self):
         selection = utils.numerical_choice(opt_dict_1_1, prompt='select on of the following options')
@@ -144,10 +148,11 @@ class UI:
                   'to start a new project before this upload process finishes is not advised')
 
         elif selection == 'upload a specific file or directory':
-            path = os.path.abspath(input('enter the relative or absolute path to the file/directory to upload'))
+            path = os.path.abspath(input(blue + 'enter the relative or absolute path to the '
+                                                              'file/directory to upload'))
             while not os.path.exists(path):
-                path = os.path.abspath(input('file/directory not found. please try again, or type q to return to the '
-                                             'previous menu'))
+                path = os.path.abspath(input(blue + 'file/directory not found. please try again, or type '
+                                                                  'q to return to the previous menu'))
                 if path == 'q':
                     return
             out = ui_helpers.upload(path)
@@ -155,9 +160,9 @@ class UI:
                 print(f'Problem while uploading: {out.stderr}')
 
         elif selection == 'download a file from dropbox':
-            path = input('enter the full path the the Dropbox file or directory')
+            path = input(blue + 'enter the full path the the Dropbox file or directory')
             while definitions.CLOUD_HOME_DIR not in path:
-                path = input(f'path should start with {definitions.CLOUD_HOME_DIR}, please try again, '
+                path = input(f'{blue}path should start with {definitions.CLOUD_HOME_DIR}, please try again, '
                              f'or press q to return to the previous menu')
                 if path == 'q':
                     return
@@ -175,12 +180,12 @@ class UI:
                      'want to pause it to analyze this video instead? (y, n)', options=['y', 'n']) == 'y':
                 ui_helpers.pause_project()
             else:
-                print('returning to previous menu')
+                bprint('returning to previous menu')
                 return
 
-        vid_path = input('enter the absolute or relative path to a local copy of the video')
+        vid_path = input(blue+'enter the absolute or relative path to a local copy of the video')
         while not os.path.exists(vid_path):
-            vid_path = input('could not find that file. please try again, '
+            vid_path = input(blue+'could not find that file. please try again, '
                              'or press q to return to the previous menu')
             if vid_path == 'q':
                 return

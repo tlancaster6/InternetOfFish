@@ -7,12 +7,13 @@ import os, socket
 from functools import wraps
 from types import FunctionType, SimpleNamespace
 import sys
+import colorama
 
 LOG_DIR = definitions.LOG_DIR
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
 
-def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False):
+def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False, color='BLUE'):
     """customized user input function. short for "formatted input", but really I just like that it's a pun on "fin"
 
     :param prompt: prompt to give the user, identical usage to the builtin input function. Required.
@@ -39,6 +40,8 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
     """
     while True:
         prompt = prompt.strip(': ') + ':  ' if prompt else prompt
+        if color:
+            prompt = getattr(colorama.Fore, color.upper()) + prompt
         user_input = str(input(prompt))
         if user_input == 'help':
             print(help_str)
@@ -62,16 +65,23 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
         return user_input
 
 
-def numerical_choice(opt_dict, prompt=None, stepout_option=True):
+def bprint(print_str):
+    print(colorama.Fore.BLUE, print_str)
+
+
+def numerical_choice(opt_dict, prompt=None, stepout_option=True, color='BLUE'):
+    print('\n')
+    color = getattr(colorama.Fore, color)
     if stepout_option:
         opt_dict = opt_dict.copy()
         opt_dict.update({len(opt_dict): 'return to the previous menu'})
     if prompt:
-        print(prompt)
+        print(color + prompt) if color else print(prompt)
     for key, val in opt_dict.items():
-        print(f'<{key}>  {val}')
+        print(f'{color}<{key}>  {val}') if color else print(f'<{key}>  {val}')
     options = [str(key) for key in list(opt_dict.keys())]
     selection = finput('', options=options)
+    print('\n')
     return opt_dict[int(selection)]
 
 def dict_print(dict_: dict, dt_as_iso=True):
