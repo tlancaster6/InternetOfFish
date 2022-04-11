@@ -388,7 +388,7 @@ class MetaDataHandler(MetaDataDict):
         elif new_proj:
             self.json_path = self.generate_metadata()
         else:
-            self.json_path = self.locate_newest_json()
+            self.json_path, _ = self.locate_newest_json()
         md = self.decode_metadata(self.json_path)
         md.update(kwargs)
         self.quick_update(md)
