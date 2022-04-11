@@ -6,7 +6,7 @@ sudo apt-get update
 sudo apt-get -y install libedgetpu1-std
 sudo apt-get -y install python3-pycoral
 curl https://rclone.org/install.sh | sudo bash
-sudo apt install screen
+sudo apt-get -y install screen
 sudo pip3 install rclone
 sudo pip3 install picamera
 sudo pip3 install sendgrid
