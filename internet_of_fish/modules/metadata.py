@@ -224,12 +224,12 @@ class AdvancedConfigDict(MetaDataDictBase):
                           value='18',
                           pattern=my_regexes.any_int_less_than_24,
                           help_str='daily collection end time. e.g., set to 19 to end at 7pm'),
-            'MAX_VIDEO_LEN_SECS':
-                MetaValue(key='MAX_VIDEO_LEN_SECS',
-                          value='3600',
-                          pattern=my_regexes.any_int,
-                          help_str='max length, in seconds, of individual videos. '
-                                   'Set to 100000 to disable video splitting'),
+            'SPLIT_AM_PM':
+                MetaValue(key='SPLIT_AM_PM',
+                          value='True',
+                          pattern=my_regexes.any_bool,
+                          help_str='If True, split the video at noon each day. Otherwise, record continuously '
+                                   'to one file'),
             'MIN_NOTIFICATION_INTERVAL':
                 MetaValue(key='MIN_NOTIFICATION_INTERVAL',
                           value='600',

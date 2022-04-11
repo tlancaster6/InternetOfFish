@@ -4,6 +4,7 @@ from internet_of_fish.modules import mptools
 from internet_of_fish.modules import utils
 import picamera
 import cv2
+import datetime as dt
 
 
 class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass):
@@ -15,13 +16,13 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         self.RESOLUTION = (self.defs.H_RESOLUTION, self.defs.V_RESOLUTION)  # pi camera resolution
         self.FRAMERATE = self.defs.FRAMERATE  # pi camera framerate
         self.DATA_DIR = self.defs.DATA_DIR
-        self.MAX_VIDEO_LEN = self.defs.MAX_VIDEO_LEN_SECS
+        self.SPLIT_AM_PM = self.defs.SPLIT_AM_PM
 
     def startup(self):
         self.cam = self.init_camera()
         self.vid_dir = self.defs.PROJ_VID_DIR
         self.cam.start_recording(self.generate_vid_path())
-        self.last_split = time.time()
+        self.split_flag = False if dt.datetime.now().hour < 12 else True
 
     def main_func(self):
         cap_time = utils.current_time_ms()
@@ -35,8 +36,9 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         if not put_result:
             self.INTERVAL_SECS += 0.1
             self.logger.info(f'img_q full, slowing collection interval to {self.INTERVAL_SECS}')
-        if (time.time() - self.last_split) > self.MAX_VIDEO_LEN:
+        if self.SPLIT_AM_PM and (dt.datetime.now().hour > 12) and not self.split_flag:
             self.split_recording()
+            self.split_flag = True
 
     def shutdown(self):
         self.cam.stop_recording()
@@ -56,7 +58,6 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
 
     def split_recording(self):
         self.cam.split_recording(self.generate_vid_path())
-        self.last_split = time.time()
 
 
 class VideoCollectorWorker(CollectorWorker):
