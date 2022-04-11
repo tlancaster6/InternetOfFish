@@ -1,5 +1,5 @@
 from typing import Tuple
-from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier
+from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier, definitions
 import time
 import datetime as dt
 import os
@@ -180,10 +180,10 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         return utils.sleep_secs(600, next_start.timestamp())
 
     def queue_uploads(self, proj_id=None, queue_end_signals=True):
-        proj_dir = self.defs.PROJ_DIR
-        proj_log_dir = self.defs.PROJ_LOG_DIR
-        proj_vid_dir = self.defs.PROJ_VID_DIR
-        proj_img_dir = self.defs.PROJ_IMG_DIR
+        proj_dir = definitions.PROJ_DIR(proj_id)
+        proj_log_dir = definitions.PROJ_LOG_DIR(proj_id)
+        proj_vid_dir = definitions.PROJ_VID_DIR(proj_id)
+        proj_img_dir = definitions.PROJ_IMG_DIR(proj_id)
 
         if os.path.exists(proj_log_dir):
             shutil.rmtree(proj_log_dir)

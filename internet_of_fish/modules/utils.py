@@ -124,10 +124,12 @@ def recursive_mtime(path):
     if os.path.isfile(path):
         return datetime.datetime.fromtimestamp(os.path.getmtime(path))
     else:
-        files = glob.glob(os.path.join(path, '**', '*.*'))
-        mtimes = [os.path.getmtime(f) for f in files]
-        return datetime.datetime.fromtimestamp(max(mtimes))
-
+        paths = glob.glob(os.path.join(path, '**', '*'), recursive=True)
+        mtimes = [os.path.getmtime(p) for p in paths]
+        try:
+            return datetime.datetime.fromtimestamp(max(mtimes))
+        except ValueError:
+            return datetime.datetime.min
 
 def sleep_secs(max_sleep, end_time=999999999999999.9):
     """see mptools.sleep_secs()"""
