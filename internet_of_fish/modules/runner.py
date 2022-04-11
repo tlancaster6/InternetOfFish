@@ -6,6 +6,7 @@ import os
 import glob
 import subprocess as sp
 import shutil
+import pathlib
 
 
 class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
@@ -48,8 +49,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             self.main_ctx.notification_q.safe_put(notifier.Notification(event.msg_src, *event.msg))
         elif event.msg_type == 'FATAL':
             self.logger.info(f'{event.msg_type.title()} event received. Rebooting machine')
-            note = notifier.Notification(event.msg_src, event.msg_type, 'event.msg',
-                                         os.path.join(self.defs.LOG_DIR, 'SUMMARY.log'))
+            note = notifier.Notification(event.msg_src, event.msg_type, event.msg,'')
             self.main_ctx.notification_q.safe_put(note)
             sp.run(['sudo', 'shutdown', '-r', '+5'])
             self.hard_shutdown()
@@ -89,6 +89,8 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             else:
                 sleep_time = self.sleep_until_morning()
                 self.logger.info(f'no change in mode. going back to sleep for {sleep_time} seconds')
+                pathlib.Path(self.defs.PROJ_JSON_FILE).touch()
+
                 time.sleep(sleep_time)
 
     def expected_mode(self):

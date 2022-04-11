@@ -21,6 +21,7 @@ PROJ_DIR = lambda proj_id: os.path.join(DATA_DIR, proj_id)
 PROJ_VID_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Videos')
 PROJ_IMG_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Images')
 PROJ_LOG_DIR = lambda proj_id: os.path.join(PROJ_DIR(proj_id), 'Logs')
+PROJ_JSON_FILE = lambda proj_id: os.path.join(PROJ_DIR(proj_id), f'{proj_id}.json')
 
 # # project-specific parameters
 # MAX_FISH = 5  # maximum number of fish detections that should be returned
