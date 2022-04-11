@@ -40,7 +40,7 @@ HOME_DIR = os.path.expanduser('~')
 PI_USER = 'pi'
 
 if os.path.exists(CREDENTIAL_FILE):
-    print('loading pi password from credentials.txt')
+    print(f'loading pi password from {CREDENTIAL_FILE}')
     with open(CREDENTIAL_FILE, 'r') as f:
         PI_PASSWORD = f.read().strip()
 else:
@@ -86,6 +86,18 @@ def pull(c):
     except Exception as e:
         print(f'pull failed: {e}')
 
+@task(hosts=MY_HOSTS)
+def clone(c):
+    print(f'cloning to {c.host}')
+    try:
+        with c.cd('/home/pi/'):
+            if c.run('test -d {}'.format('InternetOfFish'), warn=True).failed:
+                print('cloning repo')
+                c.run('git clone https://github.com/tlancaster6/InternetOfFish')
+    except Exception as e:
+        print(f'clone failed with error: {e}')
+
+
 
 @task(hosts=MY_HOSTS)
 def config(c):
@@ -96,8 +108,7 @@ def config(c):
                 print('cloning repo')
                 c.run('git clone https://github.com/tlancaster6/InternetOfFish')
             print('running configure_worker.sh')
-            c.run('chmod u+x InternetOfFish/bin/configure_worker.sh')
-            c.run('InternetOfFish/bin/configure_worker.sh')
+            c.run('bash InternetOfFish/bin/configure_worker.sh')
 
     except Exception as e:
         print(f'config failed with error: {e}')
