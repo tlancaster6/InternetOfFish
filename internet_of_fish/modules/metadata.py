@@ -488,6 +488,7 @@ class MetaDataHandler(MetaDataDict):
         try:
             json_path, ctime = utils.locate_newest_json()
             self.logger.info(f'found {os.path.basename(json_path)}, created {ctime}')
+            return json_path, ctime
 
         except Exception as e:
             self.logger.debug(e)
