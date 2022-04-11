@@ -62,7 +62,7 @@ def change_active_proj(proj_id):
     os.rename(tmp_json_path, json_path)
 
 
-def start_project(proj_id=None):
+def start_project(proj_id=active_project()[0]):
     if active_processes():
         pause_project()
     if not proj_id or proj_id != active_project()[0]:
