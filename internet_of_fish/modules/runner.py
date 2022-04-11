@@ -182,6 +182,8 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         return utils.sleep_secs(600, next_start.timestamp())
 
     def queue_uploads(self, proj_id=None, queue_end_signals=True):
+        if not proj_id:
+            proj_id = self.metadata['proj_id']
         proj_dir = definitions.PROJ_DIR(proj_id)
         proj_log_dir = definitions.PROJ_LOG_DIR(proj_id)
         proj_vid_dir = definitions.PROJ_VID_DIR(proj_id)
