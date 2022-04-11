@@ -86,25 +86,30 @@ def get_slack_time(proj_id):
     mtime = utils.recursive_mtime(definitions.PROJ_DIR(proj_id))
     return (datetime.datetime.now() - mtime).total_seconds()
 
+def inject_override(event_type: str):
+    event_type = event_type.upper()
+    if event_type not in runner.EVENT_TYPES:
+        print(f'{event_type} is an invalid override. Valid overrides include: {", ".join(runner.EVENT_TYPES)}')
+    elif not active_processes():
+        print('cannot inject an override when no project is currently running')
+    else:
+        with open(os.path.join(definitions.HOME_DIR, event_type), 'w') as _:
+            pass
+
+def end_project():
+    inject_override('ENTER_END_MODE')
+
 
 def pause_project():
     tries_left = 3
     while active_processes() and tries_left:
         tries_left -= 1
         print('pausing existing project, please wait')
-        with open(definitions.PAUSE_FILE, 'w') as _:
-            pass
+        inject_override('HARD_SHUTDOWN')
         time.sleep(5)
         if os.path.exists(definitions.PAUSE_FILE):
             os.remove(definitions.PAUSE_FILE)
     kill_processes()
-
-
-def end_project():
-    if active_processes():
-        with open(definitions.END_FILE, 'w') as _:
-            pass
-
 
 def print_project_info(proj_id):
     slack_time = get_slack_time(proj_id)

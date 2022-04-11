@@ -41,6 +41,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         self.IMG_BUFFER = self.defs.IMG_BUFFER_SECS
 
     def startup(self):
+        self.mock_hit_flag = False
         self.max_fish = self.metadata['n_fish'] if self.metadata['n_fish'] else self.defs.MAX_DETS
         self.img_dir = self.defs.PROJ_IMG_DIR
 
@@ -59,13 +60,16 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
 
     def main_func(self, q_item):
         cap_time, img = q_item
+        if img == 'MOCK_HIT':
+            self.mock_hit_flag = True
         dets = self.detect(img)
         fish_dets, pipe_det = self.filter_dets(dets)
         self.buffer.append(BufferEntry(cap_time, img, fish_dets + pipe_det))
         hit_flag = self.check_for_hit(fish_dets, pipe_det)
         self.hit_counter.increment() if hit_flag else self.hit_counter.decrement()
-        if self.hit_counter.hits >= self.HIT_THRESH:
-            self.logger.info(f"Hit threshold of {self.HIT_THRESH} exceeded, possible spawning event")
+        if self.mock_hit_flag or (self.hit_counter.hits >= self.HIT_THRESH):
+            self.mock_hit_flag = False
+            self.logger.info(f"Hit counter reached {self.hit_counter.hits}, possible spawning event")
             img_paths = [self.overlay_boxes(be) for be in self.buffer]
             vid_path = self.jpgs_to_mp4(img_paths)
             msg = f'possible spawning event in {self.metadata["tank_id"]} at {utils.current_time_iso()}'

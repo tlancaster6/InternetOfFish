@@ -12,8 +12,8 @@ HOME_DIR = os.path.expanduser('~')
 DATA_DIR = os.path.join(HOME_DIR, 'CichlidPiData', '__ProjectData')
 CLOUD_HOME_DIR = 'cichlidVideo:BioSci-McGrath/Apps'
 CLOUD_DATA_DIR = posixpath.join(CLOUD_HOME_DIR, 'CichlidPiData', '__ProjectData')
-END_FILE = os.path.join(HOME_DIR, 'END')
-PAUSE_FILE = os.path.join(HOME_DIR, 'PAUSE')
+END_FILE = os.path.join(HOME_DIR, 'ENTER_END_MODE')
+PAUSE_FILE = os.path.join(HOME_DIR, 'HARD_SHUTDOWN')
 SENDGRID_KEY_FILE = os.path.join(CREDENTIALS_DIR, 'sendgrid_key.secret')
 
 # variable paths
