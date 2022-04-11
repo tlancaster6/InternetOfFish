@@ -5,8 +5,9 @@ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install libedgetpu1-std
 sudo apt-get install python3-pycoral
+sudo pip3 install screen
 sudo pip3 install picamera
-pip3 install sendgrid
+sudo pip3 install sendgrid
 sudo pip3 install opencv-python-headless
 sudo pip3 install ffmpeg
 sudo pip3 install -U numpy
