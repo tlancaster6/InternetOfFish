@@ -2,7 +2,7 @@ import os, sys
 if os.path.abspath(os.path.dirname(os.path.dirname(__file__))) not in sys.path:
     sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from internet_of_fish.modules import ui_helpers, utils, metadata, mptools, runner
-import colorama, time
+import colorama
 colorama.init(autoreset=True)
 
 
@@ -80,6 +80,13 @@ class UI:
         demo_menu.update(Opt('put the runner into passive mode', ui_helpers.inject_override, 'ENTER_PASSIVE_MODE'))
         demo_menu.update(Opt('put the runner into end mode', ui_helpers.inject_override, 'ENTER_END_MODE'))
 
+        utils_menu = OptDict()
+        utils_menu.update(Opt('enter demo mode', self.enter_demo_mode))
+        utils_menu.update(Opt('get info about this device', device_info_menu.query))
+        utils_menu.update(Opt('pause the currently running project without exiting', ui_helpers.pause_project))
+        utils_menu.update(Opt('download a file or directory from dropbox', ui_helpers.download))
+        utils_menu.update(Opt('clear the log files', ui_helpers.clear_logs))
+
         main_menu = OptDict(stepout_opt=False)
         main_menu.update(Opt('exit the application', self.goodbye))
         main_menu.update(Opt('create a new project', new_project_menu.query))
@@ -88,12 +95,12 @@ class UI:
         main_menu.update(Opt('start the currently active project', self.start_project))
         main_menu.update(Opt('get additional info about the currently active project', project_info_menu.query))
         main_menu.update(Opt('change the currently active project', self.change_active_project))
-        main_menu.update(Opt('get info about this device', device_info_menu.query))
         main_menu.update(Opt('upload all data from this device', ui_helpers.upload_all))
-        main_menu.update(Opt('enter demo mode', self.enter_demo_mode))
+        main_menu.update(Opt('view additional utilities', utils_menu.query()))
+
 
         return {'main_menu': main_menu, 'new_project_menu': new_project_menu, 'device_info_menu': device_info_menu,
-                'project_info_menu': project_info_menu, 'demo_menu': demo_menu}
+                'project_info_menu': project_info_menu, 'demo_menu': demo_menu, 'utils_menu': utils_menu}
 
 
     def check_startup_conditions(self):
@@ -134,7 +141,19 @@ class UI:
             self.main_ctx.__exit__('', '', '')
         utils.cprint('\ngoodbye')
         sys.exit()
-
+        
+    def end_project(self):
+        active_project = ui_helpers.active_project()
+        if not active_project:
+            print('cannot find a project to upload')
+            return
+        if not ui_helpers.active_processes():
+            print(f'starting {active_project} in end mode')
+            self.start_project()
+        ui_helpers.inject_override('ENTER_END_MODE')
+        print('end mode override injected. Upload will run in background')
+        
+        
 if __name__ == '__main__':
     ui = UI()
 

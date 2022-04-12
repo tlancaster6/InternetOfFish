@@ -1,7 +1,6 @@
 import datetime
 import os
-from internet_of_fish.modules import definitions, metadata, runner, mptools, utils
-from internet_of_fish.main import main
+from internet_of_fish.modules import definitions, metadata, runner, utils
 import psutil
 import re
 import datetime as dt
@@ -9,10 +8,8 @@ import shutil
 import time
 import subprocess as sp
 import pathlib
-import socket
-import sys
 import platform
-
+import glob
 
 def check_running_in_screen():
     out = sp.run('echo $TERM', shell=True, capture_output=True, encoding='utf-8')
@@ -105,22 +102,6 @@ def change_active_proj(proj_id):
     print(f'active project is now {proj_id}')
 
 
-def start_project(proj_id=None):
-    if not proj_id:
-        proj_id = active_project()[0]
-    if active_processes():
-        pause_project()
-    if not proj_id or proj_id != active_project()[0]:
-        change_active_proj(proj_id)
-    kwargs = {'stdin': sp.PIPE, 'stdout': sp.PIPE, 'stderr': sp.PIPE, 'start_new_session': True}
-    return sp.Popen(['python3', 'internet_of_fish/main.py'], **kwargs)
-
-
-def analyze_for_spawning(vid_path):
-    kwargs = {'stdin': sp.PIPE, 'stdout': sp.PIPE, 'stderr': sp.PIPE, 'start_new_session': True}
-    return sp.Popen(['python3', 'internet_of_fish/main.py', '-s', vid_path], **kwargs)
-
-
 def get_project_metadata(proj_id):
     json_path = os.path.join(definitions.PROJ_DIR(proj_id), f'{proj_id}.json')
     metadata_simple = metadata.MetaDataHandler(new_proj=False, json_path=json_path).simplify(infer_types=False)
@@ -147,8 +128,10 @@ def inject_override(event_type: str):
         with open(os.path.join(definitions.HOME_DIR, event_type), 'w') as _:
             pass
 
-def end_project():
-    inject_override('ENTER_END_MODE')
+
+def clear_logs():
+    for log in glob.glob(os.path.join(definitions.LOG_DIR, '*.log')):
+        os.remove(log)
 
 
 def pause_project():
@@ -175,16 +158,15 @@ def upload(local_path):
     return out
 
 
-def download(cloud_path):
+def download(cloud_path=None):
+    if not cloud_path:
+        cloud_path = input(f'enter the full path to the file/directory, starting with "{definitions.CLOUD_HOME_DIR}"')
     rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
     local_path = str(pathlib.PurePosixPath(definitions.HOME_DIR) / pathlib.PurePath(rel))
     if os.path.splitext(local_path)[1]:
         out = sp.run(['rclone', 'copy', cloud_path, os.path.dirname(local_path)], capture_output=True, encoding='utf-8')
     else:
         out = sp.run(['rclone', 'copy', cloud_path, local_path], capture_output=True, encoding='utf-8')
+    if out.stderr:
+        print(f'download error: {out.stderr}')
     return out
-
-
-def upload_all():
-    pause_project()
-    upload(definitions.DATA_DIR)

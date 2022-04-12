@@ -80,7 +80,6 @@ class MPQueue(mpq.Queue):
         """
         item = self.safe_get()
         while item is not None:
-            print(item)
             yield item
             item = self.safe_get()
 
