@@ -110,6 +110,7 @@ class UI:
         ui_helpers.pause_project()
         if not ui_helpers.active_project():
             print('cannot start a project that does not exist. Try selecting "create a new project" instead')
+            return
         self.main_ctx = mptools.MainContext(metadata.MetaDataHandler(new_proj=False).simplify())
         self.main_ctx.Proc('RUN', runner.RunnerWorker, self.main_ctx)
         print(f'{self.main_ctx.metadata["proj_id"]} is now running in the background')

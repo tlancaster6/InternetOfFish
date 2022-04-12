@@ -496,7 +496,7 @@ class MetaDataHandler(MetaDataDict):
             self.logger.debug(e)
             self.logger.info(f'failed to locate an existing metadata file. Create one by running main.py with the'
                              f' --new_proj flag')
-            sys.exit()
+            raise FileNotFoundError
 
     def overwrite_json(self):
         with open(self['json_path'], 'w') as f:
