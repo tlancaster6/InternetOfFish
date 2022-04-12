@@ -124,8 +124,9 @@ class UI:
         change_project_menu.query()
 
     def goodbye(self):
+        ui_helpers.pause_project()
         if self.main_ctx:
-            self.main_ctx.__exit__()
+            self.main_ctx.__exit__('', '', '')
         utils.cprint('\ngoodbye')
         sys.exit()
 
