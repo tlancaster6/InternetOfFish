@@ -24,6 +24,8 @@ def print_summary_log_tail():
 
 def new_project(**kwargs):
     metadata.MetaDataHandler(**kwargs)
+    print('project created and set as the active project. Select "start the currently active project" from the main '
+          'manu to start data collection')
 
 def existing_projects():
     proj_ids = [p for p in os.listdir(definitions.DATA_DIR)]
@@ -35,8 +37,9 @@ def active_processes():
     processes = []
     for proc in psutil.process_iter():
         cmd = proc.cmdline()
-        if 'python3' in cmd and any([True if re.fullmatch('.*internet_of_fish/(?!ui\.py).*', c)
-                                     else False for c in cmd]):
+        if proc.pid == os.getpid():
+            continue
+        if 'python3' in cmd and any([True if re.fullmatch('.*internet_of_fish/.*', c) else False for c in cmd]):
             processes.append(proc)
     return processes
 

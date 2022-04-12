@@ -115,8 +115,6 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         self.secondary_ctx = mptools.SecondaryContext(self.metadata, self.event_q,
                                                       f'{target_mode.upper()}CONTEXT')
         self.curr_mode = target_mode
-        self.logger.debug('mode switched successfully')
-
 
     def active_mode(self):
         self.switch_mode('active')
@@ -129,6 +127,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
                 'COLLECT', collector.CollectorWorker, self.img_q)
         self.detect_proc = self.secondary_ctx.Proc(
             'DETECT', detector.DetectorWorker, self.img_q)
+        self.logger.info('successfully entered active mode')
 
     def passive_mode(self):
         self.switch_mode('passive')
@@ -137,6 +136,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         n_workers = self.queue_uploads()
         for i in range(n_workers):
             self.secondary_ctx.Proc(f'UPLOAD{i+1}', uploader.UploaderWorker, self.upload_q)
+        self.logger.info('successfully entered passive mode')
 
     def hard_shutdown(self):
         self.soft_shutdown()
