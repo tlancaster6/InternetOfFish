@@ -185,6 +185,8 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         :return: time (in seconds) to sleep. Always less than 600 (10 minutes) and less than the time until START_HOUR
         :rtype: float
         """
+        if self.metadata['source'] or self.metadata['demo'] or self.metadata['testing']:
+            return 5
         curr_time = dt.datetime.now()
         if self.defs.START_HOUR <= curr_time.hour < self.defs.END_HOUR:
             return 0
