@@ -108,7 +108,7 @@ class UI:
 
     def start_project(self):
         ui_helpers.pause_project()
-        self.main_ctx = mptools.MainContext(metadata.MetaDataHandler().simplify())
+        self.main_ctx = mptools.MainContext(metadata.MetaDataHandler(new_proj=False).simplify())
         self.main_ctx.Proc('RUN', runner.RunnerWorker, self.main_ctx)
         print(f'{self.main_ctx.metadata["proj_id"]} is now running in the background')
         if self.main_ctx.metadata['demo']:
