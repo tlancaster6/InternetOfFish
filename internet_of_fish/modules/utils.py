@@ -116,14 +116,14 @@ def freeze_definitions(proj_id, additional_definitions=None):
 
 
 def locate_newest_json():
-    potential_projects = next(os.walk(definitions.DATA_DIR))[1]
+    try:
+        potential_projects = next(os.walk(definitions.DATA_DIR))[1]
+    except StopIteration:
+        return None
     potential_jsons = [os.path.join(definitions.PROJ_DIR(pp), f'{pp}.json') for pp in potential_projects]
-    if len(potential_jsons) == 0:
-        return None, None
-    else:
-        json_path = sorted([pj for pj in potential_jsons if os.path.exists(pj)], key=os.path.getctime)[-1]
-        ctime = datetime.datetime.fromtimestamp(os.path.getctime(json_path)).isoformat()
-        return json_path, ctime
+    json_path = sorted([pj for pj in potential_jsons if os.path.exists(pj)], key=os.path.getctime)[-1]
+    ctime = datetime.datetime.fromtimestamp(os.path.getctime(json_path)).isoformat()
+    return json_path, ctime
 
 
 def recursive_mtime(path):

@@ -17,7 +17,7 @@ class Opt:
             kwargs = {key: val if not callable(val) else val() for (key, val) in self.kwargs.items()}
             self.action(*args, **kwargs)
         except Exception as e:
-            print(f'failed to execute {self.opt_str} with error {e}')
+            print(f'failed to execute "{self.opt_str}" with error {e}')
 
 
 
@@ -123,8 +123,7 @@ class UI:
     def goodbye(self):
         if self.main_ctx:
             self.main_ctx.__exit__()
-        utils.cprint('goodbye')
-        time.sleep(1)
+        utils.cprint('\ngoodbye')
         sys.exit()
 
 if __name__ == '__main__':
