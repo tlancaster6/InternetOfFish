@@ -1,1 +1,1 @@
-alias iof='cd ~/InternetOfFish && git pull >> dev/null && python3 internet_of_fish/ui.py'
+alias iof='cd ~/InternetOfFish && git pull >> /dev/null && python3 internet_of_fish/ui.py'

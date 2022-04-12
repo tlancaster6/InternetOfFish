@@ -95,8 +95,8 @@ class UI:
         main_menu.update(Opt('start the currently active project', self.start_project))
         main_menu.update(Opt('get additional info about the currently active project', project_info_menu.query))
         main_menu.update(Opt('change the currently active project', self.change_active_project))
-        main_menu.update(Opt('upload all data from this device', ui_helpers.upload_all))
-        main_menu.update(Opt('view additional utilities', utils_menu.query()))
+        main_menu.update(Opt('upload all data from this device and delete local copies', self.end_project))
+        main_menu.update(Opt('view additional utilities', utils_menu.query))
 
 
         return {'main_menu': main_menu, 'new_project_menu': new_project_menu, 'device_info_menu': device_info_menu,
