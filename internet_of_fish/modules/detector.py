@@ -62,6 +62,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         cap_time, img = q_item
         if img == 'MOCK_HIT':
             self.mock_hit_flag = True
+            return
         dets = self.detect(img)
         fish_dets, pipe_det = self.filter_dets(dets)
         self.buffer.append(BufferEntry(cap_time, img, fish_dets + pipe_det))
