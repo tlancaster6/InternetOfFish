@@ -12,8 +12,13 @@ import colorama
 LOG_DIR = definitions.LOG_DIR
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
+default_color = 'BLUE'
+default_style = 'BRIGHT'
+summary_logger_level = logging.INFO
 
-def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False, color='BLUE'):
+
+def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help_str=None, confirm=False,
+           color=default_color, style=default_style):
     """customized user input function. short for "formatted input", but really I just like that it's a pun on "fin"
 
     :param prompt: prompt to give the user, identical usage to the builtin input function. Required.
@@ -40,9 +45,9 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
     """
     while True:
         prompt = prompt.strip(': ') + ':  ' if prompt else prompt
-        if color:
-            prompt = getattr(colorama.Fore, color.upper()) + prompt
-        user_input = str(input(prompt))
+        if prompt:
+            cprint(prompt, style, color)
+        user_input = input()
         if user_input == 'help':
             print(help_str)
             continue
@@ -65,22 +70,23 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
         return user_input
 
 
-def bprint(print_str):
-    print(colorama.Fore.BLUE + print_str)
+def cprint(print_str, color=default_color, style=default_style):
+    color = getattr(colorama.Fore, color.upper()) if color else ''
+    style = getattr(colorama.Style, style.upper()) if style else ''
+    print(color + style + print_str)
 
 
-def numerical_choice(opt_dict, prompt=None, stepout_option=True, color='BLUE'):
+def numerical_choice(opt_dict, prompt=None, stepout_option=True, color=default_color, style=default_style):
     print('\n')
-    color = getattr(colorama.Fore, color)
     if stepout_option:
         opt_dict = opt_dict.copy()
-        opt_dict.update({len(opt_dict): 'return to the previous menu'})
+        opt_dict.update({0: 'return to the previous menu'})
     if prompt:
-        print(color + prompt) if color else print(prompt)
+        cprint(prompt, color, style)
     for key, val in opt_dict.items():
-        print(f'{color}<{key}>  {val}') if color else print(f'<{key}>  {val}')
+        cprint(f'<{key}>  {val}', color, style)
     options = [str(key) for key in list(opt_dict.keys())]
-    selection = finput('', options=options)
+    selection = finput('', options=options, color=color, style=style)
     print('\n')
     return opt_dict[int(selection)]
 
@@ -113,7 +119,7 @@ def locate_newest_json():
     potential_projects = next(os.walk(definitions.DATA_DIR))[1]
     potential_jsons = [os.path.join(definitions.PROJ_DIR(pp), f'{pp}.json') for pp in potential_projects]
     if len(potential_jsons) == 0:
-        return None
+        return None, None
     else:
         json_path = sorted([pj for pj in potential_jsons if os.path.exists(pj)], key=os.path.getctime)[-1]
         ctime = datetime.datetime.fromtimestamp(os.path.getctime(json_path)).isoformat()
@@ -154,6 +160,46 @@ def current_time_iso():
     return datetime.datetime.now().isoformat(timespec='seconds')
 
 
+class DoubleLogger:
+    def __init__(self, name):
+        self.summary_logger = self.make_logger('SUMMARY', summary_logger_level)
+        self.debug_logger = self.make_logger(name.upper(), logging.DEBUG)
+
+    def make_logger(self, name, level):
+        fmt = '%(asctime)s %(name)-16s %(levelname)-8s %(message)s'
+        datefmt = '%Y-%m-%d %H:%M:%S'
+        formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
+        fh = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
+        fh.setLevel(level)
+        fh.setFormatter(formatter)
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
+        if logger.hasHandlers():
+            logger.handlers.clear()
+        logger.addHandler(fh)
+        return logger
+
+    def debug(self, msg):
+        self.debug_logger.debug(msg)
+        self.summary_logger.debug(msg)
+
+    def info(self, msg):
+        self.debug_logger.info(msg)
+        self.summary_logger.info(msg)
+
+    def warning(self, msg):
+        self.debug_logger.warning(msg)
+        self.summary_logger.warning(msg)
+
+    def error(self, msg):
+        self.debug_logger.error(msg)
+        self.summary_logger.error(msg)
+
+    def critical(self, msg):
+        self.debug_logger.error(msg)
+        self.summary_logger.error(msg)
+
+
 def make_logger(name):
     """
     generate a logging.Logger object that writes to a file called "{name}.log". Logging level determined by
@@ -164,28 +210,9 @@ def make_logger(name):
     :return: pre-configured logger
     :rtype: logging.Logger
     """
-    fmt = '%(asctime)s %(name)-16s %(levelname)-8s %(message)s'
-    datefmt = '%Y-%m-%d %H:%M:%S'
-    formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
     if not os.path.exists(definitions.LOG_DIR):
         os.makedirs(LOG_DIR, exist_ok=True)
-
-    fh = logging.FileHandler(os.path.join(definitions.LOG_DIR, f'{name}.log'), mode='a')
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(formatter)
-
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.INFO)
-    ch.setFormatter(formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-    if logger.hasHandlers():
-        logger.handlers.clear()
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-    logger.debug(f'logger created for {name}')
-
+    logger = DoubleLogger(name)
     return logger
 
 

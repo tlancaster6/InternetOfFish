@@ -344,10 +344,12 @@ class MetaDataDict(MetaDataDictBase):
                                      help_str='path to source video, for analyzing an '
                                               'existing video instead of the camera input'),
             'testing':     MetaValue(key='testing',
-                                     value='False',
-                                     required=False),
-            'advanced_config': MetaValue(key='advanced_config',
-                                         value=AdvancedConfigDict())
+                                     value='False'),
+            'demo':       MetaValue(key='demo',
+                                    value='False'),
+            'advanced_config':
+                          MetaValue(key='advanced_config',
+                          value=AdvancedConfigDict())
         }
 
         # add a few special MetaValue objects that generate their values dynamically

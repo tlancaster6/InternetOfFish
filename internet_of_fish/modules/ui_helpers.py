@@ -9,6 +9,19 @@ import shutil
 import time
 import subprocess as sp
 import pathlib
+import socket
+import sys
+import platform
+
+
+def check_running_in_screen():
+    out = sp.run('echo $TERM', shell=True, capture_output=True, encoding='utf-8')
+    return out.stdout.startswith('screen')
+
+def print_summary_log_tail():
+    out = sp.run(['tail', os.path.join(definitions.LOG_DIR, 'SUMMARY.log')], capture_output=True, encoding='utf-8')
+    print(out.stdout)
+
 
 def existing_projects():
     proj_ids = [p for p in os.listdir(definitions.DATA_DIR)]
@@ -25,9 +38,17 @@ def active_processes():
     return processes
 
 
+def check_is_running():
+    is_running = bool(active_processes())
+    print(f'there {"appears" if is_running else "does not appear"} to be a project already running')
+    if is_running:
+        if utils.finput('do you want to pause the currently running project? (y, n)', options=['y', 'n']) == 'y':
+            pause_project()
+
+
 def active_project():
-    json_path, ctime = utils.locate_newest_json()
-    return os.path.splitext(os.path.basename(json_path))[0], ctime
+    json_path, _ = utils.locate_newest_json()
+    return os.path.splitext(os.path.basename(json_path))[0]
 
 
 def kill_processes():
@@ -41,7 +62,7 @@ def kill_processes():
         p.kill()
 
 
-def system_status():
+def get_system_status():
     status_dict = {
         'current_time': datetime.datetime.now(),
         'cpu_temp': float(psutil.sensors_temperatures()['cpu_thermal'][0].current),
@@ -50,6 +71,19 @@ def system_status():
         'memory_usage': float(psutil.virtual_memory().percent)
     }
     return status_dict
+
+def get_system_info():
+    my_platform = platform.uname()
+    info_dict = {
+        'node': my_platform.node,
+        'system': my_platform.system,
+        'release': my_platform.release,
+        'machine': my_platform.machine,
+        'virtual_memory': f'{psutil.virtual_memory().total/(1000**3)}Gb',
+        'effective_disk_size': f'{psutil.disk_usage("/").total/(1000**3)}Gb',
+        'cpu_count': psutil.cpu_count()
+    }
+    return info_dict
 
 
 def change_active_proj(proj_id):
@@ -60,6 +94,7 @@ def change_active_proj(proj_id):
     shutil.copy(json_path, tmp_json_path)
     os.remove(json_path)
     os.rename(tmp_json_path, json_path)
+    print(f'active project is now {proj_id}')
 
 
 def start_project(proj_id=active_project()[0]):
@@ -81,10 +116,16 @@ def get_project_metadata(proj_id):
     metadata_simple = metadata.MetaDataHandler(new_proj=False, json_path=json_path).simplify(infer_types=False)
     return metadata_simple
 
+def print_project_metadata(proj_id):
+    utils.dict_print(get_project_metadata(proj_id))
 
-def get_slack_time(proj_id):
+
+def print_slack_time(proj_id):
     mtime = utils.recursive_mtime(definitions.PROJ_DIR(proj_id))
-    return (datetime.datetime.now() - mtime).total_seconds()
+    slack_time = (datetime.datetime.now() - mtime).total_seconds()
+    print(f'{proj_id} last modified a file {slack_time:.2f} seconds ago')
+    return slack_time
+
 
 def inject_override(event_type: str):
     event_type = event_type.upper()
@@ -104,17 +145,12 @@ def pause_project():
     tries_left = 3
     while active_processes() and tries_left:
         tries_left -= 1
-        print('pausing existing project, please wait')
+        print('pausing a project that was already running, please wait')
         inject_override('HARD_SHUTDOWN')
         time.sleep(5)
         if os.path.exists(definitions.PAUSE_FILE):
             os.remove(definitions.PAUSE_FILE)
     kill_processes()
-
-def print_project_info(proj_id):
-    slack_time = get_slack_time(proj_id)
-    utils.dict_print(get_project_metadata(proj_id))
-    print(f'{proj_id} appears to be {"running" if slack_time < 600 else "paused"}')
 
 
 def upload(local_path):
@@ -128,6 +164,7 @@ def upload(local_path):
         return None
     return out
 
+
 def download(cloud_path):
     rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
     local_path = str(pathlib.PurePosixPath(definitions.HOME_DIR) / pathlib.PurePath(rel))
@@ -136,3 +173,8 @@ def download(cloud_path):
     else:
         out = sp.run(['rclone', 'copy', cloud_path, local_path], capture_output=True, encoding='utf-8')
     return out
+
+
+def upload_all():
+    pause_project()
+    upload(definitions.DATA_DIR)

@@ -7,7 +7,6 @@ from internet_of_fish.modules import utils, ui_helpers, definitions, metadata
 from internet_of_fish.modules.utils import finput, bprint
 import colorama
 
-
 opt_dict_1 = {
     1: 'get more information about a project or this device',
     2: 'start a new project',
@@ -106,7 +105,7 @@ class UI:
             proj_id = finput('enter project id', options=ui_helpers.existing_projects(), simplify=False)
             ui_helpers.print_project_info(proj_id)
         elif selection == 'view resource usage':
-            utils.dict_print(ui_helpers.system_status())
+            utils.dict_print(ui_helpers.get_system_status())
         elif selection == 'return to the previous menu':
             return
         self.get_more_info()
