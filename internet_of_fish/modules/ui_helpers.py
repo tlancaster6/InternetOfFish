@@ -22,6 +22,8 @@ def print_summary_log_tail():
     out = sp.run(['tail', os.path.join(definitions.LOG_DIR, 'SUMMARY.log')], capture_output=True, encoding='utf-8')
     print(out.stdout)
 
+def new_project(**kwargs):
+    metadata.MetaDataHandler(**kwargs)
 
 def existing_projects():
     proj_ids = [p for p in os.listdir(definitions.DATA_DIR)]

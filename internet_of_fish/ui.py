@@ -69,9 +69,9 @@ class UI:
         device_info_menu.update(Opt('view system status', utils.dict_print, ui_helpers.get_system_status))
 
         new_project_menu = OptDict()
-        new_project_menu.update(Opt('create a standard project', metadata.MetaDataHandler))
-        new_project_menu.update(Opt('create a demo project', metadata.MetaDataHandler, demo=True))
-        new_project_menu.update(Opt('create a testing project', metadata.MetaDataHandler, testing=True))
+        new_project_menu.update(Opt('create a standard project', ui_helpers.new_project))
+        new_project_menu.update(Opt('create a demo project', ui_helpers.new_project, demo=True))
+        new_project_menu.update(Opt('create a testing project', ui_helpers.new_project, testing=True))
 
         demo_menu = OptDict()
         demo_menu.update(Opt('view the tail of the summary log', ui_helpers.print_summary_log_tail))
