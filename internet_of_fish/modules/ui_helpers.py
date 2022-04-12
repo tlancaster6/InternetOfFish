@@ -33,7 +33,8 @@ def active_processes():
     processes = []
     for proc in psutil.process_iter():
         cmd = proc.cmdline()
-        if 'python3' in cmd and any([True if re.fullmatch('.*internet_of_fish.*', c) else False for c in cmd]):
+        if 'python3' in cmd and any([True if re.fullmatch('.*internet_of_fish/(?!ui\.py).*', c)
+                                     else False for c in cmd]):
             processes.append(proc)
     return processes
 
