@@ -46,7 +46,7 @@ def finput(prompt, options=None, simplify=True, pattern=None, mapping=None, help
     while True:
         prompt = prompt.strip(': ') + ':  ' if prompt else prompt
         if prompt:
-            cprint(prompt, style, color)
+            cprint(prompt, color, style)
         user_input = input()
         if user_input == 'help':
             print(help_str)
