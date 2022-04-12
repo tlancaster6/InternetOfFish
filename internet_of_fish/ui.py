@@ -24,6 +24,7 @@ class Opt:
 class OptDict:
 
     def __init__(self, prompt=None, stepout_opt=True):
+        self.stepout_opt = stepout_opt
         self.prompt = prompt if prompt else 'select one of the following options'
         self.opts = {'0': Opt('return to the previous menu', None)} if stepout_opt else {}
 
@@ -39,7 +40,7 @@ class OptDict:
             for key, val in self.opts.items():
                 utils.cprint(f'<{key}>  {val.opt_str}')
             selection = utils.finput('selection:  ', options=self.keys())
-            if selection == '0':
+            if selection == '0' and self.stepout_opt:
                 break
             else:
                 self.opts[selection].execute()
