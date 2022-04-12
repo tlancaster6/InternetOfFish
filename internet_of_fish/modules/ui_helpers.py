@@ -97,7 +97,9 @@ def change_active_proj(proj_id):
     print(f'active project is now {proj_id}')
 
 
-def start_project(proj_id=active_project()[0]):
+def start_project(proj_id=None):
+    if not proj_id:
+        proj_id = active_project()[0]
     if active_processes():
         pause_project()
     if not proj_id or proj_id != active_project()[0]:
