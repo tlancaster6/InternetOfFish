@@ -119,7 +119,7 @@ def locate_newest_json():
     try:
         potential_projects = next(os.walk(definitions.DATA_DIR))[1]
     except StopIteration:
-        return None
+        return None, None
     potential_jsons = [os.path.join(definitions.PROJ_DIR(pp), f'{pp}.json') for pp in potential_projects]
     json_path = sorted([pj for pj in potential_jsons if os.path.exists(pj)], key=os.path.getctime)[-1]
     ctime = datetime.datetime.fromtimestamp(os.path.getctime(json_path)).isoformat()
