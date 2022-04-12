@@ -199,6 +199,10 @@ class DoubleLogger:
         self.debug_logger.error(msg)
         self.summary_logger.error(msg)
 
+    def log(self, lvl, msg):
+        self.debug_logger.log(lvl, msg)
+        self.summary_logger.log(lvl, msg)
+
 
 def make_logger(name):
     """
