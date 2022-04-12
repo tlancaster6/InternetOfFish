@@ -186,7 +186,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         :rtype: float
         """
         if self.metadata['source'] or self.metadata['demo'] or self.metadata['testing']:
-            return 5
+            return 30
         curr_time = dt.datetime.now()
         if self.defs.START_HOUR <= curr_time.hour < self.defs.END_HOUR:
             return 0
