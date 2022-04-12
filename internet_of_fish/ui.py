@@ -90,6 +90,7 @@ class UI:
         main_menu.update(Opt('change the currently active project', self.change_active_project))
         main_menu.update(Opt('get info about this device', device_info_menu.query))
         main_menu.update(Opt('upload all data from this device', ui_helpers.upload_all))
+        main_menu.update(Opt('enter demo mode', self.enter_demo_mode))
 
         return {'main_menu': main_menu, 'new_project_menu': new_project_menu, 'device_info_menu': device_info_menu,
                 'project_info_menu': project_info_menu, 'demo_menu': demo_menu}
@@ -114,8 +115,12 @@ class UI:
         self.main_ctx = mptools.MainContext(metadata.MetaDataHandler(new_proj=False).simplify())
         self.main_ctx.Proc('RUN', runner.RunnerWorker, self.main_ctx)
         print(f'{self.main_ctx.metadata["proj_id"]} is now running in the background')
-        if self.main_ctx.metadata['demo']:
+
+    def enter_demo_mode(self):
+        if self.main_ctx and self.main_ctx.metadata['demo']:
             self.menus['demo_menu'].query()
+        else:
+            print('please start a project flagged as demo before entering demo mode')
 
     def change_active_project(self):
         change_project_menu = OptDict(prompt='select which project you want to activate')
