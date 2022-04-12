@@ -48,6 +48,8 @@ def check_is_running():
 
 def active_project():
     json_path, _ = utils.locate_newest_json()
+    if not json_path:
+        return None
     return os.path.splitext(os.path.basename(json_path))[0]
 
 
