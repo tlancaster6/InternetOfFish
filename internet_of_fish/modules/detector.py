@@ -160,6 +160,8 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         if self.metadata['source']:
             self.jpgs_to_mp4(glob(os.path.join(self.img_dir, '*.jpg')))
         # if in testing mode, trigger a notification each time the detector exits
+        self.event_q.safe_put(
+            mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', f'detection complete, entering passive mode'))
         self.work_q.close()
         self.event_q.close()
 
