@@ -162,6 +162,7 @@ def download(cloud_path=None):
     if not cloud_path:
         rel = input(f'complete the below path stub to indicate the location of the file:'
                            f'\n{definitions.CLOUD_HOME_DIR}/')
+        cloud_path = os.path.join(definitions.CLOUD_HOME_DIR, rel)
     else:
         rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
     local_path = str(pathlib.PurePosixPath(definitions.HOME_DIR) / pathlib.PurePath(rel))
