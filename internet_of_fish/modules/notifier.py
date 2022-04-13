@@ -51,11 +51,9 @@ class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             except Exception as e:
                 self.logger.debug(f'failed to send message. {tries_left} tries remaining')
                 print(e)
-        # else:
-        #     self.logger.warning(f'failed to send message {self.defs.MAX_TRIES} times')
-        #     self.logger.debug(f'response status code: {response.status_code}')
-        #     self.logger.debug(f'response body: {response.body}')
-        #     self.logger.debug(f'response headers: {response.headers}')
+            self.logger.debug(f'response status code: {response.status_code}')
+            self.logger.debug(f'response body: {response.body}')
+            self.logger.debug(f'response headers: {response.headers}')
 
     def check_notification_conditions(self, notification: Notification):
         if not self.last_notification:
