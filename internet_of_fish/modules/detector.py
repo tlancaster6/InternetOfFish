@@ -66,6 +66,8 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         dets = self.detect(img)
         fish_dets, pipe_det = self.filter_dets(dets)
         self.buffer.append(BufferEntry(cap_time, img, fish_dets + pipe_det))
+        if self.metadata['source']:
+            self.overlay_boxes(self.buffer[-1])
         hit_flag = self.check_for_hit(fish_dets, pipe_det)
         self.hit_counter.increment() if hit_flag else self.hit_counter.decrement()
         if self.mock_hit_flag or (self.hit_counter.hits >= self.HIT_THRESH):
@@ -155,6 +157,8 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
     def shutdown(self):
         if self.avg_timer.avg:
             self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
+        if self.metadata['source']:
+            self.jpgs_to_mp4(glob(os.path.join(self.img_dir, '*.jpg')))
         # if in testing mode, trigger a notification each time the detector exits
         self.work_q.close()
         self.event_q.close()
