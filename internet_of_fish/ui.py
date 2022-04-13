@@ -65,6 +65,8 @@ class UI:
                                      ui_helpers.active_project))
         project_info_menu.update(Opt('check when the active project last modified a file', ui_helpers.print_slack_time,
                                      ui_helpers.active_project))
+        project_info_menu.update(Opt('view the tail of the summary log', ui_helpers.print_summary_log_tail))
+        project_info_menu.update(Opt('view the tail of a different log', ui_helpers.print_selected_log_tail))
 
         device_info_menu = OptDict()
         device_info_menu.update(Opt('view system info', utils.dict_print, ui_helpers.get_system_info))
@@ -76,10 +78,12 @@ class UI:
 
         demo_menu = OptDict()
         demo_menu.update(Opt('view the tail of the summary log', ui_helpers.print_summary_log_tail))
+        demo_menu.update(Opt('view the tail of a different log', ui_helpers.print_selected_log_tail))
         demo_menu.update(Opt('trigger the "hit" response', ui_helpers.inject_override, 'MOCK_HIT'))
         demo_menu.update(Opt('put the runner into active mode', ui_helpers.inject_override, 'ENTER_ACTIVE_MODE'))
         demo_menu.update(Opt('put the runner into passive mode', ui_helpers.inject_override, 'ENTER_PASSIVE_MODE'))
         demo_menu.update(Opt('put the runner into end mode', ui_helpers.inject_override, 'ENTER_END_MODE'))
+        demo_menu.update(Opt('trigger the fatal error response', ui_helpers.inject_override('FATAL')))
 
         utils_menu = OptDict()
         utils_menu.update(Opt('enter demo mode', self.enter_demo_mode))

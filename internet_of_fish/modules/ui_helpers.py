@@ -19,6 +19,12 @@ def print_summary_log_tail():
     out = sp.run(['tail', os.path.join(definitions.LOG_DIR, 'SUMMARY.log')], capture_output=True, encoding='utf-8')
     print(out.stdout)
 
+def print_selected_log_tail():
+    ops = [os.path.splitext(f)[0].lower() for f in os.listdir(definitions.LOG_DIR)]
+    selection = utils.finput('enter the name of the log file', options=ops)
+    out = sp.run(['tail', os.path.join(definitions.LOG_DIR, f'{selection.upper()}.log')], capture_output=True, encoding='utf-8')
+    print(out.stdout)
+
 def new_project(**kwargs):
     metadata.MetaDataHandler(**kwargs)
     print('project created and set as the active project. Select "start the currently active project" from the main '
