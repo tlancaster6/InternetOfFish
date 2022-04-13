@@ -164,9 +164,13 @@ def download(cloud_path=None):
                            f'\n{definitions.CLOUD_HOME_DIR}/')
     rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
     local_path = str(pathlib.PurePosixPath(definitions.HOME_DIR) / pathlib.PurePath(rel))
+    if not os.path.exists(os.path.dirname(local_path)):
+        os.makedirs(os.path.dirname(local_path))
     if os.path.splitext(local_path)[1]:
+        # if it's a file:
         out = sp.run(['rclone', 'copy', cloud_path, os.path.dirname(local_path)], capture_output=True, encoding='utf-8')
     else:
+        # if it's a directory:
         out = sp.run(['rclone', 'copy', cloud_path, local_path], capture_output=True, encoding='utf-8')
     if out.stderr:
         print(f'download error: {out.stderr}')
