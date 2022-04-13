@@ -15,7 +15,6 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         self.INTERVAL_SECS = self.defs.INTERVAL_SECS
         self.RESOLUTION = (self.defs.H_RESOLUTION, self.defs.V_RESOLUTION)  # pi camera resolution
         self.FRAMERATE = self.defs.FRAMERATE  # pi camera framerate
-        self.DATA_DIR = self.defs.DATA_DIR
         self.SPLIT_AM_PM = self.defs.SPLIT_AM_PM
 
     def startup(self):
@@ -101,7 +100,7 @@ class SourceCollectorWorker(CollectorWorker):
 
     def locate_video(self):
         path_elements = [self.defs.HOME_DIR,
-                         * os.path.relpath(self.DATA_DIR, self.defs.HOME_DIR).split(os.sep),
+                         * os.path.relpath(self.defs.DATA_DIR, self.defs.HOME_DIR).split(os.sep),
                          self.metadata['proj_id'],
                          'Videos']
         for i in range(len(path_elements)):
