@@ -160,9 +160,10 @@ def upload(local_path):
 
 def download(cloud_path=None):
     if not cloud_path:
-        cloud_path = input(f'complete the below path stub to indicate the location of the file:'
+        rel = input(f'complete the below path stub to indicate the location of the file:'
                            f'\n{definitions.CLOUD_HOME_DIR}/')
-    rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
+    else:
+        rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
     local_path = str(pathlib.PurePosixPath(definitions.HOME_DIR) / pathlib.PurePath(rel))
     if not os.path.exists(os.path.dirname(local_path)):
         os.makedirs(os.path.dirname(local_path))
