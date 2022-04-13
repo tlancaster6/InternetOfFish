@@ -451,7 +451,7 @@ class MetaDataHandler(MetaDataDict):
 
         utils.create_project_tree(self['proj_id'])
         with open(self['json_path'], 'w') as f:
-            json.dump(self.simplify(infer_types=False), f)
+            json.dump(self.simplify(infer_types=False), f, indent=2)
             self.logger.info('metadata generated and saved to .json file')
         return self['json_path']
             
@@ -492,7 +492,7 @@ class MetaDataHandler(MetaDataDict):
 
     def overwrite_json(self):
         with open(self['json_path'], 'w') as f:
-            json.dump(self.simplify(infer_types=False), f)
+            json.dump(self.simplify(infer_types=False), f, indent=2)
             self.logger.info('json file overwritten with new metadata')
 
     def set_kill_condition(self):
