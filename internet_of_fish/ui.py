@@ -153,7 +153,8 @@ class UI:
             print(f'starting {active_project} in end mode')
             self.start_project()
         ui_helpers.inject_override('ENTER_END_MODE')
-        print('end mode override injected. Upload will run in background')
+        print('end mode override injected. Upload will run in background. Do not exit the app or attempt to start'
+              'a new project until "upload complete. exiting" prints to the screen')
         
         
 if __name__ == '__main__':

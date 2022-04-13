@@ -160,7 +160,8 @@ def upload(local_path):
 
 def download(cloud_path=None):
     if not cloud_path:
-        cloud_path = input(f'enter the full path to the file/directory, starting with "{definitions.CLOUD_HOME_DIR}"')
+        cloud_path = input(f'complete the below path stub to indicate the location of the file:'
+                           f'\n{definitions.CLOUD_HOME_DIR}/')
     rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
     local_path = str(pathlib.PurePosixPath(definitions.HOME_DIR) / pathlib.PurePath(rel))
     if os.path.splitext(local_path)[1]:
