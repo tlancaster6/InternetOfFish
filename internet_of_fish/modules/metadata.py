@@ -393,8 +393,8 @@ class MetaDataHandler(MetaDataDict):
         md.update(kwargs)
         self.quick_update(md)
         utils.create_project_tree(self['proj_id'])
-        # self.definitions = utils.freeze_definitions(self['proj_id'], self['advanced_config'])
         self.verify()
+        self.overwrite_json()
 
     def decode_metadata(self, json_path):
         """read a metadata json file"""
