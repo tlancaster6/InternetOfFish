@@ -48,12 +48,14 @@ class OptDict:
 
 class UI:
 
-    def __init__(self):
+    def __init__(self, autostart=False):
         self.main_ctx = None
         self.check_startup_conditions()
         self.welcome()
         self.menus = self.init_menus()
         self.main_menu = self.menus['main_menu']
+        if autostart:
+            self.start_project()
         self.main_menu.query()
 
     def init_menus(self):
@@ -71,7 +73,6 @@ class UI:
         new_project_menu = OptDict()
         new_project_menu.update(Opt('create a standard project', ui_helpers.new_project))
         new_project_menu.update(Opt('create a demo project', ui_helpers.new_project, demo=True))
-        new_project_menu.update(Opt('create a testing project', ui_helpers.new_project, testing=True))
 
         demo_menu = OptDict()
         demo_menu.update(Opt('view the tail of the summary log', ui_helpers.print_summary_log_tail))
@@ -120,6 +121,7 @@ class UI:
             print('cannot start a project that does not exist. Try selecting "create a new project" instead')
             return
         self.main_ctx = mptools.MainContext(metadata.MetaDataHandler(new_proj=False).simplify())
+        mptools.init_signals(self.main_ctx.shutdown_event, mptools.default_signal_handler, mptools.default_signal_handler)
         self.main_ctx.Proc('RUN', runner.RunnerWorker, self.main_ctx)
         print(f'{self.main_ctx.metadata["proj_id"]} is now running in the background')
 
@@ -155,7 +157,13 @@ class UI:
         
         
 if __name__ == '__main__':
-    ui = UI()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--autostart', action='store_true',
+                        help='equivalent to starting the ui and immediately choosing "start the currently active '
+                             'project" from the main menu. Used primarily to start the application programatically')
+    args = parser.parse_args()
+    ui = UI(autostart=args.autostart)
 
 
 

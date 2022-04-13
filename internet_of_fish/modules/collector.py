@@ -60,7 +60,7 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         self.cam.split_recording(self.generate_vid_path())
 
 
-class VideoCollectorWorker(CollectorWorker):
+class SourceCollectorWorker(CollectorWorker):
 
     """functions like a CollectorWorker, but gathers images from an existing file rather than a camera"""
 
@@ -120,3 +120,12 @@ class VideoCollectorWorker(CollectorWorker):
     def shutdown(self):
         self.img_q.close()
         self.event_q.close()
+
+
+class SimpleCollectorWorker(CollectorWorker):
+    # TODO: write a collector worker that doesn't collect images, just video
+    pass
+
+class DepthCollectorWorker(CollectorWorker):
+    # TODO: write a collector worker that collects video and depth (but not images)
+    pass

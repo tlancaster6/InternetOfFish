@@ -51,7 +51,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             self.main_ctx.notification_q.safe_put(notifier.Notification(event.msg_src, *event.msg))
         elif event.msg_type == 'FATAL':
             self.logger.info(f'{event.msg_type.title()} event received. Rebooting machine')
-            note = notifier.Notification(event.msg_src, event.msg_type, event.msg,'')
+            note = notifier.Notification(event.msg_src, event.msg_type, event.msg, self.defs.SUMMARY_LOG_FILE)
             self.main_ctx.notification_q.safe_put(note)
             sp.run(['sudo', 'shutdown', '-r', '+5'])
             self.hard_shutdown()
@@ -121,7 +121,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         self.img_q = self.secondary_ctx.MPQueue(maxsize=30)
         if self.metadata['source']:
             self.collect_proc = self.secondary_ctx.Proc(
-                'COLLECT', collector.VideoCollectorWorker, self.img_q, self.metadata['source'])
+                'COLLECT', collector.SourceCollectorWorker, self.img_q, self.metadata['source'])
         else:
             self.collect_proc = self.secondary_ctx.Proc(
                 'COLLECT', collector.CollectorWorker, self.img_q)
@@ -185,7 +185,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         :return: time (in seconds) to sleep. Always less than 600 (10 minutes) and less than the time until START_HOUR
         :rtype: float
         """
-        if self.metadata['source'] or self.metadata['demo'] or self.metadata['testing']:
+        if self.metadata['source'] or self.metadata['demo']:
             return 30
         curr_time = dt.datetime.now()
         if self.defs.START_HOUR <= curr_time.hour < self.defs.END_HOUR:
@@ -263,34 +263,3 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             kept_events_str = "\n\t".join([event.msg for event in kept_events])
             self.logger.debug(f'Returning the following events to the event queue:\n {kept_events_str}')
             [self.event_q.safe_put(event) for event in kept_events]
-
-
-class TestingRunnerWorker(RunnerWorker, metaclass=utils.AutologMetaclass):
-
-    def init_args(self, args: Tuple[mptools.MainContext, int]):
-        self.logger.debug(f"Entering RunnerWorker.init_args : {args}")
-        self.main_ctx, self.mode_switch_interval = args
-        self.curr_mode = 'active'
-        self.mode_start = time.time()
-        self.logger.debug(f"Exiting RunnerWorker.init_args")
-
-    def expected_mode(self):
-
-        mode_map = {'active': 'passive', 'passive': 'active'}
-        if (time.time() - self.mode_start) > self.mode_switch_interval:
-            self.logger.debug(f'switching mode on {self.mode_switch_interval}-second marker\n')
-            self.mode_start = time.time()
-            return mode_map[self.curr_mode]
-        else:
-            return self.curr_mode
-
-    def sleep_until_morning(self):
-        return self.mode_switch_interval/10
-
-    def shutdown(self):
-        """to test the notification capabilities, the testing version of the runner worker sends a notification
-        during shutdown"""
-        n = notifier.Notification('TESTING', 'TEST_NOTIFICATION', 'testing',
-                                  os.path.join(self.defs.LOG_DIR, 'RUN.log'))
-        self.main_ctx.notification_q.safe_put(n)
-        self.hard_shutdown()

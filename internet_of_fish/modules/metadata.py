@@ -343,8 +343,6 @@ class MetaDataDict(MetaDataDictBase):
                                      required=False,
                                      help_str='path to source video, for analyzing an '
                                               'existing video instead of the camera input'),
-            'testing':     MetaValue(key='testing',
-                                     value='False'),
             'demo':       MetaValue(key='demo',
                                     value='False'),
             'advanced_config':

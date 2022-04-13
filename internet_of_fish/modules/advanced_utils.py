@@ -1,6 +1,5 @@
 import os
 import cv2
-from internet_of_fish.modules import definitions
 
 
 def jpgs_to_mp4(img_paths, dest_dir, fps):
