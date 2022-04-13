@@ -83,7 +83,7 @@ class UI:
         demo_menu.update(Opt('put the runner into active mode', ui_helpers.inject_override, 'ENTER_ACTIVE_MODE'))
         demo_menu.update(Opt('put the runner into passive mode', ui_helpers.inject_override, 'ENTER_PASSIVE_MODE'))
         demo_menu.update(Opt('put the runner into end mode', ui_helpers.inject_override, 'ENTER_END_MODE'))
-        demo_menu.update(Opt('trigger the fatal error response', ui_helpers.inject_override('FATAL')))
+        demo_menu.update(Opt('trigger the fatal error response', ui_helpers.inject_override, 'FATAL'))
 
         utils_menu = OptDict()
         utils_menu.update(Opt('enter demo mode', self.enter_demo_mode))
