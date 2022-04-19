@@ -116,7 +116,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=gen_utils.AutologMetaclass):
             return 'passive'
 
     def switch_mode(self, target_mode):
-        if self.curr_mode == target_mode:
+        if self.curr_mode == target_mode and self.secondary_ctx is not None:
             self.logger.debug(f'runner received instructions to switch to {target_mode} mode, but was already in '
                               f'{self.curr_mode} mode. Skipping mode switch.')
             return
