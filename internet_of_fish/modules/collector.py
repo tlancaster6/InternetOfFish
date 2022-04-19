@@ -35,7 +35,7 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=gen_utils.AutologMetacl
         if not put_result:
             self.INTERVAL_SECS += 0.1
             self.logger.info(f'img_q full, slowing collection interval to {self.INTERVAL_SECS}')
-        if self.SPLIT_AM_PM and (dt.datetime.now().hour > 12) and not self.split_flag:
+        if self.SPLIT_AM_PM and (dt.datetime.now().hour >= 12) and not self.split_flag:
             self.split_recording()
             self.split_flag = True
 
