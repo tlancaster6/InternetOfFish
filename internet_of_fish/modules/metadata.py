@@ -1,9 +1,12 @@
-import os, json, sys, re, platform, time
-from internet_of_fish.modules import definitions, utils
+import os, json, re, platform, time
+
+from internet_of_fish.modules.utils import file_utils
+from internet_of_fish.modules import definitions
+from internet_of_fish.modules.utils import gen_utils
 import datetime as dt
 from typing import Union, Callable
 from types import SimpleNamespace
-from internet_of_fish.modules.utils import finput
+from internet_of_fish.modules.utils.gen_utils import finput
 
 my_regexes = SimpleNamespace()
 my_regexes.any_int = r'\d+'
@@ -21,7 +24,7 @@ my_regexes.any_null = r'[Nn][Oo][Nn][Ee]|[Nn][Uu][Ll][Ll]|'
 my_regexes.any_dict = r'{(.+: .+)*}'
 
 
-class MetaDataDictBase(metaclass=utils.AutologMetaclass):
+class MetaDataDictBase(metaclass=gen_utils.AutologMetaclass):
 
     def __init__(self, name: str):
         """dict-like class that holds a collection of MetaValue objects with various preset attributes, as well as
@@ -37,7 +40,7 @@ class MetaDataDictBase(metaclass=utils.AutologMetaclass):
         :type name: str
         """
         self.name = name
-        self.logger = utils.make_logger(name)
+        self.logger = gen_utils.make_logger(name)
         self.contents = {}
 
     def __getitem__(self, key):
@@ -329,10 +332,10 @@ class MetaDataDict(MetaDataDictBase):
                                      simplify=False,
                                      required=False),
             'created':     MetaValue(key='created',
-                                     value=utils.current_time_iso(),
+                                     value=gen_utils.current_time_iso(),
                                      pattern=my_regexes.any_iso_datetime),
             'ip_address':  MetaValue(key='ip_address',
-                                     value=utils.get_ip()),
+                                     value=gen_utils.get_ip()),
             'kill_after':  MetaValue(key='kill_after',
                                      pattern=my_regexes.any_int,
                                      required=False,
@@ -344,6 +347,8 @@ class MetaDataDict(MetaDataDictBase):
                                      help_str='path to source video, for analyzing an '
                                               'existing video instead of the camera input'),
             'demo':       MetaValue(key='demo',
+                                    value='False'),
+            'test':       MetaValue(key='test',
                                     value='False'),
             'advanced_config':
                           MetaValue(key='advanced_config',
@@ -392,7 +397,7 @@ class MetaDataHandler(MetaDataDict):
         md = self.decode_metadata(self.json_path)
         md.update(kwargs)
         self.quick_update(md)
-        utils.create_project_tree(self['proj_id'])
+        file_utils.create_project_tree(self['proj_id'])
         self.verify()
         self.overwrite_json()
 
@@ -449,7 +454,7 @@ class MetaDataHandler(MetaDataDict):
                 if key != 'advanced_config':
                     print(f'{key}: {val}')
 
-        utils.create_project_tree(self['proj_id'])
+        file_utils.create_project_tree(self['proj_id'])
         with open(self['json_path'], 'w') as f:
             json.dump(self.simplify(infer_types=False), f, indent=2)
             self.logger.info('metadata generated and saved to .json file')
@@ -480,7 +485,7 @@ class MetaDataHandler(MetaDataDict):
         """locate the most recently created json file in the data dir (see definitions.py for data dir location)"""
         self.logger.info('attempting to locate existing metadata file')
         try:
-            json_path, ctime = utils.locate_newest_json()
+            json_path, ctime = file_utils.locate_newest_json()
             self.logger.info(f'found {os.path.basename(json_path)}, created {ctime}')
             return json_path, ctime
 

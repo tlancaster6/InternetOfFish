@@ -1,4 +1,5 @@
-from internet_of_fish.modules import mptools, utils
+from internet_of_fish.modules import mptools
+from internet_of_fish.modules.utils import gen_utils
 import base64
 import os
 from datetime import datetime as dt
@@ -10,7 +11,7 @@ from sendgrid.helpers.mail import (
 class Notification:
     def __init__(self, msg_src, msg_type, msg, attachment_path):
         self.msg_src, self.msg_type, self.msg, self.attachment_path = msg_src, msg_type, msg, attachment_path
-        self.id = utils.current_time_iso()
+        self.id = gen_utils.current_time_iso()
 
     def __str__(self):
         return (f"time: {self.id}\n"
@@ -23,7 +24,7 @@ class Notification:
         return dt.fromisoformat(self.id).timestamp()
 
 
-class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
+class NotifierWorker(mptools.QueueProcWorker, metaclass=gen_utils.AutologMetaclass):
 
     def startup(self):
         self.MIN_NOTIFICATION_INTERVAL = self.defs.MIN_NOTIFICATION_INTERVAL
@@ -45,6 +46,7 @@ class NotifierWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             try:
                 message = self.notification_to_sendgrid_message(notification)
                 response = self.api_client.send(message)
+                self.logger.debug(f'response status code: {response.status_code}')
                 if response.status_code == '202':
                     break
 

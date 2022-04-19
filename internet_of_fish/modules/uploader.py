@@ -1,5 +1,7 @@
 from internet_of_fish.modules.mptools import QueueProcWorker
-import os, pathlib, subprocess
+from internet_of_fish.modules.utils import file_utils
+import os
+import subprocess
 
 
 class UploaderWorker(QueueProcWorker):
@@ -22,10 +24,10 @@ class UploaderWorker(QueueProcWorker):
                 else:
                     continue
             try:
-                self.logger.debug(f'uploading {target} to {self.local_to_cloud(target)}')
-                cmnd = ['rclone', 'copyto', target, self.local_to_cloud(target)]
+                self.logger.debug(f'uploading {target} to {file_utils.local_to_cloud(target)}')
+                cmnd = ['rclone', 'copyto', target, file_utils.local_to_cloud(target)]
                 out = subprocess.run(cmnd, capture_output=True, encoding='utf-8')
-                if self.exists_cloud(target):
+                if file_utils.exists_cloud(target):
                     self.logger.debug(f'successfully uploaded {target}')
                     if not target.endswith('.json') or end_of_proj:
                         self.logger.debug(f'deleting {target}')
@@ -42,43 +44,6 @@ class UploaderWorker(QueueProcWorker):
             # (tries_left = 0). If the loop instead hits a break statement (due to a successful upload or conversion)
             # this clause gets skipped.
             self.logger.warning(f'failed three times to process {os.path.basename(target)}. Moving on')
-
-    def exists_local(self, local_path):
-        """
-        simple helper function that returns True if a file/directory exists locally, false otherwise
-        :param local_path: path to file
-        :type local_path: str
-        :return: True if local_path exists, false otherwise
-        :rtype: bool
-        """
-        return os.path.exists(local_path)
-
-    def exists_cloud(self, local_path):
-        """
-        simple helper function that returns True if a file exists on Dropbox, false otherwise. May behave strangely if
-        local_path is a directory rather than file. For consistency with other class methods, this function expects
-        a path to a local file, which it then converts to a corresponding cloud path using the self.local_to_cloud
-        method. It is not, however, necessary for the local file to actually exist for this function to be used.
-        :param local_path: path to local file
-        :type local_path: str
-        :return: True if local_path exists, false otherwise
-        :rtype: bool
-        """
-        cmnd = ['rclone', 'lsf', self.local_to_cloud(local_path)]
-        return subprocess.run(cmnd, capture_output=True, encoding='utf-8').stdout != ''
-
-    def local_to_cloud(self, local_path):
-        """
-        takes a path to a local file or directory and converts it to a Dropbox location. This is done by replacing
-        definitions.HOME_DIR with definitions.CLOUD_HOME_DIR.
-        :param local_path: path to a local file. Note: file must be somewhere in the current user's home directory.
-        :type local_path: str
-        :return: path to corresponding file or directory on Dropbox
-        :rtype: str
-        """
-        rel = os.path.relpath(local_path, self.defs.HOME_DIR)
-        cloud_path = pathlib.PurePosixPath(self.defs.CLOUD_HOME_DIR) / pathlib.PurePath(rel)
-        return str(cloud_path)
 
     def h264_to_mp4(self, h264_path):
         """convert a .h264 video to a .mp4 video

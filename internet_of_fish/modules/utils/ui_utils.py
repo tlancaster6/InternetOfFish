@@ -1,13 +1,17 @@
 import datetime
 import os
-from internet_of_fish.modules import definitions, metadata, runner, utils
+
+from internet_of_fish.modules.utils import file_utils
+from internet_of_fish.modules import definitions
+from internet_of_fish.modules import metadata
+from internet_of_fish.modules import runner
+from internet_of_fish.modules.utils import gen_utils
 import psutil
 import re
 import datetime as dt
 import shutil
 import time
 import subprocess as sp
-import pathlib
 import platform
 import glob
 
@@ -21,7 +25,7 @@ def print_summary_log_tail():
 
 def print_selected_log_tail():
     ops = [os.path.splitext(f)[0].lower() for f in os.listdir(definitions.LOG_DIR)]
-    selection = utils.finput('enter the name of the log file', options=ops)
+    selection = gen_utils.finput('enter the name of the log file', options=ops)
     out = sp.run(['tail', os.path.join(definitions.LOG_DIR, f'{selection.upper()}.log')], capture_output=True, encoding='utf-8')
     print(out.stdout)
 
@@ -51,12 +55,12 @@ def check_is_running():
     is_running = bool(active_processes())
     print(f'there {"appears" if is_running else "does not appear"} to be a project already running')
     if is_running:
-        if utils.finput('do you want to pause the currently running project? (y, n)', options=['y', 'n']) == 'y':
+        if gen_utils.finput('do you want to pause the currently running project? (y, n)', options=['y', 'n']) == 'y':
             pause_project()
 
 
 def active_project():
-    json_path, _ = utils.locate_newest_json()
+    json_path, _ = file_utils.locate_newest_json()
     if not json_path:
         return None
     return os.path.splitext(os.path.basename(json_path))[0]
@@ -114,11 +118,11 @@ def get_project_metadata(proj_id):
     return metadata_simple
 
 def print_project_metadata(proj_id):
-    utils.dict_print(get_project_metadata(proj_id))
+    gen_utils.dict_print(get_project_metadata(proj_id))
 
 
 def print_slack_time(proj_id):
-    mtime = utils.recursive_mtime(definitions.PROJ_DIR(proj_id))
+    mtime = gen_utils.recursive_mtime(definitions.PROJ_DIR(proj_id))
     slack_time = (datetime.datetime.now() - mtime).total_seconds()
     print(f'{proj_id} last modified a file {slack_time:.2f} seconds ago')
     return slack_time
@@ -152,37 +156,3 @@ def pause_project():
     kill_processes()
 
 
-def upload(local_path):
-    rel = os.path.relpath(local_path, definitions.HOME_DIR)
-    cloud_path = str(pathlib.PurePosixPath(definitions.CLOUD_HOME_DIR) / pathlib.PurePath(rel))
-    if os.path.isfile(local_path):
-        out = sp.run(['rclone', 'copy', local_path, os.path.dirname(cloud_path)], capture_output=True, encoding='utf-8')
-    elif os.path.isdir(local_path):
-        out = sp.run(['rclone', 'copy', local_path, cloud_path], capture_output=True, encoding='utf-8')
-    else:
-        return None
-    return out
-
-
-def download(cloud_path=None):
-    if not cloud_path:
-        rel = input(f'complete the below path stub to indicate the location of the file:'
-                           f'\n{definitions.CLOUD_HOME_DIR}/')
-        cloud_path = os.path.join(definitions.CLOUD_HOME_DIR, rel)
-    else:
-        rel = os.path.relpath(cloud_path, definitions.CLOUD_HOME_DIR)
-    local_path = str(pathlib.PurePosixPath(definitions.HOME_DIR) / pathlib.PurePath(rel))
-    if not os.path.exists(os.path.dirname(local_path)):
-        os.makedirs(os.path.dirname(local_path))
-    print('downloading, please wait')
-    if os.path.splitext(local_path)[1]:
-        # if it's a file:
-        out = sp.run(['rclone', 'copy', cloud_path, os.path.dirname(local_path)], capture_output=True, encoding='utf-8')
-    else:
-        # if it's a directory:
-        out = sp.run(['rclone', 'copy', cloud_path, local_path], capture_output=True, encoding='utf-8')
-    if out.stderr:
-        print(f'download error: {out.stderr}')
-    else:
-        print('download complete')
-    return out

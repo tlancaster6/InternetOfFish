@@ -6,7 +6,6 @@ from internet_of_fish.modules import definitions
 import os, socket
 from functools import wraps
 from types import FunctionType, SimpleNamespace
-import sys
 import colorama
 
 LOG_DIR = definitions.LOG_DIR
@@ -76,20 +75,6 @@ def cprint(print_str, color=default_color, style=default_style):
     print(color + style + print_str)
 
 
-def numerical_choice(opt_dict, prompt=None, stepout_option=True, color=default_color, style=default_style):
-    print('\n')
-    if stepout_option:
-        opt_dict = opt_dict.copy()
-        opt_dict.update({0: 'return to the previous menu'})
-    if prompt:
-        cprint(prompt, color, style)
-    for key, val in opt_dict.items():
-        cprint(f'<{key}>  {val}', color, style)
-    options = [str(key) for key in list(opt_dict.keys())]
-    selection = finput('', options=options, color=color, style=style)
-    print('\n')
-    return opt_dict[int(selection)]
-
 def dict_print(dict_: dict, dt_as_iso=True):
     for key, val in dict_.items():
         if isinstance(val, (datetime.datetime, datetime.date, datetime.time)) and dt_as_iso:
@@ -113,17 +98,6 @@ def freeze_definitions(proj_id, additional_definitions=None):
     if additional_definitions:
         defs.update(additional_definitions)
     return SimpleNamespace(**defs)
-
-
-def locate_newest_json():
-    try:
-        potential_projects = next(os.walk(definitions.DATA_DIR))[1]
-    except StopIteration:
-        return None, None
-    potential_jsons = [os.path.join(definitions.PROJ_DIR(pp), f'{pp}.json') for pp in potential_projects]
-    json_path = sorted([pj for pj in potential_jsons if os.path.exists(pj)], key=os.path.getctime)[-1]
-    ctime = datetime.datetime.fromtimestamp(os.path.getctime(json_path)).isoformat()
-    return json_path, ctime
 
 
 def recursive_mtime(path):
@@ -238,51 +212,6 @@ def get_ip():
     return IP
 
 
-def cleanup(proj_id):
-    logfiles = glob.glob(os.path.join(definitions.LOG_DIR, '*.log'))
-    logfiles.extend(glob.glob(os.path.join(definitions.PROJ_LOG_DIR(proj_id), '*.log')))
-    vidfiles = glob.glob(os.path.join(definitions.PROJ_VID_DIR(proj_id), '*'))
-    imgfiles = glob.glob(os.path.join(definitions.PROJ_IMG_DIR(proj_id), '*'))
-    allfiles = logfiles + vidfiles + imgfiles
-    [os.remove(f) for f in allfiles]
-
-
-def remove_empty_dirs(parent_dir, remove_root=False):
-    if not os.path.isdir(parent_dir):
-        return
-    children = os.listdir(parent_dir)
-    if children:
-        for child in children:
-            fullpath = os.path.join(parent_dir, child)
-            if os.path.isdir(fullpath):
-                remove_empty_dirs(fullpath, remove_root=True)
-    children = os.listdir(parent_dir)
-    if not children and remove_root:
-        os.rmdir(parent_dir)
-
-def create_project_tree(proj_id):
-    for dir_func in [definitions.PROJ_DIR,
-                     definitions.PROJ_IMG_DIR,
-                     definitions.PROJ_VID_DIR,
-                     definitions.PROJ_LOG_DIR]:
-        path = dir_func(proj_id)
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-# def retry_wrapper():
-#     def wrapper_fn(f):
-#         @wraps(f)
-#         def new_wrapper(*args, **kwargs):
-#             for i in range(definitions.MAX_TRIES):
-#                 try:
-#                     return f(*args, **kwargs)
-#                 except Exception as e:
-#                     error = e
-#             raise error
-#         return new_wrapper
-#     return wrapper_fn
-
-
 def strfmt_func_call(fname, *args, **kwargs):
     arg_str = ', '.join([str(arg) for arg in args])
     kwarg_str = ', '.join([f'{key}={val}' for key, val in kwargs.items()])
@@ -340,5 +269,7 @@ class Averager:
         else:
             self.avg = ((self.avg * self.count) + val) / (self.count + 1)
         self.count += 1
+
+
 
 

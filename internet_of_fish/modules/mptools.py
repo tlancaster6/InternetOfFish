@@ -3,12 +3,10 @@ import logging
 import multiprocessing as mp
 import multiprocessing.queues as mpq
 import signal
-import sys
 import time
 from queue import Empty, Full
-from internet_of_fish.modules import utils
+from internet_of_fish.modules.utils import gen_utils
 import re
-from typing import Union
 
 """adapted from https://github.com/PamelaM/mptools"""
 
@@ -173,16 +171,16 @@ def init_signals(shutdown_event, int_handler, term_handler):
 
 # -- Worker Process classes
 
-class ProcWorker(metaclass=utils.AutologMetaclass):
+class ProcWorker(metaclass=gen_utils.AutologMetaclass):
     int_handler = staticmethod(default_signal_handler)
     term_handler = staticmethod(default_signal_handler)
 
     def __init__(self, name, startup_event, shutdown_event, event_q, metadata, *args):
         self.name = name
         self.metadata = metadata
-        self.defs = utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
+        self.defs = gen_utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
         self.MAX_TERMINATE_CALLED = self.defs.MAX_TRIES
-        self.logger = utils.make_logger(name)
+        self.logger = gen_utils.make_logger(name)
         self.startup_event = startup_event
         self.shutdown_event = shutdown_event
         self.event_q = event_q
@@ -226,7 +224,7 @@ class ProcWorker(metaclass=utils.AutologMetaclass):
             self.shutdown()
 
 
-class TimerProcWorker(ProcWorker, metaclass=utils.AutologMetaclass):
+class TimerProcWorker(ProcWorker, metaclass=gen_utils.AutologMetaclass):
     INTERVAL_SECS = 10
     MAX_SLEEP_SECS = 0.02
 
@@ -239,7 +237,7 @@ class TimerProcWorker(ProcWorker, metaclass=utils.AutologMetaclass):
                 next_time = time.time() + self.INTERVAL_SECS
 
 
-class QueueProcWorker(ProcWorker, metaclass=utils.AutologMetaclass):
+class QueueProcWorker(ProcWorker, metaclass=gen_utils.AutologMetaclass):
     def init_args(self, args):
         self.work_q, = args
 
@@ -262,14 +260,14 @@ def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, even
     return proc_worker.run()
 
 
-class Proc(metaclass=utils.AutologMetaclass):
+class Proc(metaclass=gen_utils.AutologMetaclass):
 
     def __init__(self, name, worker_class, shutdown_event, event_q, metadata, *args):
         self.metadata = metadata
-        self.defs = utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
+        self.defs = gen_utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
         self.STARTUP_WAIT_SECS = self.defs.DEFAULT_STARTUP_WAIT_SECS
         self.SHUTDOWN_WAIT_SECS = self.defs.DEFAULT_SHUTDOWN_WAIT_SECS
-        self.logger = utils.make_logger(name)
+        self.logger = gen_utils.make_logger(name)
         self.name = name
         self.shutdown_event = shutdown_event
         self.startup_event = mp.Event()
@@ -316,12 +314,12 @@ class Proc(metaclass=utils.AutologMetaclass):
 
 
 # -- Main Wrappers
-class MainContext(metaclass=utils.AutologMetaclass):
+class MainContext(metaclass=gen_utils.AutologMetaclass):
 
 
     def __init__(self, metadata: dict):
         self.metadata = metadata
-        self.defs = utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
+        self.defs = gen_utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
         self.STOP_WAIT_SECS = self.defs.DEFAULT_SHUTDOWN_WAIT_SECS
         self.procs = []
         self.queues = []
@@ -331,7 +329,7 @@ class MainContext(metaclass=utils.AutologMetaclass):
 
     def _init_specials(self):
         self.notification_q = self.MPQueue()
-        self.logger = utils.make_logger('MAINCONTEXT')
+        self.logger = gen_utils.make_logger('MAINCONTEXT')
 
     def __enter__(self):
         return self
@@ -419,7 +417,7 @@ class MainContext(metaclass=utils.AutologMetaclass):
         return num_items_left
 
 
-class SecondaryContext(MainContext, metaclass=utils.AutologMetaclass):
+class SecondaryContext(MainContext, metaclass=gen_utils.AutologMetaclass):
 
     def __init__(self, metadata, event_q=None, name='SECONDARYCONTEXT'):
         self.name = name.upper()
@@ -430,5 +428,5 @@ class SecondaryContext(MainContext, metaclass=utils.AutologMetaclass):
         self.logger.debug(f'new SecondaryContext initialized as {name}')
 
     def _init_specials(self):
-        self.logger = utils.make_logger(self.name)
+        self.logger = gen_utils.make_logger(self.name)
 

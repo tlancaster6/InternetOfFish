@@ -1,9 +1,9 @@
 import logging
 import time
 
-from context import mptools, utils
+from context import mptools
+from internet_of_fish.modules.utils import gen_utils
 import pytest
-from io import StringIO
 from PIL import Image
 from numpy.random import rand
 import multiprocessing as mp
@@ -28,7 +28,7 @@ def explicit_mpqueue():
 @pytest.fixture
 def explicit_img_queue():
     q = mptools.MPQueue()
-    cap_time = utils.current_time_ms()
+    cap_time = gen_utils.current_time_ms()
     for _ in range(10):
         img = random_image()
         q.safe_put((cap_time, img))

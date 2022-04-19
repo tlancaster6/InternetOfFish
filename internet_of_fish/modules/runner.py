@@ -1,5 +1,13 @@
 from typing import Tuple
-from internet_of_fish.modules import mptools, collector, detector, utils, uploader, notifier, definitions
+
+from internet_of_fish.modules.utils import file_utils
+from internet_of_fish.modules import mptools
+from internet_of_fish.modules import collector
+from internet_of_fish.modules import detector
+from internet_of_fish.modules.utils import gen_utils
+from internet_of_fish.modules import uploader
+from internet_of_fish.modules import notifier
+from internet_of_fish.modules import definitions
 import time
 import datetime as dt
 import os
@@ -11,7 +19,7 @@ import pathlib
 EVENT_TYPES = ['NOTIFY', 'FATAL', 'HARD_SHUTDOWN', 'SOFT_SHUTDOWN', 'ENTER_ACTIVE_MODE', 'ENTER_PASSIVE_MODE',
                'ENTER_END_MODE', 'MOCK_HIT']
 
-class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
+class RunnerWorker(mptools.ProcWorker, metaclass=gen_utils.AutologMetaclass):
 
     def init_args(self, args: Tuple[mptools.MainContext,]):
         self.main_ctx, = args
@@ -84,13 +92,11 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         if self.curr_mode == 'active':
             if self.expected_mode() == 'passive':
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', 'mode switch'))
-                self.curr_mode = 'passive'
             else:
                 time.sleep(0.1)
         elif self.curr_mode == 'passive':
             if self.expected_mode() == 'active':
                 self.event_q.safe_put(mptools.EventMessage(self.name, 'ENTER_ACTIVE_MODE', 'mode switch'))
-                self.curr_mode = 'active'
             else:
                 sleep_time = self.sleep_until_morning()
                 self.logger.info(f'no change in mode. going back to sleep for {sleep_time} seconds')
@@ -99,7 +105,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
                 time.sleep(sleep_time)
 
     def expected_mode(self):
-        if self.metadata['source'] or self.metadata['demo']:
+        if self.metadata['source'] or self.metadata['demo'] or self.metadata['test']:
             try:
                 return self.curr_mode
             except AttributeError:
@@ -110,6 +116,10 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             return 'passive'
 
     def switch_mode(self, target_mode):
+        if self.curr_mode == target_mode:
+            self.logger.debug(f'runner received instructions to switch to {target_mode} mode, but was already in '
+                              f'{self.curr_mode} mode. Skipping mode switch.')
+            return
         self.clean_event_queue()
         self.soft_shutdown()
         self.secondary_ctx = mptools.SecondaryContext(self.metadata, self.event_q,
@@ -176,7 +186,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
             self.logger.warning('cannot inject a mock hit while in passive mode. '
                                 'Please switch to active mode and try again')
         else:
-            self.img_q.safe_put((utils.current_time_ms(), 'MOCK_HIT'))
+            self.img_q.safe_put((gen_utils.current_time_ms(), 'MOCK_HIT'))
 
     def sleep_until_morning(self):
         """returns a positive sleep time, not exceeding the time until lights on (as specified by START_HOUR in the
@@ -185,7 +195,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         :return: time (in seconds) to sleep. Always less than 600 (10 minutes) and less than the time until START_HOUR
         :rtype: float
         """
-        if self.metadata['source'] or self.metadata['demo']:
+        if self.metadata['source'] or self.metadata['demo'] or self.metadata['test']:
             return 30
         curr_time = dt.datetime.now()
         if self.defs.START_HOUR <= curr_time.hour < self.defs.END_HOUR:
@@ -193,7 +203,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
         if curr_time.hour >= self.defs.END_HOUR:
             curr_time = (curr_time + dt.timedelta(days=1))
         next_start = curr_time.replace(hour=self.defs.START_HOUR, minute=0, second=0, microsecond=0)
-        return utils.sleep_secs(600, next_start.timestamp())
+        return gen_utils.sleep_secs(600, next_start.timestamp())
 
     def queue_uploads(self, proj_id=None, queue_end_signals=True):
         if not proj_id:
@@ -241,7 +251,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=utils.AutologMetaclass):
                         for i in range(self.MAX_UPLOAD_WORKERS)]
         self.secondary_ctx.stop_procs(upload_procs, stop_wait_secs=3600)
         self.secondary_ctx.stop_all_procs()
-        utils.remove_empty_dirs(self.defs.DATA_DIR)
+        file_utils.remove_empty_dirs(self.defs.DATA_DIR)
         sp.run(['echo', 'upload', 'complete.', 'exiting'])
         self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'project ending'))
 

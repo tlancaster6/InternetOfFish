@@ -10,7 +10,8 @@ from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
 import internet_of_fish.modules.advanced_utils
-from internet_of_fish.modules import mptools, utils
+from internet_of_fish.modules import mptools
+from internet_of_fish.modules.utils import gen_utils
 
 BufferEntry = namedtuple('BufferEntry', ['cap_time', 'img', 'dets'])
 
@@ -30,7 +31,7 @@ class HitCounter:
         self.hits = 0
 
 
-class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
+class DetectorWorker(mptools.QueueProcWorker, metaclass=gen_utils.AutologMetaclass):
 
 
     def init_args(self, args):
@@ -54,7 +55,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
         self.ids = {val: key for key, val in self.labels.items()}
 
         self.hit_counter = HitCounter()
-        self.avg_timer = utils.Averager()
+        self.avg_timer = gen_utils.Averager()
         self.buffer = []
         self.loop_counter = 0
 
@@ -75,7 +76,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             self.logger.info(f"Hit counter reached {self.hit_counter.hits}, possible spawning event")
             img_paths = [self.overlay_boxes(be) for be in self.buffer]
             vid_path = self.jpgs_to_mp4(img_paths)
-            msg = f'possible spawning event in {self.metadata["tank_id"]} at {utils.current_time_iso()}'
+            msg = f'possible spawning event in {self.metadata["tank_id"]} at {gen_utils.current_time_iso()}'
             self.event_q.safe_put(mptools.EventMessage(self.name, 'NOTIFY', ['SPAWNING_EVENT', msg, vid_path]))
             self.hit_counter.reset()
             self.buffer = []
@@ -159,9 +160,9 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=utils.AutologMetaclass):
             self.logger.log(logging.INFO, f'average time for detection loop: {self.avg_timer.avg * 1000}ms')
         if self.metadata['source']:
             self.jpgs_to_mp4(glob(os.path.join(self.img_dir, '*.jpg')))
-        # if in testing mode, trigger a notification each time the detector exits
-        self.event_q.safe_put(
-            mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', f'detection complete, entering passive mode'))
+        if self.metadata['demo'] or self.metadata['source']:
+            self.event_q.safe_put(
+                mptools.EventMessage(self.name, 'ENTER_PASSIVE_MODE', f'detection complete, entering passive mode'))
         self.work_q.close()
         self.event_q.close()
 

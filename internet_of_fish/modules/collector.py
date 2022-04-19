@@ -1,13 +1,13 @@
 import logging, os, io, time
 from PIL import Image
 from internet_of_fish.modules import mptools
-from internet_of_fish.modules import utils
+from internet_of_fish.modules.utils import gen_utils
 import picamera
 import cv2
 import datetime as dt
 
 
-class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass):
+class CollectorWorker(mptools.TimerProcWorker, metaclass=gen_utils.AutologMetaclass):
 
 
     def init_args(self, args):
@@ -24,7 +24,7 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         self.split_flag = False if dt.datetime.now().hour < 12 else True
 
     def main_func(self):
-        cap_time = utils.current_time_ms()
+        cap_time = gen_utils.current_time_ms()
         stream = io.BytesIO()
         self.cam.capture(stream, format='jpeg', use_video_port=True)
         stream.seek(0)
@@ -53,7 +53,7 @@ class CollectorWorker(mptools.TimerProcWorker, metaclass=utils.AutologMetaclass)
         return cam
 
     def generate_vid_path(self):
-        return os.path.join(self.vid_dir, f'{utils.current_time_iso()}.h264')
+        return os.path.join(self.vid_dir, f'{gen_utils.current_time_iso()}.h264')
 
     def split_recording(self):
         self.cam.split_recording(self.generate_vid_path())
@@ -81,7 +81,7 @@ class SourceCollectorWorker(CollectorWorker):
         if not self.active:
             time.sleep(1)
             return
-        cap_time = utils.current_time_ms()
+        cap_time = gen_utils.current_time_ms()
         ret, frame = self.cam.read()
         if ret:
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
