@@ -79,10 +79,10 @@ def download(cloud_path=None):
 
 def download_json(proj_id=None):
     if not proj_id:
-        proj_id = input('enter the project id')
+        proj_id = input('enter the project id:  ')
         while not exists_cloud(definitions.PROJ_JSON_FILE(proj_id)):
             print('invalid project id, please try again')
-            proj_id = input('enter the project id')
+            proj_id = input('enter the project id:  ')
     local_json_path = definitions.PROJ_JSON_FILE(proj_id)
     download(local_to_cloud(local_json_path))
     return local_json_path
