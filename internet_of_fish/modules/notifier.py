@@ -46,16 +46,14 @@ class NotifierWorker(mptools.QueueProcWorker, metaclass=gen_utils.AutologMetacla
             try:
                 message = self.notification_to_sendgrid_message(notification)
                 response = self.api_client.send(message)
-                self.logger.debug(f'response status code: {response.status_code}')
-                if response.status_code == '202':
+                if str(response.status_code) == '202':
+                    self.logger.debug('notification appears to have sent successfully')
                     break
-
+                else:
+                    self.logger.debug(f'expected response status code of 202, got {response.status_code}. retrying')
             except Exception as e:
                 self.logger.debug(f'failed to send message. {tries_left} tries remaining')
                 print(e)
-            self.logger.debug(f'response status code: {response.status_code}')
-            self.logger.debug(f'response body: {response.body}')
-            self.logger.debug(f'response headers: {response.headers}')
 
     def check_notification_conditions(self, notification: Notification):
         if not self.last_notification:
