@@ -97,14 +97,6 @@ def clone(c):
     except Exception as e:
         print(f'clone failed with error: {e}')
 
-@task(hosts=MY_HOSTS)
-def install_requirements(c):
-    print(f'installing requirements for {c.host}')
-    try:
-        with c.cd('/home/pi/'):
-                c.run('bash ./InternetOfFish/bin/install_requirements_worker.sh')
-    except Exception as e:
-        print(f'install requirements failed with error: {e}')
 
 @task(hosts=MY_HOSTS)
 def config(c):
@@ -120,13 +112,5 @@ def config(c):
     except Exception as e:
         print(f'config failed with error: {e}')
 
-@task(hosts=MY_HOSTS)
-def end(c):
-    print(f'ending projects and uploading from {c.host}')
-    try:
-        with c.cd('/home/pi'):
-            c.run('touch END')
-    except Exception as e:
-        print(f'Error: {e}')
 
 
