@@ -122,8 +122,13 @@ class SourceCollectorWorker(CollectorWorker):
 
 
 class SimpleCollectorWorker(CollectorWorker):
-    # TODO: write a collector worker that doesn't collect images, just video
-    pass
+
+    def main_func(self):
+        time.sleep(5)
+        if self.SPLIT_AM_PM and (dt.datetime.now().hour >= 12) and not self.split_flag:
+            self.split_recording()
+            self.split_flag = True
+
 
 class DepthCollectorWorker(CollectorWorker):
     # TODO: write a collector worker that collects video and depth (but not images)
