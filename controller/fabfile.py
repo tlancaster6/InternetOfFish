@@ -1,4 +1,3 @@
-from fabric import Connection, Config
 from fabric import task
 from capturer import CaptureOutput
 import subprocess
@@ -28,6 +27,8 @@ fab config     | configure all hosts. This will ensure the InternetOfFish repo i
                | configured and up-to-date has no effect
 fab pull       | run "git pull" on every host to update the InternetOfFish repository. This only works for hosts that
                | have already been configured
+fab clone      | clone the InternetOfFish repo to each host. Does not require that the host has been configured, only
+               | that it has a functioning OS that recognizes git and can be reached over ssh.
 """
 
 CODE_DIR = os.path.dirname(os.path.abspath(__file__))
