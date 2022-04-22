@@ -1,3 +1,7 @@
+"""this script represents the primary user entry-point to the InternetOfFish (IOF) application. It can be run
+like a standard python script using "python3 internet_of_fish/ui.py", or by using the alias command "iof" (after
+successfully running configure_worker.sh). """
+
 import os, sys
 if os.path.abspath(os.path.dirname(os.path.dirname(__file__))) not in sys.path:
     sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))

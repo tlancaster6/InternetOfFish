@@ -12,9 +12,9 @@ Note that these files (and for that matter, the InternetOfFish repository as a w
 computer you are using to reach the pi's, and not on the pi's themselves. 
 
 The first time you use this interface, you may also need to install the required libraries. To do so, navigate to
-InternetOfFish/bin and run the install_requirements_controller.sh script.
+InternetOfFish/bin and run the configure_worker.sh script.
 
-To use the fab commads defined here, open up a terminal on any computer that is either hardwired to the GaTech network
+To use the fab commands defined here, open up a terminal on any computer that is either hardwired to the GaTech network
 or connected via VPN. Navigate to this file's parent directory, InternetOfFish/controller. You should now be able to 
 run the following commands, to the described effect:
 
@@ -101,6 +101,16 @@ def clone(c):
 @task(hosts=MY_HOSTS)
 def config(c):
     print(f'configuring {c.host}')
+    print('copying local rclone credentials to remote device')
+    out1 = subprocess.run(['rclone', 'config', 'file'], capture_output=True, encoding='utf-8')
+    out2 = subprocess.run(['rclone', 'listremotes'], capture_output=True, encoding='utf-8')
+    if out1.stderr or ('file doesn\'t exist' in out1.stdout.split('\n')[0]) or ('cichlidVideo:' not in out2.stdout.split('\n')):
+        print('there appears to be a problem with the local rclone config, please see the readme section on setting up'
+              'an rclone remote for the first time')
+        return
+    config_path = out1.stdout.split('\n')[1]
+    c.run('mkdir -p /home/pi/.config/rclone')
+    c.put(config_path, remote='/home/pi/.config/rclone')
     try:
         with c.cd('/home/pi/'):
             if c.run('test -d {}'.format('InternetOfFish'), warn=True).failed:
