@@ -176,6 +176,21 @@ class ProcWorker(metaclass=gen_utils.AutologMetaclass):
     term_handler = staticmethod(default_signal_handler)
 
     def __init__(self, name, startup_event, shutdown_event, event_q, metadata, *args):
+        """
+        Worker process base class
+        :param name: descriptive name for the worker process
+        :type name: str
+        :param startup_event: event used to signal to the parent that the worker process started successfully
+        :type startup_event: multiprocessing.Event
+        :param shutdown_event: event used to signal to the worker that it should shut down
+        :type shutdown_event: multiprocessing.Event
+        :param event_q: queue used to communicate complex messages with the parent class
+        :type event_q: MPQueue
+        :param metadata: project metadata dictionary, as returned by metadata.MetaDataHandler.simplify()
+        :type metadata: dict[str, Union[str, dict[str, str]]]
+        :param args: additional arguments handled by the init_args method
+        :type args: Any
+        """
         self.name = name
         self.metadata = metadata
         self.defs = gen_utils.freeze_definitions(self.metadata['proj_id'], self.metadata['advanced_config'])
