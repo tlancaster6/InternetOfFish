@@ -8,7 +8,7 @@ from internet_of_fish.modules.utils import gen_utils
 from internet_of_fish.modules import uploader
 from internet_of_fish.modules import notifier
 from internet_of_fish.modules import definitions
-from internet_of_fish.modules import watcher
+# from internet_of_fish.modules import watcher
 import time
 import datetime as dt
 import os
@@ -30,13 +30,13 @@ class RunnerWorker(mptools.ProcWorker, metaclass=gen_utils.AutologMetaclass):
     def startup(self):
         self.event_types = EVENT_TYPES
         self.MAX_UPLOAD_WORKERS = self.defs.MAX_UPLOAD_WORKERS
-        self.STATUS_INTERVAL = self.defs.STATUS_INTERVAL
-        self.status_report_deadline = time.time() + self.STATUS_INTERVAL
+        # self.STATUS_INTERVAL = self.defs.STATUS_INTERVAL
+        # self.status_report_deadline = time.time() + self.STATUS_INTERVAL
         self.last_event = None
 
         self.main_ctx.Proc('NOTIFY', notifier.NotifierWorker, self.main_ctx.notification_q)
-        self.status_queue = self.main_ctx.MPQueue(maxsize=10)
-        self.main_ctx.Proc('WATCH', watcher.WatcherWorker, self.status_queue)
+        # self.status_queue = self.main_ctx.MPQueue(maxsize=10)
+        # self.main_ctx.Proc('WATCH', watcher.WatcherWorker, self.status_queue)
         self.secondary_ctx = None
 
         self.die_time = dt.datetime.combine(self.metadata['end_date'], self.metadata['end_time'])
@@ -52,9 +52,9 @@ class RunnerWorker(mptools.ProcWorker, metaclass=gen_utils.AutologMetaclass):
             self.logger.debug(f"RunnerWorker injected a HARD_SHUTDOWN into the event queue")
             self.event_q.safe_put(mptools.EventMessage(self.name, 'HARD_SHUTDOWN', 'die_time exceeded'))
 
-        if time.time() > self.status_report_deadline:
-            self.status_queue.safe_put(self.status_report())
-            self.status_report_deadline = time.time() + self.STATUS_INTERVAL
+        # if time.time() > self.status_report_deadline:
+        #     self.status_queue.safe_put(self.status_report())
+        #     self.status_report_deadline = time.time() + self.STATUS_INTERVAL
 
         for event_type in self.event_types:
             if os.path.exists(os.path.join(self.defs.HOME_DIR, event_type)):
@@ -290,12 +290,12 @@ class RunnerWorker(mptools.ProcWorker, metaclass=gen_utils.AutologMetaclass):
             self.logger.debug(f'Returning the following events to the event queue:\n {kept_events_str}')
             [self.event_q.safe_put(event) for event in kept_events]
 
-    def status_report(self):
-        # TODO: write a function to gather status information about the program into a dict. Possible items:
-            # self.main_ctx.shutdown_event.is_set()
-            # self.curr_mode
-            # self.last_event
-            # for proc in self.main_ctx.procs:
-                # proc.start_event.is_set()
-                # proc.name
-        pass
+    # def status_report(self):
+    #     # TODO: write a function to gather status information about the program into a dict. Possible items:
+    #         # self.main_ctx.shutdown_event.is_set()
+    #         # self.curr_mode
+    #         # self.last_event
+    #         # for proc in self.main_ctx.procs:
+    #             # proc.start_event.is_set()
+    #             # proc.name
+    #     pass
