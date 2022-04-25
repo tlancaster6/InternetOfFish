@@ -3,6 +3,7 @@ from collections import namedtuple
 
 from PIL import Image, ImageDraw
 from glob import glob
+from numpy import isclose
 
 from pycoral.adapters import common
 from pycoral.adapters import detect
@@ -116,8 +117,9 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=gen_utils.AutologMetacla
         intersect_count = 0
         for det in fish_dets:
             intersect = detect.BBox.intersect(det.bbox, pipe_det[0].bbox)
-            intersect_count += intersect.valid
-            color = 'green' if intersect.valid else 'red'
+            intersect_flag = (intersect.valid and isclose(intersect.area, det.bbox.area))
+            intersect_count += intersect_flag
+            color = 'green' if intersect_flag else 'red'
             overlay_box(det, color)
             
         color = 'red' if not intersect_count else 'yellow' if intersect_count == 1 else 'green'
@@ -143,7 +145,7 @@ class DetectorWorker(mptools.QueueProcWorker, metaclass=gen_utils.AutologMetacla
         pipe_det = pipe_det[0]
         for det in fish_dets:
             intersect = detect.BBox.intersect(det.bbox, pipe_det.bbox)
-            intersect_count += intersect.valid
+            intersect_count += (intersect.valid and isclose(intersect.area, det.bbox.area))
         if intersect_count < 2:
             return False
         else:
