@@ -152,7 +152,8 @@ class UI:
         utils_menu.update(Opt('get info about this device', device_info_menu.query))
         utils_menu.update(Opt('pause the currently running project without exiting', ui_utils.pause_project))
         utils_menu.update(Opt('download a file or directory from dropbox', file_utils.download))
-        utils_menu.update(Opt('download the .json file for a particular project', file_utils.download_json))
+        utils_menu.update(Opt('download the .json file for a particular project, and "source" if specified',
+                              file_utils.download_json))
         utils_menu.update(Opt('clear the log files', ui_utils.clear_logs))
 
         main_menu = OptDict(stepout_opt=False)

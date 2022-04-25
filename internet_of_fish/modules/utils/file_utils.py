@@ -2,6 +2,7 @@ import datetime
 import os
 import pathlib
 import subprocess as sp
+import json
 
 from internet_of_fish.modules import definitions
 
@@ -85,6 +86,11 @@ def download_json(proj_id=None):
             proj_id = input('enter the project id:  ')
     local_json_path = definitions.PROJ_JSON_FILE(proj_id)
     download(local_to_cloud(local_json_path))
+    with open(local_json_path, 'r') as f:
+        source = json.load(f)['source']
+        if source and source != 'None':
+            print(f'json specifies source as {source}. Downloading')
+            download(local_to_cloud(source))
     return local_json_path
 
 
