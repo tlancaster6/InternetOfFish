@@ -66,7 +66,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=gen_utils.AutologMetaclass):
         event = self.event_q.safe_get()
         if event:
             self.logger.debug(f'Runner received event: {event}')
-            self.last_event = event
+            self.last_event = event.msg_type
         if not event:
             self.verify_mode()
         elif event.msg_type == 'NOTIFY':
@@ -77,7 +77,7 @@ class RunnerWorker(mptools.ProcWorker, metaclass=gen_utils.AutologMetaclass):
             self.main_ctx.notification_q.safe_put(note)
             sp.run(['sudo', 'shutdown', '-r', '+5'])
             self.hard_shutdown()
-        elif event.msg_type in 'HARD_SHUTDOWN':
+        elif event.msg_type == 'HARD_SHUTDOWN':
             self.logger.info(f'{event.msg_type} event received. Executing hard shutdown')
             self.hard_shutdown()
         elif event.msg_type == 'SOFT_SHUTDOWN':
