@@ -31,7 +31,7 @@ class StatusReport:
         # generate additional attributes programmatically
         self.disk_usage = float(psutil.disk_usage('/').percent)
         self.mem_usage = float(psutil.virtual_memory().percent)
-        self.idle_time = dt.datetime.now() - recursive_mtime(PROJ_DIR(proj_id)).total_seconds()
+        self.idle_time = (dt.datetime.now() - recursive_mtime(PROJ_DIR(proj_id))).total_seconds()
 
     def __call__(self):
         return {key: str(val) for key, val in vars(self).items()}
