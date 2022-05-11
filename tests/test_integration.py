@@ -9,7 +9,7 @@ def mock_metadata():
     mm.quick_update({'owner': 'foo',
                      'species': 'bar',
                      'fish_type': 'other',
-                     'model_id': 'efficientdet_new',
+                     'model_id': 'efficientdet_april25',
                      })
     yield mm.simplify()
 
