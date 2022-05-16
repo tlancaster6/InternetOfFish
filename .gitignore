@@ -130,3 +130,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Training files
+/obj_det_training/data/*
+/obj_det_training/mbuna/*
