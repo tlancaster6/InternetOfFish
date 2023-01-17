@@ -172,12 +172,12 @@ def init_signals(shutdown_event, int_handler, term_handler):
 # -- Worker Process classes
 
 class ProcWorker(metaclass=gen_utils.AutologMetaclass):
-    int_handler = staticmethod(default_signal_handler)
-    term_handler = staticmethod(default_signal_handler)
+    int_handler = staticmethod(default_signal_handler)   # interrupt signal handler
+    term_handler = staticmethod(default_signal_handler)  # terminate signal handler
 
     def __init__(self, name, startup_event, shutdown_event, event_q, metadata, *args):
         """
-        Worker process base class
+        Worker process base class. Most methods will be overridden in derived classes, except for "__init__" and "run"
         :param name: descriptive name for the worker process
         :type name: str
         :param startup_event: event used to signal to the parent that the worker process started successfully
@@ -188,7 +188,7 @@ class ProcWorker(metaclass=gen_utils.AutologMetaclass):
         :type event_q: MPQueue
         :param metadata: project metadata dictionary, as returned by metadata.MetaDataHandler.simplify()
         :type metadata: dict[str, Union[str, dict[str, str]]]
-        :param args: additional arguments handled by the init_args method
+        :param args: additional arguments handled by the init_args method of derived classes
         :type args: Any
         """
         self.name = name
@@ -203,27 +203,50 @@ class ProcWorker(metaclass=gen_utils.AutologMetaclass):
         self.init_args(args)
 
     def init_args(self, args):
+        """
+        placeholder method. Can be overridden in child classes to handle additional initialization arguments without
+        having to override the default __init__ method.
+        """
         if args:
             raise ValueError(f"Unexpected arguments to ProcWorker.init_args: {args}")
 
     def init_signals(self):
+        """
+        initializes signal handlers
+        """
         signal_object = init_signals(self.shutdown_event, self.int_handler, self.term_handler)
         return signal_object
 
     def main_loop(self):
+        """
+        placeholder method that should be overridden in derived classes.
+        """
         while not self.shutdown_event.is_set():
             self.main_func()
 
     def startup(self):
+        """
+        placeholder method that should be  overridden in derived classes.
+        """
         pass
 
     def shutdown(self):
+        """
+        placeholder method that should be overridden in derived classes.
+        """
         pass
 
     def main_func(self, *args):
+        """
+        placeholder method that should be overridden in derived classes.
+        """
         raise NotImplementedError(f"{self.__class__.__name__}.main_func is not implemented")
 
     def run(self):
+        """
+        Boilerplate method that should not be overridden. Wraps the main_loop method in various signal handling, setup,
+        and cleanup functionality.
+        """
         self.init_signals()
         try:
             self.startup()
@@ -240,23 +263,46 @@ class ProcWorker(metaclass=gen_utils.AutologMetaclass):
 
 
 class TimerProcWorker(ProcWorker, metaclass=gen_utils.AutologMetaclass):
-    INTERVAL_SECS = 10
-    MAX_SLEEP_SECS = 0.02
+    """
+    Basic worker process class for processes where the main function should run at set intervals (determined by
+    INTERVAL_SECS, which defaults to 10 seconds.) INTERVAL_SECS can be set at instantiation by redefining
+    self.INTERVAL_SECS in the init_args() or startup() methods -- see the CollectorWorker class in collector.py for an
+    example.
+    """
+    INTERVAL_SECS = 10  # default interval at which the main loop runs
+    MAX_SLEEP_SECS = 0.02  # default interval at which the process checks whether it should run the main loop
 
     def main_loop(self):
+        # determine when the main_func method should be called again
         next_time = time.time() + self.INTERVAL_SECS
+        # repeatedly (and frequently) check if another process is trying to shut this process down
         while not self.shutdown_event.is_set():
+            # sleep for MAX_SLEEP_SECS or until next_time, whichever is smaller
             time.sleep(sleep_secs(self.MAX_SLEEP_SECS, next_time))
+            # if the current time exceeds next_time, run the main function and update next_time
             if time.time() > next_time:
                 self.main_func()
                 next_time = time.time() + self.INTERVAL_SECS
 
 
 class QueueProcWorker(ProcWorker, metaclass=gen_utils.AutologMetaclass):
+    """
+    Basic worker class for processes that primarily operate on data drawn from a queue. This type of process worker can
+    be shut down immediately by setting the shutdown_event, or can be shut down in a more controlled fashion by placing
+    the string "END" into the work queue, which will trigger a shutdown when it is encountered.
+    """
     def init_args(self, args):
+        """
+        store a reference to the work_q, the multiprocessing queue from which this process will draw data
+        """
         self.work_q, = args
 
     def main_loop(self):
+        """
+        While the shutdown event is not set, this method takes an item from the work queue and passes it to the
+        main_func method. If the queue is empty, continues without throwing an error. If the queue item is the string
+        "END", breaks the main loop, which triggers the process to shut down gracefully.
+        """
         while not self.shutdown_event.is_set():
             item = self.work_q.safe_get()
             if not item:
@@ -271,6 +317,21 @@ class QueueProcWorker(ProcWorker, metaclass=gen_utils.AutologMetaclass):
 # -- Process Wrapper
 
 def proc_worker_wrapper(proc_worker_class, name, startup_evt, shutdown_evt, event_q, metadata, *args):
+    """
+    wrapper to facilitate passing process worker classes as the "target" keyword argument of multiprocessing.Proc
+    :param proc_worker_class: the process worker class to wrap
+    :type proc_worker_class: type
+    :param name: process name
+    :type name: str
+    :param startup_evt: multiprocessing event set to True once the proc_worker starts up successfully
+    :type startup_evt: mp.Event
+    :param shutdown_evt:
+    :type shutdown_evt:
+    :param event_q:
+    :param metadata:
+    :param args:
+    :return:
+    """
     proc_worker = proc_worker_class(name, startup_evt, shutdown_evt, event_q, metadata, *args)
     return proc_worker.run()
 
